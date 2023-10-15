@@ -1,0 +1,12 @@
+{
+  "name": "parcel",
+  "version": "1.0.0",
+  "author": "Blake Rain <blake.rain@blakerain.com>",
+  "license": "BSD3",
+  "devDependencies": {
+    "tailwindcss": "^3.3.3"
+  },
+  "scripts": {
+    "build": "tailwindcss -i style/input.css -o templates/main.css -m"
+  }
+}
