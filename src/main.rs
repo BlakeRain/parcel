@@ -28,8 +28,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         sub.init();
     }
 
-    let env = Env::new(args).await?;
-    let app = create_app(env);
+    let cookie_key = args.get_cookie_key()?;
+    let env = Env::new(&args).await?;
+    let app = create_app(env, cookie_key.as_deref());
     Server::new(TcpListener::bind("0.0.0.0:3000"))
         .run(app)
         .await?;

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}{% endblock %} - Parcel File Sharing</title>
+    <link rel="shortcut icon" type="image/png" href="/static/favicon.png" />
+    <link href="/static/main.css" rel="stylesheet" />
+  </head>
+  <body>
+    <header>
+      <nav>
+        <ul>
+          <li class="logo">
+            <a href="/" class="font-semibold">
+              {% include "icons/lucide/package-open.svg" %} Parcel
+            </a>
+          </li>
+          {% if user %}
+            <li><a href="/upload">New Upload</a></li>
+          {% endif %}
+        </ul>
+        <ul>
+          {% if user %}
+            <li class="dropdown">
+              <span>
+                {% include "icons/lucide/user-circle-2.svg" %}
+                {{ user.username }}
+              </span>
+              <ul>
+                <li>
+                  {% if user.admin %}
+                    <a href="/admin">
+                      {% include "icons/lucide/cog.svg" %}
+                      Administration
+                    </a>
+                  {% endif %}
+                  <a href="/user/settings">
+                    {% include "icons/lucide/settings-2.svg" %}
+                    Account Settings
+                  </a>
+                </li>
+                <li>
+                  <a href="/user/signout">
+                    {% include "icons/lucide/log-out.svg" %}
+                    Sign Out
+                  </a>
+                </li>
+              </ul>
+            </li>
+          {% else %}
+            <li><a href="/user/signin">Sign In</a></li>
+          {% endif %}
+        </ul>
+      </nav>
+    </header>
+    {% block content %}{% endblock %}
+    <footer>
+      <div>
+        Powered by
+        <a
+          title="Git repository"
+          href="https://git.blakerain.com/BlakeRain/parcel"
+          >Parcel</a
+        >
+        file sharing
+        <a
+          title="Repository version tag"
+          href="https://git.blakerain.com/BlakeRain/parcel/src/tag/{{ build.version }}"
+        >
+          v{{ build.version }}
+        </a>
+      </div>
+      <div>
+        Build of
+        <a
+          title="Commit hash"
+          href="https://git.blakerain.com/BlakeRain/parcel/commit/{{
+        build.git.commit }}"
+          >{{ build.git.short }}</a
+        >
+        on {{ build.date }}
+      </div>
+    </footer>
+    <script src="/static/htmx.js"></script>
+    <script>
+      document.querySelectorAll(".dropdown").forEach(element => {
+        element.addEventListener("click", (event) => {
+          element.classList.toggle("open");
+          event.stopPropagation();
+        });
+      });
+
+      document.addEventListener("click", (event) => {
+        if (event.target.closest(".dropdown")) {
+          return;
+        }
+
+        document.querySelectorAll(".dropdown").forEach(element => {
+          element.classList.remove("open");
+        });
+      });
+    </script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

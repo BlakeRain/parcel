@@ -2,7 +2,7 @@ use std::{path::PathBuf, str::FromStr, sync::Arc};
 
 use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
 
-use crate::{args::Args, model::MIGRATOR};
+use crate::{args::Args, model::migration::MIGRATOR};
 
 pub struct Env {
     inner: Arc<Inner>,
@@ -29,8 +29,9 @@ pub struct Inner {
 }
 
 impl Env {
-    pub async fn new(Args { db, cache_dir, .. }: Args) -> sqlx::Result<Self> {
-        let opts = SqliteConnectOptions::from_str(&db)?.create_if_missing(true);
+    pub async fn new(Args { db, cache_dir, .. }: &Args) -> sqlx::Result<Self> {
+        let cache_dir = cache_dir.clone();
+        let opts = SqliteConnectOptions::from_str(db)?.create_if_missing(true);
         let pool = SqlitePool::connect_with(opts).await?;
         MIGRATOR.run(&pool).await?;
 

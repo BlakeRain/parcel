@@ -1,25 +1,32 @@
 {% extends "base.html" %}
 
-{% block title %}Setup{% endblock %}
+{% block title %}Account Settings{% endblock %}
 
 {% block content %}
   <div class="container mx-auto flex justify-center">
     <div class="w-full md:w-2/3 lg:w-1/2 flex flex-col border border-slate-400 dark:border-slate-700 dark:bg-slate-900 rounded-md shadow-md p-6 sm:p-8 space-y-4 md:space-y-6">
       <h1 class="text-xl md:text-2xl font-bold leading-tight tracking-light text-gray-900 dark:text-white">
-        Sign in to your account
+        Account settings
       </h1>
       {% if error %}
         <div id="error" class="text-danger">
           {{ error }}
         </div>
       {% endif %}
-      <form method="POST" action="/user/signin" class="form" id="signin-form">
+      <form method="POST" action="/user/settings/username" class="form" id="username-form">
         <input type="hidden" name="token" value="{{ token }}">
-        <label for="username">Your username</label>
-        <input class="field" type="text" name="username" id="username" placeholder="Username" required>
-        <label for="password">Your password</label>
-        <input class="field" type="password" name="password" id="password" placeholder="••••••••" required>
-        <button type="submit" class="button">Sign in</button>
+        <label for="username">Change your username</label>
+        <input
+          class="field"
+          type="text"
+          name="username"
+          id="username"
+          placeholder="Username"
+          value="{{ user.username }}"
+          required />
+        <div class="buttons">
+          <button type="submit" class="button">Change username</button>
+        </div>
       </form>
     </div>
   </div>
@@ -27,9 +34,10 @@
 
 {% block scripts %}
   <script>
-    document.querySelector("form#signin-form").addEventListener("submit", (event) => {
-      // Disable the submit button so we don't try multiple submissions.
+    document.querySelector("form").addEventListener("submit", (event) => {
+      // Disable all submit buttons so we don't try multiple submissions.
       document.querySelector("button[type=submit]").disabled = true;
     });
   </script>
 {% endblock %}
+

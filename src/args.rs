@@ -1,8 +1,9 @@
 use std::path::PathBuf;
 
+use base64::Engine;
 use clap::Parser;
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 #[command(author, about, long_about = None)]
 pub struct Args {
     /// Enable logging ('-v' for debug, '-vv' for tracing).
@@ -13,7 +14,21 @@ pub struct Args {
     #[arg(long, default_value = "sqlite://parcel.db", env)]
     pub db: String,
 
-    /// Director in which to store the file cache.
+    /// Directory in which to store the file cache.
     #[arg(long, default_value = "./cache", env)]
     pub cache_dir: PathBuf,
+
+    /// Cookie secret (must be 32-bytes, base64-encoded).
+    #[arg(long, env)]
+    pub cookie_secret: Option<String>,
+}
+
+impl Args {
+    pub fn get_cookie_key(&self) -> Result<Option<Vec<u8>>, base64::DecodeError> {
+        Ok(if let Some(secret) = &self.cookie_secret {
+            Some(base64::engine::general_purpose::URL_SAFE.decode(secret)?)
+        } else {
+            None
+        })
+    }
 }

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Setup{% endblock %}
+
+{% block content %}
+
+<div class="container mx-auto flex justify-center">
+  <div class="w-full md:w-2/3 lg:w-1/2 flex flex-col items-center border border-slate-400 dark:border-slate-700 rounded-md shadow-md p-4">
+    <h1 class="text-2xl font-semibold">⚙️ Initial Setup</h1>
+    <p class="my-4 text-center">
+      Welcome to the initial setup of a new 📦 Parcel installation.
+      <br />
+      To set up your installation, you need to create the username and password for the
+      first administrator user. You can add more administrators or normal users later.
+    </p>
+    <div id="error" class="text-danger">
+      {% if error %}{{ error }}{% endif %}
+    </div>
+    <form id="setup-form" action="/admin/setup" method="POST" class="form w-full lg:w-2/3 xl:w-1/2">
+      <input type="hidden" name="token" value="{{ token }}" />
+      <label for="username">Administrator Username</label>
+      <input class="field" name="username" type="text" placeholder="Administrator Username" />
+      <label for="password">Administrator Password</label>
+      <input class="field" name="password" type="password" placeholder="Administrator Password" />
+      <input class="field" name="confirm" type="password" placeholder="Confirm Administrator Password" />
+      <button type="submit" class="button">👍 Create Administrator</button>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+  document.querySelector("form#setup-form").addEventListener("submit", (event) => {
+    const username = document.querySelector("input[name='username']").value;
+    const password = document.querySelector("input[name='password']").value;
+    const confirm = document.querySelector("input[name='confirm']").value;
+
+    // Check to make sure that the username is not empty.
+    if (username.length === 0) {
+      event.preventDefault();
+      document.querySelector("#error").innerHTML = "The administrator username cannot be empty.";
+      return;
+    }
+
+    // Check to make sure that the password is not empty; If it is, then cancel the submission event
+    if (password.length === 0) {
+      event.preventDefault();
+      document.querySelector("#error").innerHTML = "The administrator password cannot be empty.";
+      return;
+    }
+
+    // Check to make sure that the password and the confirmation are the same; If they are not, then
+    // cancel the submission event and set the <div id="error"> content to a suitable error message.
+    if (password !== confirm) {
+      event.preventDefault();
+      document.querySelector("#error").innerHTML = "The passwords do not match.";
+      return;
+    }
+
+    // Disable the submit button so we don't try multiple submissions.
+    document.querySelector("button[type=submit]").disabled = true;
+  });
+</script>
+
+{% endblock %}

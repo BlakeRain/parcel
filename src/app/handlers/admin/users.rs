@@ -1,16 +1,17 @@
 use poem::{
     error::InternalServerError,
     handler,
-    web::{Data, Form, Html, Path, Redirect},
+    http::StatusCode,
+    web::{CsrfToken, CsrfVerifier, Data, Form, Html, Path, Redirect},
     IntoResponse,
 };
 use serde::Deserialize;
 use time::OffsetDateTime;
 
 use crate::{
-    app::templates::{default_context, render_template},
+    app::templates::{default_context, render_404, render_template},
     env::Env,
-    model::{hash_password, User},
+    model::user::{hash_password, User},
 };
 
 #[handler]
@@ -23,22 +24,36 @@ pub async fn get_users(env: Data<&Env>) -> poem::Result<Html<String>> {
     render_template("admin/users.html", &context)
 }
 
+#[handler]
+pub fn get_users_new(env: Data<&Env>, token: &CsrfToken) -> poem::Result<Html<String>> {
+    let mut context = default_context();
+    context.insert("token", &token.0);
+    render_template("admin/users/new.html", &context)
+}
+
 #[derive(Debug, Deserialize)]
 pub struct NewUserForm {
+    token: String,
     username: String,
     password: String,
     admin: bool,
 }
 
 #[handler]
-pub async fn post_users(
+pub async fn post_users_new(
     env: Data<&Env>,
+    verifier: &CsrfVerifier,
     Form(NewUserForm {
+        token,
         username,
         password,
         admin,
     }): Form<NewUserForm>,
 ) -> poem::Result<impl IntoResponse> {
+    if !verifier.is_valid(&token) {
+        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+    }
+
     let mut user = User {
         id: 0,
         username,
@@ -62,7 +77,25 @@ pub struct EditUserForm {
 }
 
 #[handler]
-pub async fn post_user(
+pub async fn get_user_edit(
+    env: Data<&Env>,
+    Path(user_id): Path<i32>,
+) -> poem::Result<Html<String>> {
+    let Some(user) = User::get(&env.pool, user_id)
+        .await
+        .map_err(InternalServerError)?
+    else {
+        tracing::error!("Unrecognized user ID '{user_id}'");
+        return render_404("Unrecognized user ID");
+    };
+
+    let mut context = default_context();
+    context.insert("user", &user);
+    render_template("admin/users/edit.html", &context)
+}
+
+#[handler]
+pub async fn put_user(
     env: Data<&Env>,
     Path(user_id): Path<i32>,
     Form(EditUserForm {
