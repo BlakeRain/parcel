@@ -100,7 +100,7 @@ impl User {
         enabled: bool,
     ) -> sqlx::Result<()> {
         sqlx::query("UPDATE users SET username = $1, enabled = $2, admin = $3 WHERE id = $4")
-            .bind(&username)
+            .bind(username)
             .bind(enabled)
             .bind(admin)
             .bind(self.id)

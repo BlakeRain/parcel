@@ -1,0 +1,74 @@
+<div id="upload-list-container" class="panel">
+  <div class="flex flex-row justify-between items-center">
+    <h1 class="heading">Uploads</h1>
+    <div class="buttons">
+      <button
+        class="button"
+        type="button"
+        hx-get="/admin/uploads"
+        hx-target="#upload-list-container"
+        hx-swap="outerHTML">
+        {% include "icons/lucide/refresh-cw.svg" %}
+      </button>
+    </div>
+  </div>
+  <div class="table">
+    <table>
+      <thead>
+        <tr>
+          <th class="text-right">ID</th>
+          <th class="text-left">Slug</th>
+          <th class="text-left">Filename</th>
+          <th class="text-right">Downloads</th>
+          <th class="text-right">Remaining</th>
+          <th class="text-left">Expiry Date</th>
+          <th class="text-left">Uploaded At</th>
+          <th class="text-left">Uploaded By</th>
+          <th class="text-left">Uploaded From</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for upload in uploads %}
+          <tr>
+            <td class="text-right">{{ upload.id }}</td>
+            <td class="text-left">
+              <a href="/uploads/{{ upload.slug }}" target="_blank">
+                {{ upload.slug }}
+              </a>
+            </td>
+            <td class="text-left">
+              <code>{{ upload.filename }}</code>
+            </td>
+            <td>
+              {% if upload.public %}Public{% else %}Private{% endif %}
+            </td>
+            <td class="text-right">
+              {{ upload.downloads }}
+            </td>
+            <td class="text-right">
+              {% if upload.remaining is null %}
+                Unlimited
+              {% else %}
+                {{ upload.remaining }}
+              {% endif %}
+            </td>
+            <td class="text-left">
+              {% if upload.expiry_date %}
+                {{ upload.expiry_date|datetime }}
+              {% endif %}
+            </td>
+            <td class="text-left">
+              {{ upload.created_at|datetime }}
+            </td>
+            <td class="text-left">
+              {{ upload.uploaded_by_name }}
+            </td>
+            <td class="text-left">
+              <code>{{ upload.remote_addr }}</code>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>

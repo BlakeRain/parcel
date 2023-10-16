@@ -14,6 +14,7 @@ lazy_static! {
     pub static ref TEMPLATES: Tera = {
         let mut tera = Tera::new("templates/**/*").expect("to load templates");
         tera.autoescape_on(vec![".html", ".svg"]);
+
         tera.register_filter(
             "datetime",
             |value: &tera::Value, _: &HashMap<String, tera::Value>| -> tera::Result<tera::Value> {
@@ -26,6 +27,29 @@ lazy_static! {
                 )?)
             },
         );
+
+        tera.register_filter(
+            "date",
+            |value: &tera::Value, _: &HashMap<String, tera::Value>| -> tera::Result<tera::Value> {
+                let time = serde_json::from_value::<OffsetDateTime>(value.clone())?;
+                Ok(tera::to_value(
+                    time.format(format_description!("[year]-[month]-[day]"))
+                        .expect("formatted time"),
+                )?)
+            },
+        );
+
+        tera.register_filter(
+            "time",
+            |value: &tera::Value, _: &HashMap<String, tera::Value>| -> tera::Result<tera::Value> {
+                let time = serde_json::from_value::<OffsetDateTime>(value.clone())?;
+                Ok(tera::to_value(
+                    time.format(format_description!("[hour]:[minute]:[second]"))
+                        .expect("formatted time"),
+                )?)
+            },
+        );
+
         tera
     };
     pub static ref BASE_CONTEXT: Context = {

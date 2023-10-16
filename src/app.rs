@@ -20,6 +20,7 @@ pub mod templates;
 mod handlers {
     pub mod admin;
     pub mod index;
+    pub mod uploads;
     pub mod users;
 }
 
@@ -87,6 +88,15 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> impl IntoEndpoint {
             "/admin/users/:id/enable",
             put(handlers::admin::users::put_enable_user),
         )
+        // GET /admin/uploads
+        .at("/admin/uploads", get(handlers::admin::uploads::get_uploads))
+        // GET  /uploads
+        // POST /uploads
+        .at(
+            "/uploads",
+            get(handlers::uploads::get_new_upload).post(handlers::uploads::post_new_upload),
+        )
+        .at("/uploads/:id", get(handlers::uploads::get_upload))
         .catch_error(errors::NotSignedInError::handle)
         .catch_error(errors::CsrfError::handle)
         .data(env)

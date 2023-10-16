@@ -1,9 +1,6 @@
-use poem::{handler, web::Html};
-
-use crate::app::templates::{default_context, render_template};
+use poem::{handler, web::Redirect};
 
 #[handler]
-pub fn get_index() -> poem::Result<Html<String>> {
-    let context = default_context();
-    render_template("index.html", &context)
+pub fn get_index() -> poem::Result<Redirect> {
+    Ok(Redirect::see_other("/uploads"))
 }

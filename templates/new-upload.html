@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}New Upload{% endblock %}
+
+{% block content %}
+  <div class="container mx-auto flex flex-col items-center gap-4">
+    <div class="panel thin">
+      <h1 class="heading">New Upload</h1>
+
+      <form id="upload-form">
+        <input type="file" name="file">
+        <button type="submit">Upload file</button>
+        <progress id="progress" value="0" max="100"></progress>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    function setError(message) {
+      const existing = document.querySelector("#error");
+      if (existing) {
+        existing.innerHtml = message;
+        return;
+      }
+
+      const element = document.createElement("DIV");
+      element.classNames.add("text-danger");
+      element.innerHtml = message;
+
+      const form = document.querySelector("#upload-form");
+      form.parent.insertBefore(element, form);
+    }
+
+    document.querySelector("#upload-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+
+      var total_size = 0;
+      const form_data = new FormData();
+      for (let field of event.target.elements) {
+        if (field.tagName !== "INPUT") {
+          continue;
+        }
+
+        if (field.type === "file") {
+          total_size += field.files[0].size;
+          form_data.append(field.name, field.files[0]);
+        } else {
+          form_data.append(field.name, field.value);
+        }
+      }
+
+      const progress = document.querySelector("#progress");
+      const request = new XMLHttpRequest();
+
+      request.addEventListener("load", (event) => {
+        window.location.assign(`/uploads/${event.target.responseText}`)
+      });
+
+      request.addEventListener("error", (event) => {
+        setErrorMessage("Encountered and error uploading file");
+      });
+
+      request.addEventListener("abort", (event) => {
+        setErrorMessage("Upload was aborted");
+      });
+
+      request.upload.addEventListener("progress", (event) => {
+        const amount = Math.round(event.loaded / total_size * 100.0);
+        progress.value = amount;
+      });
+
+      request.open("POST", "/uploads");
+      request.send(form_data);
+    });
+  </script>
+{% endblock %}
+

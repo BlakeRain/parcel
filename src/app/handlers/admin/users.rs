@@ -11,25 +11,25 @@ use time::OffsetDateTime;
 use crate::{
     app::{
         extractors::admin::Admin,
-        templates::{default_context, render_404, render_template},
+        templates::{authorized_context, render_404, render_template},
     },
     env::Env,
     model::user::{hash_password, User},
 };
 
 #[handler]
-pub async fn get_users(env: Data<&Env>, Admin(_): Admin) -> poem::Result<Html<String>> {
+pub async fn get_users(env: Data<&Env>, Admin(admin): Admin) -> poem::Result<Html<String>> {
     let users = User::get_list(&env.pool)
         .await
         .map_err(InternalServerError)?;
-    let mut context = default_context();
+    let mut context = authorized_context(&admin);
     context.insert("users", &users);
     render_template("admin/users.html", &context)
 }
 
 #[handler]
-pub fn get_users_new(Admin(_): Admin, token: &CsrfToken) -> poem::Result<Html<String>> {
-    let mut context = default_context();
+pub fn get_users_new(Admin(admin): Admin, token: &CsrfToken) -> poem::Result<Html<String>> {
+    let mut context = authorized_context(&admin);
     context.insert("token", &token.0);
     render_template("admin/users/new.html", &context)
 }
@@ -82,7 +82,7 @@ pub async fn get_user_edit(
     env: Data<&Env>,
     token: &CsrfToken,
     Path(user_id): Path<i32>,
-    Admin(_): Admin,
+    Admin(admin): Admin,
 ) -> poem::Result<Html<String>> {
     let Some(user) = User::get(&env.pool, user_id)
         .await
@@ -92,7 +92,7 @@ pub async fn get_user_edit(
         return render_404("Unrecognized user ID");
     };
 
-    let mut context = default_context();
+    let mut context = authorized_context(&admin);
     context.insert("token", &token.0);
     context.insert("user", &user);
     render_template("admin/users/edit.html", &context)

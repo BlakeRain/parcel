@@ -14,14 +14,14 @@ CREATE TABLE IF NOT EXISTS uploads (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   slug TEXT NOT NULL,
   filename TEXT NOT NULL,
+  size INTEGER NOT NULL,
   public BOOLEAN NOT NULL,
-  encrypted BOOLEAN NOT NULL,
   downloads INTEGER NOT NULL,
   remaining INTEGER,
   expiry_date DATETIME,
   uploaded_by INTEGER NOT NULL REFERENCES users (id),
   uploaded_at DATETIME NOT NULL,
-  remote_addr TEXT NOT NULL
+  remote_addr TEXT
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uploads_slug_uindex ON uploads (slug);

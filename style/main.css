@@ -142,7 +142,7 @@
     @apply flex flex-col;
     @apply border rounded-md shadow-md;
     @apply border-slate-400 dark:border-slate-700 dark:bg-slate-900;
-    @apply p-6 sm:p-8 space-y-4 md:space-y-6;
+    @apply p-6 sm:p-8;
 
     &.thin {
       @apply md:w-2/3 lg:w-1/2;
@@ -251,6 +251,12 @@
 
   .lucide {
     @apply inline-block w-4;
+  }
+
+  .big-icon {
+    > svg {
+      @apply w-40 h-40;
+    }
   }
 }
 
