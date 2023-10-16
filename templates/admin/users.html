@@ -1,0 +1,89 @@
+<div id="user-list-container" class="panel">
+  <div class="flex flex-row justify-between items-center">
+    <h1 class="heading">Users</h1>
+    <div class="buttons">
+      <button
+        class="button"
+        type="button"
+        hx-get="/admin/users"
+        hx-target="#user-list-container"
+        hx-swap="outerHTML">
+        {% include "icons/lucide/refresh-cw.svg" %}
+        Refresh
+      </button>
+      <button
+        class="button"
+        type="button"
+        hx-get="/admin/users/new"
+        hx-target="body"
+        hx-swap="beforeend">
+        {% include "icons/lucide/plus.svg" %}
+        Add User
+      </button>
+    </div>
+  </div>
+  <div class="table">
+    <table>
+      <thead>
+        <tr>
+          <th class="text-right">ID</th>
+          <th class="text-left">Username</th>
+          <th class="text-center">Enabled</th>
+          <th class="text-center">Admin</th>
+          <th class="text-left">Created At</th>
+          <th />
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+          <tr>
+            <td class="text-right">{{ user.id }}</td>
+            <td class="text-left">{{ user.username }}</td>
+            <td class="text-center {% if user.enabled %}text-success{% else %}text-danger{% endif %}">
+              {% if user.enabled %}Yes{% else %}No{% endif %}
+            </td>
+            <td class="text-center {% if user.admin %}text-success{% else %}text-danger{% endif %}">
+              {% if user.admin %}Yes{% else %}No{% endif %}
+            </td>
+            <td class="text-left">{{ user.created_at|datetime }}</td>
+            <td class="text-right">
+              <a
+                href="#"
+                title="Edit user"
+                hx-get="/admin/users/{{ user.id }}"
+                hx-target="body"
+                hx-swap="beforeend">
+                {% include "icons/lucide/pencil.svg" %}
+              </a>
+              <a
+                href="#"
+                title="{% if user.enabled %}Disable{% else %}Enable{% endif %} user"
+                hx-put="/admin/users/{{ user.id }}/{% if user.enabled %}disable{% else %}enable{% endif %}"
+                hx-trigger="click"
+                hx-target="#user-list-container"
+                hx-swap="outerHTML">
+                {% if user.enabled %}
+                  {% include "icons/lucide/lock.svg" %}
+                {% else %}
+                  {% include "icons/lucide/unlock.svg" %}
+                {% endif %}
+              </a>
+              <a
+                href="#"
+                class="text-danger"
+                title="Delete user"
+                hx-delete="/admin/users/{{ user.id }}"
+                hx-trigger="click"
+                hx-target="#user-list-container"
+                hx-swap="outerHTML"
+                hx-confirm="Are you sure you want to delete this user?">
+                {% include "icons/lucide/trash-2.svg" %}
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+

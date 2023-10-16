@@ -2,6 +2,7 @@ use poem::{
     endpoint::StaticFilesEndpoint,
     get,
     middleware::Csrf,
+    post, put,
     session::{CookieConfig, CookieSession},
     web::cookie::CookieKey,
     EndpointExt, IntoEndpoint, Route,
@@ -39,8 +40,17 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> impl IntoEndpoint {
             "/user/signin",
             get(handlers::users::get_signin).post(handlers::users::post_signin),
         )
-        // GET /user/settings
-        .at("/user/settings", get(handlers::users::get_settings))
+        // GET  /user/settings
+        // POST /user/settings
+        // POST /user/settings/password
+        .at(
+            "/user/settings",
+            get(handlers::users::get_settings).post(handlers::users::post_settings),
+        )
+        .at(
+            "/user/settings/password",
+            post(handlers::users::post_settings_password),
+        )
         // GET /user/signout
         .at("/user/signout", get(handlers::users::get_signout))
         // GET /admin
@@ -50,6 +60,32 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> impl IntoEndpoint {
         .at(
             "/admin/setup",
             get(handlers::admin::setup::get_setup).post(handlers::admin::setup::post_setup),
+        )
+        // GET /admin/users
+        // GET /admin/users/new
+        .at("/admin/users", get(handlers::admin::users::get_users))
+        .at(
+            "/admin/users/new",
+            get(handlers::admin::users::get_users_new).post(handlers::admin::users::post_users_new),
+        )
+        // GET    /admin/users/:id
+        // PUT    /admin/users/:id
+        // DELETE /admin/users/:id
+        .at(
+            "/admin/users/:id",
+            get(handlers::admin::users::get_user_edit)
+                .put(handlers::admin::users::put_user)
+                .delete(handlers::admin::users::delete_user),
+        )
+        // PUT /admin/users/:id/disable
+        .at(
+            "/admin/users/:id/disable",
+            put(handlers::admin::users::put_disable_user),
+        )
+        // PUT /admin/users/:id/enable
+        .at(
+            "/admin/users/:id/enable",
+            put(handlers::admin::users::put_enable_user),
         )
         .catch_error(errors::NotSignedInError::handle)
         .catch_error(errors::CsrfError::handle)

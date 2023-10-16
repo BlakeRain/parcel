@@ -18,7 +18,7 @@ serde_json = { version = "1.0" }
 sqlx = { version = "0.7", features = ["sqlite", "runtime-tokio", "time"] }
 tera = { version = "1.19" }
 thiserror = { version = "1.0" }
-time = { version = "0.3", features = ["formatting", "serde"] }
+time = { version = "0.3", features = ["formatting", "macros", "serde"] }
 tokio = { version = "1.32", features = ["full"] }
 toml = { version = "0.8" }
 tracing = { version = "0.1", features = ["log"] }

@@ -14,7 +14,7 @@ fn main() {
         panic!("failed to build Tailwind CSS");
     }
 
-    // Run `npm run copy` to copy the htmlx source
+    // Run `npm run copy` to copy the htmlx and _hyperscript source
     let status = Command::new("npm")
         .args(["run", "copy"])
         .status()

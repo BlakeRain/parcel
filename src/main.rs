@@ -9,6 +9,7 @@ mod app;
 mod args;
 mod env;
 mod model;
+mod utils;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

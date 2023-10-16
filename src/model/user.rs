@@ -57,6 +57,63 @@ impl User {
         Ok(())
     }
 
+    pub async fn set_username(&mut self, pool: &SqlitePool, username: &str) -> sqlx::Result<()> {
+        sqlx::query("UPDATE users SET username = $1 WHERE id = $2")
+            .bind(username)
+            .bind(self.id)
+            .execute(pool)
+            .await?;
+
+        self.username = username.to_string();
+        Ok(())
+    }
+
+    pub async fn set_password(&mut self, pool: &SqlitePool, password: &str) -> sqlx::Result<()> {
+        let password = hash_password(password);
+
+        sqlx::query("UPDATE users SET password = $1 WHERE id = $2")
+            .bind(&password)
+            .bind(self.id)
+            .execute(pool)
+            .await?;
+
+        self.password = password;
+        Ok(())
+    }
+
+    pub async fn set_enabled(&mut self, pool: &SqlitePool, enabled: bool) -> sqlx::Result<()> {
+        sqlx::query("UPDATE users SET enabled = $1 WHERE id = $2")
+            .bind(enabled)
+            .bind(self.id)
+            .execute(pool)
+            .await?;
+
+        self.enabled = enabled;
+        Ok(())
+    }
+
+    pub async fn update(
+        &mut self,
+        pool: &SqlitePool,
+        username: &str,
+        admin: bool,
+        enabled: bool,
+    ) -> sqlx::Result<()> {
+        sqlx::query("UPDATE users SET username = $1, enabled = $2, admin = $3 WHERE id = $4")
+            .bind(&username)
+            .bind(enabled)
+            .bind(admin)
+            .bind(self.id)
+            .execute(pool)
+            .await?;
+
+        self.username = username.to_string();
+        self.enabled = enabled;
+        self.admin = admin;
+
+        Ok(())
+    }
+
     pub async fn get(pool: &SqlitePool, id: i32) -> sqlx::Result<Option<Self>> {
         sqlx::query_as("SELECT * FROM users WHERE id = ?")
             .bind(id)
@@ -75,6 +132,14 @@ impl User {
         sqlx::query_as("SELECT * FROM users ORDER BY username")
             .fetch_all(pool)
             .await
+    }
+
+    pub async fn delete(pool: &SqlitePool, id: i32) -> sqlx::Result<()> {
+        sqlx::query("DELETE FROM users WHERE id = $1")
+            .bind(id)
+            .execute(pool)
+            .await?;
+        Ok(())
     }
 
     pub fn verify_password(&self, plain: &str) -> bool {

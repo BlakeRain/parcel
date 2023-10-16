@@ -1,0 +1,48 @@
+<form
+  class="modal"
+  hx-put="/admin/users/{{ user.id }}"
+  hx-target="#user-list-container"
+  hx-swap="outerHTML"
+  _="on closeModal add .closing then wait for animationend then remove me"
+>
+  <div class="underlay" _="on click trigger closeModal"></div>
+  <div class="content flex flex-col gap-2">
+    <input type="hidden" name="token" value="{{ token }}" />
+    <label for="username">Username</label>
+    <input
+      type="text"
+      class="field"
+      name="username"
+      id="username"
+      placeholder="Username"
+      value="{{ user.username }}"
+      required
+    />
+    <div class="flex flex-row gap-2">
+      <input
+        type="checkbox"
+        name="admin"
+        id="admin"
+        {% if user.admin %}checked{% endif %} />
+      <label for="admin">User is an administrator</label>
+    </div>
+    <div class="flex flex-row gap-2">
+      <input
+        type="checkbox"
+        name="enabled"
+        id="enabled"
+        {% if user.enabled %}checked{% endif %} />
+      <label for="enabled">User account is enabled</label>
+    </div>
+    <div class="buttons end">
+      <a
+        class="mx-2"
+        href="#"
+        _="on click call event.preventDefault() then trigger closeModal"
+        >Cancel</a
+      >
+      <button type="submit" class="button" _="on click trigger closeModal">Save changes</button>
+    </div>
+  </div>
+</form>
+

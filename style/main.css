@@ -122,10 +122,10 @@
   }
 
   .buttons {
-    @display flex flex-col md:flex-row gap-2;
+    @apply flex flex-col md:flex-row md:items-center gap-2;
 
-    .end {
-      @display justify-end;
+    &.end {
+      @apply justify-end;
     }
 
     > button {
@@ -137,11 +137,169 @@
     @apply mt-2;
   }
 
-  .text-danger {
-    @apply text-red-500 dark:text-red-400;
+  .panel {
+    @apply w-full;
+    @apply flex flex-col;
+    @apply border rounded-md shadow-md;
+    @apply border-slate-400 dark:border-slate-700 dark:bg-slate-900;
+    @apply p-6 sm:p-8 space-y-4 md:space-y-6;
+
+    &.thin {
+      @apply md:w-2/3 lg:w-1/2;
+    }
+
+    .heading {
+      @apply text-xl md:text-2xl font-bold leading-tight tracking-tight;
+      @apply text-gray-900 dark:text-white;
+    }
+  }
+
+  div.table {
+    @apply bg-slate-50 dark:bg-slate-800/25;
+    @apply rounded-xl overflow-auto;
+
+    table {
+      @apply text-slate-400 dark:text-slate-200;
+      @apply border-collapse table-auto;
+      @apply w-full my-8 text-sm;
+
+      thead {
+        tr {
+          th {
+            @apply border-b dark:border-slate-600 font-medium p-4;
+            @apply pt-0;
+
+            &:first-child {
+              @apply pl-8;
+            }
+
+            &:last-child {
+              @apply pr-8;
+            }
+          }
+        }
+      }
+
+      tbody {
+        @apply bg-white dark:bg-slate-800;
+        @apply text-slate-500 dark:text-slate-400;
+
+        tr {
+          td {
+            @apply border-b border-slate-100 dark:border-slate-700 p-4;
+
+            &:first-child {
+              @apply pl-8;
+            }
+
+            &:last-child {
+              @apply pr-8;
+            }
+          }
+
+          &:last-child {
+            td {
+              @apply border-slate-200 dark:border-slate-600;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .modal {
+    @apply fixed top-0 bottom-0 left-0 right-0;
+    @apply flex flex-col items-center justify-center;
+    @apply bg-black/50;
+    @apply backdrop-filter backdrop-blur-sm;
+
+    z-index: 1000;
+
+    animation-name: fadeIn;
+    animation-duration: 150ms;
+    animation-timing-function: ease;
+
+    > .underlay {
+      @apply absolute top-0 left-0 right-0 bottom-0;
+      z-index: -1;
+    }
+
+    > .content {
+      @apply w-full md:w-2/3 lg:w-1/2;
+      @apply border border-slate-200 dark:border-slate-600;
+      @apply bg-white dark:bg-slate-900;
+      @apply rounded-md shadow-md;
+      @apply p-4;
+
+      animation-name: zoomIn;
+      animation-duration: 150ms;
+      animation-timing-function: ease;
+    }
+
+    &.closing {
+      animation-name: fadeOut;
+      animation-duration: 150ms;
+      animation-timing-function: ease;
+
+      > .content {
+        animation-name: zoomOut;
+        animation-duration: 150ms;
+        animation-timing-function: ease;
+      }
+    }
   }
 
   .lucide {
     @apply inline-block w-4;
+  }
+}
+
+@layer utilities {
+  .text-danger {
+    @apply text-red-500 dark:text-red-400;
+  }
+
+  .text-success {
+    @apply text-green-600 dark:text-green-400;
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes zoomIn {
+  0% {
+    transform: scale(0.9);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes zoomOut {
+  0% {
+    transform: scale(1);
+  }
+
+  100% {
+    transform: scale(0.9);
   }
 }

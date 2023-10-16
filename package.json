@@ -6,10 +6,11 @@
   "devDependencies": {
     "autoprefixer": "^10.4.14",
     "htmx.org": "^1.9.6",
+    "hyperscript.org": "^0.9.11",
     "tailwindcss": "^3.3.3"
   },
   "scripts": {
     "build": "tailwindcss --postcss -i style/main.css -o static/main.css -m",
-    "copy": "cp node_modules/htmx.org/dist/htmx.min.js static/htmx.js"
+    "copy": "cp node_modules/htmx.org/dist/htmx.min.js static/htmx.js && cp node_modules/hyperscript.org/dist/_hyperscript.min.js static/hyperscript.js"
   }
 }

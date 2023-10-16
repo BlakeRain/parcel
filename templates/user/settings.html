@@ -3,17 +3,22 @@
 {% block title %}Account Settings{% endblock %}
 
 {% block content %}
-  <div class="container mx-auto flex justify-center">
-    <div class="w-full md:w-2/3 lg:w-1/2 flex flex-col border border-slate-400 dark:border-slate-700 dark:bg-slate-900 rounded-md shadow-md p-6 sm:p-8 space-y-4 md:space-y-6">
-      <h1 class="text-xl md:text-2xl font-bold leading-tight tracking-light text-gray-900 dark:text-white">
+  <div class="container mx-auto flex flex-col items-center gap-4">
+    <div class="panel thin">
+      <h1 class="heading">
         Account settings
       </h1>
-      {% if error %}
-        <div id="error" class="text-danger">
-          {{ error }}
+      {% if settings_success %}
+        <div id="success" class="text-success">
+          {{ settings_success }}
         </div>
       {% endif %}
-      <form method="POST" action="/user/settings/username" class="form" id="username-form">
+      {% if settings_error %}
+        <div id="error" class="text-danger">
+          {{ settings_error }}
+        </div>
+      {% endif %}
+      <form method="POST" action="/user/settings" class="form" id="username-form">
         <input type="hidden" name="token" value="{{ token }}">
         <label for="username">Change your username</label>
         <input
@@ -25,7 +30,44 @@
           value="{{ user.username }}"
           required />
         <div class="buttons">
-          <button type="submit" class="button">Change username</button>
+          <button type="submit" class="button">Update settings</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="panel thin">
+      <h1 class="heading">
+        Account password
+      </h1>
+      {% if password_success %}
+        <div id="password-success" class="text-success">
+          {{ password_success }}
+        </div>
+      {% endif %}
+      {% if password_error %}
+        <div id="password-error" class="text-danger">
+          {{ password_error }}
+        </div>
+      {% endif %}
+      <form method="POST" action="/user/settings/password" class="form" id="password-form">
+        <input type="hidden" name="token" value="{{ token }}">
+        <label for="username">Change your password</label>
+        <input
+          class="field"
+          type="password"
+          name="password"
+          id="password"
+          placeholder="New password"
+          required />
+        <input
+          class="field"
+          type="password"
+          name="confirm"
+          id="confirm"
+          placeholder="Confirm password"
+          required />
+        <div class="buttons">
+          <button type="submit" class="button">Change password</button>
         </div>
       </form>
     </div>
@@ -34,9 +76,41 @@
 
 {% block scripts %}
   <script>
-    document.querySelector("form").addEventListener("submit", (event) => {
-      // Disable all submit buttons so we don't try multiple submissions.
-      document.querySelector("button[type=submit]").disabled = true;
+    document.querySelectorAll("form").forEach((element) => {
+      element.addEventListener("submit", (event) => {
+        // Disable all submit buttons so we don't try multiple submissions.
+        document.querySelector("button[type=submit]").disabled = true;
+      });
+    });
+
+    function setError(target, message) {
+      const existing = target.parentElement.querySelector(".text-danger");
+      if (existing) {
+        existing.innerHTML = message;
+        return;
+      }
+
+      const div = document.createElement("DIV");
+      div.classList.add("text-danger");
+      div.innerHTML = message;
+      target.parentElement.insertBefore(div, target);
+    }
+
+    document.querySelector("#password-form").addEventListener("submit", (event) => {
+      const password = document.querySelector("input[name='password']").value;
+      const confirm = document.querySelector("input[name='confirm']").value;
+
+      if (password.length === 0) {
+        event.preventDefault();
+        setError(event.target, "Your new password cannot be empty.");
+        return;
+      }
+
+      if (password !== confirm) {
+        event.preventDefault();
+        setError(event.target, "The passwords do not match");
+        return;
+      }
     });
   </script>
 {% endblock %}

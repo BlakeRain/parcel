@@ -3,7 +3,8 @@
 {% block title %}Administration{% endblock %}
 
 {% block content %}
-  <div class="container mx-auto">
-    <h1 class="text-2xl font-semibold">Administration</h1>
+  <div class="container mx-auto flex flex-col gap-4">
+    <h1 class="text-3xl font-semibold">Administration</h1>
+    <div class="flex" hx-get="/admin/users" hx-trigger="load"></div>
   </div>
 {% endblock %}

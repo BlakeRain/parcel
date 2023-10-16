@@ -26,6 +26,7 @@ yarn.lock
 cache/
 parcel.db
 
-# Ignore the generated CSS and the copied HTMX bundle
+# Ignore the generated CSS and the copied HTMX and Hyperscript bundles
 static/main.css
 static/htmx.js
+static/hyperscript.js

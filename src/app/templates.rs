@@ -1,15 +1,31 @@
+use std::collections::HashMap;
+
 use lazy_static::lazy_static;
 use poem::error::InternalServerError;
 use poem::web::Html;
 use tera::Context;
 use tera::Tera;
+use time::macros::format_description;
+use time::OffsetDateTime;
 
 use crate::model::user::User;
 
 lazy_static! {
     pub static ref TEMPLATES: Tera = {
         let mut tera = Tera::new("templates/**/*").expect("to load templates");
-        tera.autoescape_on(vec![".html"]);
+        tera.autoescape_on(vec![".html", ".svg"]);
+        tera.register_filter(
+            "datetime",
+            |value: &tera::Value, _: &HashMap<String, tera::Value>| -> tera::Result<tera::Value> {
+                let time = serde_json::from_value::<OffsetDateTime>(value.clone())?;
+                Ok(tera::to_value(
+                    time.format(format_description!(
+                        "[year]-[month]-[day] [hour]:[minute]:[second]"
+                    ))
+                    .expect("formatted time"),
+                )?)
+            },
+        );
         tera
     };
     pub static ref BASE_CONTEXT: Context = {
