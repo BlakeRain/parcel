@@ -19,8 +19,8 @@
   header {
     @apply bg-neutral-100 dark:bg-gray-900;
     @apply text-neutral-800 dark:text-neutral-200;
-    @apply border-b border-gray-200 dark:border-gray-700;
-    @apply w-full mb-4;
+    @apply border-b border-gray-400 dark:border-gray-700;
+    @apply w-full mb-4 shadow-sm;
 
     nav {
       @apply container mx-auto;

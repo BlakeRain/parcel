@@ -1,8 +1,12 @@
 use poem::{
     error::InternalServerError,
     handler,
-    http::StatusCode,
+    http::{
+        header::{CONTENT_DISPOSITION, CONTENT_LENGTH},
+        HeaderName, StatusCode,
+    },
     web::{CsrfToken, CsrfVerifier, Data, Form, Html, Multipart, Path, RealIp, Redirect},
+    Body, Response,
 };
 use serde::Deserialize;
 use time::{Date, OffsetDateTime};
@@ -30,7 +34,7 @@ pub async fn get_uploads(env: Data<&Env>, user: User) -> poem::Result<Html<Strin
 #[handler]
 pub fn get_new_upload(user: User) -> poem::Result<Html<String>> {
     let mut context = authorized_context(&user);
-    render_template("new-upload.html", &context)
+    render_template("uploads/new.html", &context)
 }
 
 #[handler]
@@ -62,7 +66,7 @@ pub async fn post_uploads(
             let path = env.cache_dir.join(&slug);
 
             {
-                let mut file = tokio::fs::File::create(env.cache_dir.join(&slug))
+                let mut file = tokio::fs::File::create(&path)
                     .await
                     .map_err(InternalServerError)?;
                 tokio::io::copy(&mut field, &mut file)
@@ -117,6 +121,22 @@ pub async fn get_upload(
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
+    let owner = if let Some(user) = &user {
+        user.admin || upload.uploaded_by == user.id
+    } else {
+        false
+    };
+
+    if !upload.public && !owner {
+        tracing::error!(
+            user = ?user,
+            upload = ?upload,
+            "User tried to access private upload without permission"
+        );
+
+        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
+    }
+
     let Some(uploader) = User::get(&env.pool, upload.uploaded_by)
         .await
         .map_err(InternalServerError)?
@@ -141,14 +161,54 @@ pub async fn get_upload(
     context.insert("upload", &upload);
     context.insert("uploader", &uploader);
 
+    context.insert("owner", &owner);
+    render_template("uploads/view.html", &context)
+}
+
+#[handler]
+pub async fn get_upload_download(
+    env: Data<&Env>,
+    user: Option<User>,
+    Path(slug): Path<String>,
+) -> poem::Result<Response> {
+    let Some(upload) = Upload::get_by_slug(&env.pool, &slug)
+        .await
+        .map_err(InternalServerError)?
+    else {
+        tracing::error!(slug = ?slug, "Unable to find upload with given ID");
+        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
+    };
+
     let owner = if let Some(user) = &user {
         user.admin || upload.uploaded_by == user.id
     } else {
         false
     };
 
-    context.insert("owner", &owner);
-    render_template("upload.html", &context)
+    if !upload.public && !owner {
+        tracing::error!(
+            user = ?user,
+            upload = ?upload,
+            "User tried to access private upload without permission"
+        );
+
+        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
+    }
+
+    let path = env.cache_dir.join(&upload.slug);
+    let file = tokio::fs::File::open(path)
+        .await
+        .map_err(InternalServerError)?;
+    let meta = file.metadata().await.map_err(InternalServerError)?;
+
+    Ok(Response::builder()
+        .status(StatusCode::OK)
+        .header(
+            CONTENT_DISPOSITION,
+            format!("attachment; filename=\"{}\"", upload.filename),
+        )
+        .header(CONTENT_LENGTH, meta.len())
+        .body(Body::from_async_read(file)))
 }
 
 #[handler]
