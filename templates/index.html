@@ -95,7 +95,7 @@
       const request = new XMLHttpRequest();
 
       request.addEventListener("load", (event) => {
-        htmx.trigger("#upload-list-container", "refresh-event", {});
+        htmx.trigger("#upload-refresh", "refresh-event", {});
 
         input.value = null;
         progress.classList.add("hidden");
