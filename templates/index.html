@@ -75,7 +75,7 @@
       const request = new XMLHttpRequest();
 
       request.addEventListener("load", (event) => {
-        window.location.assign(`/uploads/${event.target.responseText}`)
+        htmx.trigger("#upload-list-container", "refresh-event", {});
       });
 
       request.addEventListener("error", (event) => {

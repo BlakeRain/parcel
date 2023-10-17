@@ -19,8 +19,11 @@ pub async fn get_uploads(env: Data<&Env>, user: User) -> poem::Result<Html<Strin
         .await
         .map_err(InternalServerError)?;
 
+    let total: i32 = uploads.iter().map(|upload| upload.size).sum();
+
     let mut context = authorized_context(&user);
     context.insert("uploads", &uploads);
+    context.insert("total", &total);
     render_template("uploads/list.html", &context)
 }
 
@@ -31,7 +34,7 @@ pub fn get_new_upload(user: User) -> poem::Result<Html<String>> {
 }
 
 #[handler]
-pub async fn post_new_upload(
+pub async fn post_uploads(
     env: Data<&Env>,
     RealIp(ip): RealIp,
     user: User,
