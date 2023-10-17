@@ -5,13 +5,22 @@
 @layer components {
   body {
     @apply bg-neutral-100 text-neutral-800;
-    @apply dark:bg-slate-800 dark:text-neutral-300;
+    @apply dark:bg-gray-900 dark:text-neutral-300;
+  }
+
+  a {
+    @apply text-blue-900 dark:text-blue-200;
+
+    &:hover {
+      @apply text-blue-700 dark:text-blue-400;
+    }
   }
 
   header {
-    @apply bg-slate-900;
-    @apply text-neutral-200;
-    @apply w-full shadow-sm mb-4;
+    @apply bg-neutral-100 dark:bg-gray-900;
+    @apply text-neutral-800 dark:text-neutral-200;
+    @apply border-b border-gray-200 dark:border-gray-700;
+    @apply w-full mb-4;
 
     nav {
       @apply container mx-auto;
@@ -29,9 +38,11 @@
         li a,
         li span {
           @apply block px-4 py-4;
+          @apply text-neutral-800 dark:text-neutral-200;
 
           &:hover {
             @apply bg-slate-700/25;
+            @apply text-neutral-800 dark:text-neutral-200;
           }
         }
 
@@ -104,7 +115,7 @@
   .button {
     @apply w-full rounded-lg;
     @apply px-5 py-2.5;
-    @apply text-white bg-primary-600 hover:bg-primary-700;
+    @apply text-white bg-primary-600 hover:text-white hover:bg-primary-700;
     @apply dark:bg-primary-600 dark:hover:bg-primary-700;
     @apply focus:ring-4 focus:outline-none focus:ring-primary-300;
     @apply dark:focus:ring-primary-800;
@@ -141,7 +152,7 @@
     @apply w-full;
     @apply flex flex-col;
     @apply border rounded-md shadow-md;
-    @apply border-slate-400 dark:border-slate-700 dark:bg-slate-900;
+    @apply border-slate-400 dark:border-gray-700 dark:bg-gray-800;
     @apply p-6 sm:p-8;
 
     &.thin {
