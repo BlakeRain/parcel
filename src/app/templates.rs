@@ -6,7 +6,9 @@ use poem::web::Html;
 use tera::Context;
 use tera::Tera;
 use time::macros::format_description;
+use time::Date;
 use time::OffsetDateTime;
+use time::Time;
 
 use crate::model::user::User;
 
@@ -29,9 +31,20 @@ lazy_static! {
         );
 
         tera.register_filter(
-            "date",
+            "datetime_offset",
             |value: &tera::Value, _: &HashMap<String, tera::Value>| -> tera::Result<tera::Value> {
                 let time = serde_json::from_value::<OffsetDateTime>(value.clone())?;
+                let offset = time - OffsetDateTime::now_utc();
+                Ok(tera::to_value(
+                    time_humanize::HumanTime::from(offset.whole_seconds()).to_string(),
+                )?)
+            },
+        );
+
+        tera.register_filter(
+            "date",
+            |value: &tera::Value, _: &HashMap<String, tera::Value>| -> tera::Result<tera::Value> {
+                let time = serde_json::from_value::<Date>(value.clone())?;
                 Ok(tera::to_value(
                     time.format(format_description!("[year]-[month]-[day]"))
                         .expect("formatted time"),
@@ -40,9 +53,20 @@ lazy_static! {
         );
 
         tera.register_filter(
+            "date_offset",
+            |value: &tera::Value, _: &HashMap<String, tera::Value>| -> tera::Result<tera::Value> {
+                let time = serde_json::from_value::<Date>(value.clone())?;
+                let offset = time - time::OffsetDateTime::now_utc().date();
+                Ok(tera::to_value(
+                    time_humanize::HumanTime::from(offset.whole_seconds()).to_string(),
+                )?)
+            },
+        );
+
+        tera.register_filter(
             "time",
             |value: &tera::Value, _: &HashMap<String, tera::Value>| -> tera::Result<tera::Value> {
-                let time = serde_json::from_value::<OffsetDateTime>(value.clone())?;
+                let time = serde_json::from_value::<Time>(value.clone())?;
                 Ok(tera::to_value(
                     time.format(format_description!("[hour]:[minute]:[second]"))
                         .expect("formatted time"),

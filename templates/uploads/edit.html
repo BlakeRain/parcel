@@ -1,24 +1,88 @@
 <form
   class="modal"
-  hx-put="/uploads/{{ upload.id }}"
-  hx-target="#upload-list"
-  hx-select="#upload-list"
+  hx-put="/uploads/{{ upload.id }}/edit"
+  hx-target="#upload-list-container"
+  hx-select="#upload-list-container"
   hx-swap="outerHTML"
   _="on closeModal add .closing then wait for animationend then remove me"
 >
   <div class="underlay" _="on click trigger closeModal"></div>
   <div class="content flex flex-col gap-2">
     <input type="hidden" name="token" value="{{ token }}" />
-    <div class="buttons end">
+    <label for="filename">Filename</label>
+    <input
+      class="field"
+      type="text"
+      id="filename"
+      name="filename"
+      value="{{ upload.filename }}"
+      required />
+    <div class="flex flex-row gap-2">
+      <input
+        type="checkbox"
+        name="public"
+        id="public"
+        {% if upload.public %}checked{% endif %} />
+      <label for="public">Download is publicly accessible (no need to sign in to download)</label>
+    </div>
+    <div class="grid grid-cols-2 gap-2">
+      <div>
+        <div class="flex flex-row gap-2">
+          <input
+            type="checkbox"
+            name="limit_check"
+            id="limit_check"
+            {% if upload.limit is number %}checked{% endif %} />
+          <label for="limit_check">Limit downloads</label>
+        </div>
+        <input
+          class="field"
+          type="number"
+          min="0"
+          id="limit"
+          name="limit"
+          value="{{ upload.limit | default(value = 0) }}"
+          {% if upload.limit is not number %}disabled{% endif %} />
+      </div>
+      <div>
+        <div class="flex flex-row gap-2">
+          <input
+            type="checkbox"
+            name="expiry_check"
+            id="expiry_check"
+            {% if upload.expiry_date %}checked{% endif %} />
+          <label for="expiry_check">Expiry date</label>
+        </div>
+        <input
+          class="field"
+          type="date"
+          id="expiry_date"
+          name="expiry_date"
+          {% if upload.expiry_date %}
+            value="{{ upload.expiry_date | date }}"
+          {% endif %}
+          {% if not upload.expiry_date %}disabled{% endif %} />
+      </div>
+    </div>
+    <div class="buttons end mt-2">
       <a
         class="mx-2"
         href="#"
-        _="on click call event.preventDefault() then trigger closeModal"
-        >Cancel</a
-      >
+        _="on click call event.preventDefault() then trigger closeModal">
+        Cancel
+      </a>
       <button type="submit" class="button" _="on click trigger closeModal">
         Save changes
       </button>
     </div>
   </div>
+  <script>
+    document.querySelector("input[name='limit_check']").addEventListener("change", (event) => {
+      event.target.form.querySelector("input[name='limit']").disabled = !event.target.checked;
+    });
+
+    document.querySelector("input[name='expiry_check']").addEventListener("change", (event) => {
+      event.target.form.querySelector("input[name='expiry_date']").disabled = !event.target.checked;
+    });
+  </script>
 </form>

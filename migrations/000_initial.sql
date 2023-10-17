@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS uploads (
   public BOOLEAN NOT NULL,
   downloads INTEGER NOT NULL,
   "limit" INTEGER,
-  expiry_date DATETIME,
+  expiry_date DATE,
   uploaded_by INTEGER NOT NULL REFERENCES users (id),
   uploaded_at DATETIME NOT NULL,
   remote_addr TEXT

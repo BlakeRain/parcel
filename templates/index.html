@@ -3,7 +3,12 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-  <div class="container mx-auto flex flex-col gap-4">
+  <div
+    hx-get="/uploads"
+    hx-target="this"
+    hx-trigger="load"
+    hx-swap="beforeend"
+    class="container mx-auto flex flex-col gap-4">
     <div class="panel thin">
       <h1 class="heading">New Upload</h1>
       <form id="upload-form">
@@ -13,57 +18,6 @@
       </form>
     </div>
 
-    <div class="table">
-      <table>
-        <thead>
-          <tr>
-            <th class="text-left">File</th>
-            <th class="text-right">Size</th>
-            <th class="text-right">Downloads</th>
-            <th class="text-right">Remaining</th>
-            <th class="text-left">Expires</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% if uploads | length == 0 %}
-          <tr>
-            <td colspan="4" class="text-center italic">
-              Nothing to show
-            </td>
-          </tr>
-          {% endif %}
-          {% for upload in uploads %}
-            <tr>
-              <td>
-                <div class="flex flex-row gap-1">
-                  <a href="/uploads/{{ upload.slug }}">{{ upload.filename }}</a>
-                  <div id="{{ upload.id }}_copy" class="clipboard-copy">
-                    <span>{% include "icons/lucide/clipboard-copy.svg" %}</span>
-                    <span>{% include "icons/lucide/clipboard-check.svg" %}</span>
-                  </div>
-                </div>
-              </td>
-              <td class="text-right">{{ upload.size | filesizeformat }}</td>
-              <td class="text-right">{{ upload.downloads }}</td>
-              <td class="text-right">
-                {% if upload.limit is number %}
-                  {{ upload.limit - upload.downloads }}
-                {% else %}
-                  <i>Unlimited</i>
-                {% endif %}
-              </td>
-              <td>
-                {% if upload.expiry_date %}
-                  {{ upload.expiry_date | datetime }}
-                {% else %}
-                  <i>Never</i>
-                {% endif %}
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
   </div>
 {% endblock %}
 

@@ -12,21 +12,20 @@
         <div>
           <h1 class="heading">{{ upload.filename }}</h1>
           <div>
-            Uploaded on {{ upload.uploaded_at|date }}
-            at {{ upload.uploaded_at|time }}
+            Uploaded {{ upload.uploaded_at | datetime_offset }}
             by {{ uploader.username }}
           </div>
           <div>
             Downloaded {{ upload.downloads }} time{% if upload.downloads != 1 %}s{% endif %}
-            {% if upload.remaining %}
-              <span class="{% if upload.remaining == 0 %}text-danger{% else %}text-success{% endif %}">
-                ({{ upload.remaining }} remaining)
+            {% if upload.limit %}
+            <span class="{% if upload.downloads >= upload.limit %}text-danger{% else %}text-success{% endif %}">
+                ({{ upload.limit - upload.downloads }} remaining)
               </span>
             {% endif %}
           </div>
           {% if upload.expiry_date %}
-            <div class="{% if upload.expiry_date < now %}text-danger{% else %}text-success{% endif %}">
-              Upload expires on {{ upload.expiry_date|date }}
+            <div class="{% if expired %}text-danger{% else %}text-success{% endif %}">
+              Upload expires {{ upload.expiry_date | date_offset }}
             </div>
           {% endif %}
         </div>

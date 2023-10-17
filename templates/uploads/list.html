@@ -1,0 +1,80 @@
+<div class="table" id="upload-list-container">
+  <table>
+    <thead>
+      <tr>
+        <th class="text-left">File</th>
+        <th class="text-right">Size</th>
+        <th class="text-right">Downloads</th>
+        <th class="text-right">Remaining</th>
+        <th class="text-left">Expires</th>
+        <th>Public</th>
+        <th />
+      </tr>
+    </thead>
+    <tbody>
+      {% if uploads | length == 0 %}
+      <tr>
+        <td colspan="7" class="text-center italic">
+          Nothing to show
+        </td>
+      </tr>
+      {% endif %}
+      {% for upload in uploads %}
+        <tr>
+          <td>
+            <div class="flex flex-row gap-1">
+              <a href="/uploads/{{ upload.slug }}">{{ upload.filename }}</a>
+              <div id="{{ upload.id }}_copy" class="clipboard-copy">
+                <span>{% include "icons/lucide/clipboard-copy.svg" %}</span>
+                <span>{% include "icons/lucide/clipboard-check.svg" %}</span>
+              </div>
+            </div>
+          </td>
+          <td class="text-right">{{ upload.size | filesizeformat }}</td>
+          <td class="text-right">{{ upload.downloads }}</td>
+          <td class="text-right">
+            {% if upload.limit is number %}
+              {{ upload.limit - upload.downloads }}
+            {% else %}
+              <i>Unlimited</i>
+            {% endif %}
+          </td>
+          <td>
+            {% if upload.expiry_date %}
+              {{ upload.expiry_date | date }} ({{ upload.expiry_date | date_offset }})
+            {% else %}
+              <i>Never</i>
+            {% endif %}
+          </td>
+          {% if upload.public %}
+            <td class="text-center text-danger">Yes</td>
+          {% else %}
+            <td class="text-center text-success">No</td>
+          {% endif %}
+          <td class="text-right">
+            <a
+              href="#"
+              title="Edit upload"
+              hx-get="/uploads/{{ upload.id }}/edit"
+              hx-trigger="click"
+              hx-target="body"
+              hx-swap="beforeend">
+              {% include "icons/lucide/pencil.svg" %}
+            </a>
+            <a
+              href="#"
+              title="Delete upload"
+              hx-delete="/uploads/{{ upload.id }}"
+              hx-trigger="click"
+              hx-target="body"
+              hx-swap="beforeend"
+              hx-confirm="Are you sure you want to delete this upload?">
+              {% include "icons/lucide/trash-2.svg" %}
+            </a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+

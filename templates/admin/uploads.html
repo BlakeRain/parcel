@@ -65,13 +65,13 @@
               </td>
               <td class="text-left">
                 {% if upload.expiry_date %}
-                  {{ upload.expiry_date|datetime }}
+                  {{ upload.expiry_date | date }}
                 {% else %}
                   <i>Never</i>
                 {% endif %}
               </td>
               <td class="text-left">
-                {{ upload.uploaded_at|datetime }}
+                {{ upload.uploaded_at | datetime }}
               </td>
               <td class="text-left">
                 {{ upload.uploaded_by_name }}

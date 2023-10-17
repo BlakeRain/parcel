@@ -1,6 +1,6 @@
 use serde::Serialize;
 use sqlx::{FromRow, SqlitePool};
-use time::OffsetDateTime;
+use time::{Date, OffsetDateTime};
 
 #[derive(Debug, FromRow, Serialize)]
 pub struct Upload {
@@ -11,7 +11,7 @@ pub struct Upload {
     pub public: bool,
     pub downloads: i32,
     pub limit: Option<i32>,
-    pub expiry_date: Option<OffsetDateTime>,
+    pub expiry_date: Option<Date>,
     pub uploaded_by: i32,
     pub uploaded_at: OffsetDateTime,
     pub remote_addr: Option<String>,
@@ -44,7 +44,44 @@ impl Upload {
         Ok(())
     }
 
-    pub async fn get_for_user(pool: &SqlitePool, owner: i32) -> sqlx::Result<Vec<Upload>> {
+    pub async fn edit(
+        &mut self,
+        pool: &SqlitePool,
+        filename: &str,
+        public: bool,
+        limit: Option<i32>,
+        expiry: Option<Date>,
+    ) -> sqlx::Result<()> {
+        sqlx::query(
+            "UPDATE uploads SET 
+                filename = $1,
+                public = $2,
+                \"limit\" = $3,
+                expiry_date = $4
+            WHERE id = $5",
+        )
+        .bind(filename)
+        .bind(public)
+        .bind(limit)
+        .bind(expiry)
+        .bind(self.id)
+        .execute(pool)
+        .await?;
+
+        self.filename = filename.to_string();
+        self.public = public;
+        self.limit = limit;
+        Ok(())
+    }
+
+    pub async fn get(pool: &SqlitePool, id: i32) -> sqlx::Result<Option<Self>> {
+        sqlx::query_as("SELECT * FROM uploads WHERE id = $1")
+            .bind(id)
+            .fetch_optional(pool)
+            .await
+    }
+
+    pub async fn get_for_user(pool: &SqlitePool, owner: i32) -> sqlx::Result<Vec<Self>> {
         sqlx::query_as("SELECT * FROM uploads WHERE uploaded_by = $1 ORDER BY uploaded_at DESC")
             .bind(owner)
             .fetch_all(pool)
@@ -66,9 +103,9 @@ impl Upload {
         Ok(())
     }
 
-    pub async fn delete(pool: &SqlitePool, id: i32) -> sqlx::Result<()> {
+    pub async fn delete(&self, pool: &SqlitePool) -> sqlx::Result<()> {
         sqlx::query("DELETE FROM uploads WHERE id = ?")
-            .bind(id)
+            .bind(self.id)
             .execute(pool)
             .await?;
 

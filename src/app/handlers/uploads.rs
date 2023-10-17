@@ -2,15 +2,27 @@ use poem::{
     error::InternalServerError,
     handler,
     http::StatusCode,
-    web::{Data, Html, Multipart, Path, RealIp},
+    web::{CsrfToken, CsrfVerifier, Data, Form, Html, Multipart, Path, RealIp, Redirect},
 };
-use time::OffsetDateTime;
+use serde::Deserialize;
+use time::{Date, OffsetDateTime};
 
 use crate::{
-    app::templates::{authorized_context, default_context, render_template},
+    app::templates::{authorized_context, default_context, render_404, render_template},
     env::Env,
     model::{upload::Upload, user::User},
 };
+
+#[handler]
+pub async fn get_uploads(env: Data<&Env>, user: User) -> poem::Result<Html<String>> {
+    let uploads = Upload::get_for_user(&env.pool, user.id)
+        .await
+        .map_err(InternalServerError)?;
+
+    let mut context = authorized_context(&user);
+    context.insert("uploads", &uploads);
+    render_template("uploads/list.html", &context)
+}
 
 #[handler]
 pub fn get_new_upload(user: User) -> poem::Result<Html<String>> {
@@ -116,6 +128,13 @@ pub async fn get_upload(
         default_context()
     };
 
+    let expired = if let Some(expiry) = upload.expiry_date {
+        expiry < OffsetDateTime::now_utc().date()
+    } else {
+        false
+    };
+
+    context.insert("expired", &expired);
     context.insert("upload", &upload);
     context.insert("uploader", &uploader);
 
@@ -130,6 +149,117 @@ pub async fn get_upload(
 }
 
 #[handler]
-pub async fn post_upload(Path(slug): Path<String>) -> poem::Result<()> {
-    todo!()
+pub async fn delete_upload(
+    env: Data<&Env>,
+    user: User,
+    Path(id): Path<i32>,
+) -> poem::Result<Redirect> {
+    let Some(upload) = Upload::get(&env.pool, id)
+        .await
+        .map_err(InternalServerError)?
+    else {
+        tracing::error!(id = ?id, "Unable to find upload with given ID");
+        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
+    };
+
+    if !user.admin && upload.uploaded_by != user.id {
+        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+    }
+
+    upload
+        .delete(&env.pool)
+        .await
+        .map_err(InternalServerError)?;
+
+    Ok(Redirect::see_other("/uploads"))
+}
+
+#[handler]
+pub async fn get_upload_edit(
+    env: Data<&Env>,
+    token: &CsrfToken,
+    user: User,
+    Path(id): Path<i32>,
+) -> poem::Result<Html<String>> {
+    let Some(upload) = Upload::get(&env.pool, id)
+        .await
+        .map_err(InternalServerError)?
+    else {
+        tracing::error!("Unrecognized upload ID '{id}'");
+        return render_404("Unrecognized upload ID");
+    };
+
+    if !user.admin && upload.uploaded_by != user.id {
+        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+    }
+
+    let mut context = authorized_context(&user);
+    context.insert("token", &token.0);
+    context.insert("upload", &upload);
+    render_template("uploads/edit.html", &context)
+}
+
+time::serde::format_description!(iso8601_date, Date, "[year]-[month]-[day]");
+
+#[derive(Debug, Deserialize)]
+pub struct UploadEditForm {
+    token: String,
+    filename: String,
+    public: Option<String>,
+    limit: Option<i32>,
+    #[serde(with = "iso8601_date::option")]
+    expiry_date: Option<Date>,
+}
+
+#[handler]
+pub async fn put_upload_edit(
+    env: Data<&Env>,
+    verifier: &CsrfVerifier,
+    user: User,
+    Path(id): Path<i32>,
+    Form(UploadEditForm {
+        token,
+        filename,
+        public,
+        limit,
+        expiry_date,
+    }): Form<UploadEditForm>,
+) -> poem::Result<Redirect> {
+    if !verifier.is_valid(&token) {
+        tracing::error!("CSRF token is invalid");
+        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+    }
+
+    let Some(mut upload) = Upload::get(&env.pool, id)
+        .await
+        .map_err(InternalServerError)?
+    else {
+        tracing::error!("Unrecognized upload ID '{id}'");
+        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
+    };
+
+    if !user.admin && upload.uploaded_by != user.id {
+        tracing::error!(
+            user = user.id,
+            upload = upload.id,
+            "User tried to edit upload without permission"
+        );
+        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+    }
+
+    let public = public.as_deref() == Some("on");
+
+    tracing::info!(
+        upload = id,
+        filename = ?filename,
+        limit = ?limit,
+        expiry = ?expiry_date,
+        "Updating upload");
+
+    upload
+        .edit(&env.pool, &filename, public, limit, expiry_date)
+        .await
+        .map_err(InternalServerError)?;
+
+    Ok(Redirect::see_other("/uploads"))
 }
