@@ -25,22 +25,51 @@
       placeholder="Password"
       required
     />
-    <div class="flex flex-row gap-2">
-      <input type="checkbox" name="admin" id="admin" />
-      <label for="admin">User is an administrator</label>
+    <div class="grid grid-cols-3 gap-2">
+      <div>
+        <div class="flex flex-row gap-2">
+          <input type="checkbox" name="admin" id="admin" />
+          <label for="admin">User is an administrator</label>
+        </div>
+      </div>
+      <div>
+        <div class="flex flex-row gap-2">
+          <input type="checkbox" name="enabled" id="enabled" checked />
+          <label for="enabled">User account is enabled</label>
+        </div>
+      </div>
+      <div class="flex flex-col gap-2">
+        <div class="flex flex-row gap-2">
+          <input type="checkbox" name="limit_check" id="limit_check" checked />
+          <label for="limit_check">User has an upload limit (MB)</label>
+        </div>
+        <input
+          type="number"
+          class="field"
+          name="limit"
+          id="limit"
+          value="100"
+          min="0"
+        />
+      </div>
     </div>
-    <div class="flex flex-row gap-2">
-      <input type="checkbox" name="enabled" id="enabled" checked />
-      <label for="enabled">User account is enabled</label>
-    </div>
-    <div class="buttons end">
+    <div class="buttons end mt-4">
       <a
         class="mx-2"
         href="#"
         _="on click call event.preventDefault() then trigger closeModal"
-        >Cancel</a
       >
+        Cancel
+      </a>
       <button type="submit" class="button">Add user</button>
     </div>
   </div>
+  <script>
+    document
+      .querySelector("input[name='limit_check']")
+      .addEventListener("change", (event) => {
+        event.target.form.querySelector("input[name='limit']").disabled =
+          !event.target.checked;
+      });
+  </script>
 </form>

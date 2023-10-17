@@ -18,6 +18,7 @@ pub struct User {
     pub password: String,
     pub enabled: bool,
     pub admin: bool,
+    pub limit: Option<i32>,
     pub created_at: OffsetDateTime,
     pub created_by: Option<i32>,
 }
@@ -41,13 +42,14 @@ impl User {
     pub async fn create(&mut self, pool: &SqlitePool) -> sqlx::Result<()> {
         let result = sqlx::query_scalar::<_, i32>(
             "INSERT INTO users (username, password, enabled, admin,
-            created_at, created_by) VALUES ($1, $2, $3, $4, $5, $6)
+            \"limit\", created_at, created_by) VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING id",
         )
         .bind(&self.username)
         .bind(&self.password)
         .bind(self.enabled)
         .bind(self.admin)
+        .bind(self.limit)
         .bind(self.created_at)
         .bind(self.created_by)
         .fetch_one(pool)
@@ -98,14 +100,20 @@ impl User {
         username: &str,
         admin: bool,
         enabled: bool,
+        limit: Option<i32>,
     ) -> sqlx::Result<()> {
-        sqlx::query("UPDATE users SET username = $1, enabled = $2, admin = $3 WHERE id = $4")
-            .bind(username)
-            .bind(enabled)
-            .bind(admin)
-            .bind(self.id)
-            .execute(pool)
-            .await?;
+        sqlx::query(
+            "UPDATE users SET 
+                    username = $1, enabled = $2, admin = $3, \"limit\" = $4
+                    WHERE id = $5",
+        )
+        .bind(username)
+        .bind(enabled)
+        .bind(admin)
+        .bind(limit)
+        .bind(self.id)
+        .execute(pool)
+        .await?;
 
         self.username = username.to_string();
         self.enabled = enabled;

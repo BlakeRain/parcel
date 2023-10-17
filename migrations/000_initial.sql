@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS users (
   password TEXT NOT NULL,
   enabled BOOLEAN NOT NULL,
   admin BOOLEAN NOT NULL,
+  "limit" INTEGER,
   created_at DATETIME NOT NULL,
   created_by INTEGER
 );

@@ -41,6 +41,7 @@ pub struct NewUserForm {
     password: String,
     admin: Option<String>,
     enabled: Option<String>,
+    limit: Option<i32>,
 }
 
 #[handler]
@@ -54,6 +55,7 @@ pub async fn post_users_new(
         password,
         admin,
         enabled,
+        limit,
     }): Form<NewUserForm>,
 ) -> poem::Result<impl IntoResponse> {
     if !verifier.is_valid(&token) {
@@ -69,6 +71,7 @@ pub async fn post_users_new(
         password: hash_password(&password),
         enabled,
         admin,
+        limit: limit.map(|limit| limit * 1024 * 1024),
         created_at: OffsetDateTime::now_utc(),
         created_by: Some(admin_user.id),
     };
@@ -104,6 +107,7 @@ pub struct EditUserForm {
     username: String,
     admin: Option<String>,
     enabled: Option<String>,
+    limit: Option<i32>,
 }
 
 #[handler]
@@ -117,6 +121,7 @@ pub async fn put_user(
         username,
         admin,
         enabled,
+        limit,
     }): Form<EditUserForm>,
 ) -> poem::Result<impl IntoResponse> {
     if !verifier.is_valid(&token) {
@@ -144,8 +149,9 @@ pub async fn put_user(
 
     let admin = admin.as_deref() == Some("on");
     let enabled = enabled.as_deref() == Some("on");
+    let limit = limit.map(|limit| limit * 1024 * 1024);
 
-    user.update(&env.pool, &username, admin, enabled)
+    user.update(&env.pool, &username, admin, enabled, limit)
         .await
         .map_err(InternalServerError)?;
 

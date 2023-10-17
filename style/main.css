@@ -88,6 +88,10 @@
     }
   }
 
+  progress {
+    @apply rounded-md;
+  }
+
   .form {
     @apply flex flex-col gap-2;
   }

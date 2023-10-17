@@ -76,6 +76,7 @@ pub async fn post_setup(
         password: hash_password(&password),
         enabled: true,
         admin: true,
+        limit: None,
         created_at: OffsetDateTime::now_utc(),
         created_by: None,
     };

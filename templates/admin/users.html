@@ -40,6 +40,7 @@
             <th class="text-center">Enabled</th>
             <th class="text-center">Admin</th>
             <th class="text-left">Created At</th>
+            <th class="text-right">Limit</th>
             <th />
           </tr>
         </thead>
@@ -55,6 +56,13 @@
                 {% if user.admin %}Yes{% else %}No{% endif %}
               </td>
               <td class="text-left">{{ user.created_at|datetime }}</td>
+              <td class="text-right">
+                {% if user.limit is number %}
+                  {{ user.limit | filesizeformat }}
+                {% else %}
+                  <i>No Limit</i>
+                {% endif %}
+              </td>
               <td class="text-right">
                 <a
                   href="#"
