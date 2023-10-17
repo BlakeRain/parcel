@@ -5,9 +5,11 @@ fn main() {
     let git_short = build_data::get_git_commit_short().unwrap_or_else(|_| "unknown".to_string());
     let build_date = build_data::format_date(build_data::now());
 
+    let is_debug = std::env::var("PROFILE").expect("PROFILE") == "debug";
+
     // Run `npm run build` to build the Tailwind CSS
     let status = Command::new("npm")
-        .args(["run", "build"])
+        .args(["run", if is_debug { "build-dev" } else { "build" }])
         .status()
         .expect("failed to build Tailwind CSS");
     if !status.success() {
@@ -16,7 +18,7 @@ fn main() {
 
     // Run `npm run copy` to copy the htmlx and _hyperscript source
     let status = Command::new("npm")
-        .args(["run", "copy"])
+        .args(["run", if is_debug { "copy-dev" } else { "copy" }])
         .status()
         .expect("failed to copy HTMX");
     if !status.success() {
