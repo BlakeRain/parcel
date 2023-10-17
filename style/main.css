@@ -269,6 +269,32 @@
       @apply w-40 h-40;
     }
   }
+
+  .clipboard-copy {
+    @apply cursor-pointer;
+
+    > span:first-of-type {
+      @apply block;
+    }
+
+    > span:last-of-type {
+      @apply hidden;
+    }
+
+    &.copied {
+      > span:first-of-type {
+        @apply hidden;
+      }
+
+      > span:last-of-type {
+        @apply block;
+      }
+    }
+
+    > span > svg {
+      @apply relative -top-0.5;
+    }
+  }
 }
 
 @layer utilities {

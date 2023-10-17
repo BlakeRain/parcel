@@ -2,6 +2,7 @@ use poem::{
     error::InternalServerError,
     handler,
     http::{header::LOCATION, HeaderMap, HeaderValue, StatusCode},
+    session::Session,
     web::{CsrfToken, CsrfVerifier, Data, Form, Html},
 };
 use serde::Deserialize;
@@ -46,6 +47,7 @@ pub struct SetupForm {
 pub async fn post_setup(
     env: Data<&Env>,
     verifier: &CsrfVerifier,
+    session: &Session,
     Form(SetupForm {
         token,
         username,
@@ -79,6 +81,7 @@ pub async fn post_setup(
     };
 
     admin.create(&env.pool).await.map_err(InternalServerError)?;
+    session.set("user_id", admin.id);
 
     Ok((
         StatusCode::SEE_OTHER,

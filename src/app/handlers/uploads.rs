@@ -29,7 +29,7 @@ pub async fn post_new_upload(
     let mut filename = None;
     let mut size = 0;
     let mut public = false;
-    let mut remaining = None;
+    let mut limit = None;
     let mut expiry_date = None;
 
     while let Ok(Some(field)) = form.next_field().await {
@@ -73,7 +73,7 @@ pub async fn post_new_upload(
         size,
         public,
         downloads: 0,
-        remaining,
+        limit,
         expiry_date,
         uploaded_by: user.id,
         uploaded_at: OffsetDateTime::now_utc(),
