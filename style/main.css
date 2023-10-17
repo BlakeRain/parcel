@@ -128,7 +128,7 @@
       @apply justify-end;
     }
 
-    > button {
+    > .button {
       @apply w-auto;
     }
   }

@@ -193,3 +193,17 @@ impl<'r> FromRequest<'r> for User {
         Ok(user)
     }
 }
+
+#[derive(Debug, FromRow, Serialize)]
+pub struct UserStats {
+    pub total: i32,
+    pub enabled: i32,
+}
+
+impl UserStats {
+    pub async fn get(pool: &SqlitePool) -> sqlx::Result<UserStats> {
+        sqlx::query_as("SELECT COUNT(*) AS total, SUM(enabled) AS enabled FROM users")
+            .fetch_one(pool)
+            .await
+    }
+}

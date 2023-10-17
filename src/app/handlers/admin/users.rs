@@ -74,7 +74,7 @@ pub async fn post_users_new(
     };
 
     user.create(&env.pool).await.map_err(InternalServerError)?;
-    Ok(Redirect::see_other("/admin"))
+    Ok(Redirect::see_other("/admin/users"))
 }
 
 #[handler]

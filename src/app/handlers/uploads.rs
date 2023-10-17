@@ -128,3 +128,8 @@ pub async fn get_upload(
     context.insert("owner", &owner);
     render_template("upload.html", &context)
 }
+
+#[handler]
+pub async fn post_upload(Path(slug): Path<String>) -> poem::Result<()> {
+    todo!()
+}

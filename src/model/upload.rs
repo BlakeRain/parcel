@@ -79,3 +79,23 @@ impl Upload {
         Ok(())
     }
 }
+
+#[derive(Debug, FromRow, Serialize)]
+pub struct UploadStats {
+    pub total: i32,
+    pub public: i32,
+    pub downloads: i32,
+    pub size: i32,
+}
+
+impl UploadStats {
+    pub async fn get(pool: &SqlitePool) -> sqlx::Result<UploadStats> {
+        sqlx::query_as(
+            "SELECT COUNT(*) AS total, COUNT(public) AS public,
+            SUM(downloads) AS downloads, SUM(size) AS size
+            FROM uploads",
+        )
+        .fetch_one(pool)
+        .await
+    }
+}
