@@ -125,10 +125,14 @@
     @apply w-full rounded-lg;
     @apply px-5 py-2.5;
     @apply text-white bg-primary-600 hover:text-white hover:bg-primary-700;
-    @apply dark:bg-primary-600 dark:hover:bg-primary-700;
     @apply focus:ring-4 focus:outline-none focus:ring-primary-300;
     @apply dark:focus:ring-primary-800;
     @apply text-center text-sm font-medium;
+
+    &:disabled {
+      @apply text-white/75 dark:text-white/50;
+      @apply bg-primary-400 dark:bg-primary-900;
+    }
 
     &.success {
       @apply bg-green-600 text-white;

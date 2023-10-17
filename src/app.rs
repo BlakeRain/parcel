@@ -4,7 +4,7 @@ use poem::{
     middleware::Csrf,
     post, put,
     session::{CookieConfig, CookieSession},
-    web::cookie::CookieKey,
+    web::cookie::{CookieKey, SameSite},
     EndpointExt, IntoEndpoint, Route,
 };
 
@@ -135,5 +135,10 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> impl IntoEndpoint {
         .catch_error(errors::CsrfError::handle)
         .data(env)
         .with(Csrf::new())
-        .with(CookieSession::new(CookieConfig::private(cookie_key)))
+        .with(CookieSession::new(
+            CookieConfig::private(cookie_key)
+                .name("parcel")
+                .same_site(Some(SameSite::Strict))
+                .max_age(Some(std::time::Duration::from_secs(14 * 24 * 60 * 60))),
+        ))
 }

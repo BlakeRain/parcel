@@ -9,12 +9,18 @@
     hx-trigger="load"
     hx-swap="beforeend"
     class="container mx-auto flex flex-col gap-4">
-    <div class="panel thin">
+
+    <div class="panel thin gap-2">
       <h1 class="heading">New Upload</h1>
-      <form id="upload-form">
-        <input type="file" name="file">
-        <button type="submit">Upload file</button>
-        <progress id="progress" value="0" max="100"></progress>
+      <form id="upload-form" class="form">
+        <input type="file" class="field" name="file">
+        <progress id="progress" value="0" max="100" class="hidden"></progress>
+        <div class="buttons end mt-4">
+          <button type="submit" class="button" disabled>
+            {% include "icons/lucide/upload.svg" %}
+            Upload file
+          </button>
+        </div>
       </form>
     </div>
 
@@ -51,10 +57,25 @@
 
       const form = document.querySelector("#upload-form");
       form.parent.insertBefore(element, form);
+
+      document.querySelector("button[type='submit']").disabled = false;
+      document.querySelector("progress").classList.add("hidden");
     }
 
-    document.querySelector("#upload-form").addEventListener("submit", (event) => {
+    const form = document.querySelector("#upload-form");
+    const input = document.querySelector("input[type='file']");
+    const progress = document.querySelector("progress");
+    const submit = document.querySelector("button[type='submit']");
+
+    input.addEventListener("change", (event) => {
+      submit.disabled = event.target.files.length === 0;
+    });
+
+    form.addEventListener("submit", (event) => {
       event.preventDefault();
+
+      submit.disabled = true;
+      progress.classList.remove("hidden");
 
       var total_size = 0;
       const form_data = new FormData();
@@ -71,11 +92,14 @@
         }
       }
 
-      const progress = document.querySelector("#progress");
       const request = new XMLHttpRequest();
 
       request.addEventListener("load", (event) => {
         htmx.trigger("#upload-list-container", "refresh-event", {});
+
+        input.value = null;
+        progress.classList.add("hidden");
+        submit.disabled = true;
       });
 
       request.addEventListener("error", (event) => {
