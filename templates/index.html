@@ -12,12 +12,12 @@
         <progress id="progress" value="0" max="100"></progress>
       </form>
     </div>
-    
+
     <div class="table">
       <table>
         <thead>
           <tr>
-            <th>File</th>
+            <th class="text-left">File</th>
             <th class="text-right">Size</th>
             <th class="text-right">Downloads</th>
             <th class="text-right">Remaining</th>
@@ -25,6 +25,13 @@
           </tr>
         </thead>
         <tbody>
+          {% if uploads | length == 0 %}
+          <tr>
+            <td colspan="4" class="text-center italic">
+              Nothing to show
+            </td>
+          </tr>
+          {% endif %}
           {% for upload in uploads %}
             <tr>
               <td>
@@ -37,15 +44,14 @@
                 </div>
               </td>
               <td class="text-right">{{ upload.size | filesizeformat }}</td>
-              {% if upload.limit is number %}
-                <td class="text-right">
+              <td class="text-right">{{ upload.downloads }}</td>
+              <td class="text-right">
+                {% if upload.limit is number %}
                   {{ upload.limit - upload.downloads }}
-                </td>
-              {% else %}
-                <td class="text-center">
+                {% else %}
                   <i>Unlimited</i>
-                </td>
-              {% endif %}
+                {% endif %}
+              </td>
               <td>
                 {% if upload.expiry_date %}
                   {{ upload.expiry_date | datetime }}
@@ -78,7 +84,7 @@
       });
     });
 
-    function setError(message) {
+    function setErrorMessage(message) {
       const existing = document.querySelector("#error");
       if (existing) {
         existing.innerHtml = message;
@@ -136,5 +142,3 @@
     });
   </script>
 {% endblock %}
-
-

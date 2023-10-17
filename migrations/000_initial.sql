@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS uploads (
   size INTEGER NOT NULL,
   public BOOLEAN NOT NULL,
   downloads INTEGER NOT NULL,
-  remaining INTEGER,
+  "limit" INTEGER,
   expiry_date DATETIME,
   uploaded_by INTEGER NOT NULL REFERENCES users (id),
   uploaded_at DATETIME NOT NULL,

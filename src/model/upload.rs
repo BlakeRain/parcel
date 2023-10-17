@@ -21,7 +21,7 @@ impl Upload {
     pub async fn create(&mut self, pool: &SqlitePool) -> sqlx::Result<()> {
         let result = sqlx::query_scalar::<_, i32>(
             "INSERT INTO uploads (slug, filename, size, public,
-            downloads, limit, expiry_date,
+            downloads, \"limit\", expiry_date,
             uploaded_by, uploaded_at, remote_addr)
             VALUES ($1, $2, $3, $4,
                     0, $5, $6,

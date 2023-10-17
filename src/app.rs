@@ -39,6 +39,9 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> impl IntoEndpoint {
         // --- Uploads ----------------------------------------------------------------------------
         .at("/", get(handlers::index::get_index))
         //
+        // POST /uploads
+        .at("/uploads", post(handlers::uploads::post_new_upload))
+        //
         // GET  /uploads/:id
         // POST /uploads/:id
         .at(
