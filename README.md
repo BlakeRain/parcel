@@ -16,6 +16,7 @@ cookie key (in the `COOKIE_SECRET` environment variable) to avoid being signed o
 ```bash
 # Initial setup of a cookie key
 COOKIE_SECRET=$(openssl rand -base64 32 | tr -d '\n' ; echo)
+export COOKIE_SECRET
 
 # Run the server, but recompile/restart on any changes
 cargo watch -L debug -x run
