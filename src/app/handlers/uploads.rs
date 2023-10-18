@@ -270,7 +270,7 @@ pub struct UploadEditForm {
     filename: String,
     public: Option<String>,
     limit: Option<i32>,
-    #[serde(with = "iso8601_date::option")]
+    #[serde(default, with = "iso8601_date::option")]
     expiry_date: Option<Date>,
 }
 
