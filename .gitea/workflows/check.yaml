@@ -21,6 +21,7 @@ jobs:
         with:
           toolchain: stable
           components: clippy
+          cache: false
       - name: Run Cargo Check
         uses: actions-rs/cargo@v1
         with:
