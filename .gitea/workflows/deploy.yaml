@@ -1,0 +1,28 @@
+name: Deploy
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the Repository
+        uses: actions/checkout@v3
+      - name: Build the Docker Image
+        run: |
+          sudo docker build -t blakerain/parcel .
+      - name: Login to Docker
+        run: |
+          sudo docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Push the Image
+        run: |
+          sudo docker push blakerain/parcel:latest
+          RELEASE_VERSION="${GITHUB_REF#refs/*/}"
+          sudo docker tag blakerain/parcel:latest blakerain/parcel:$RELEASE_VERSION
+          sudo docker push blakerain/parcel:$RELEASE_VERSION
