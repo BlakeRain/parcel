@@ -15,11 +15,7 @@ jobs:
       - name: Install Node Packages
         run: npm install
       - name: Install the Stable Rust Toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
+        uses: dtolnay/rust-toolchain@stable
       - name: Run Cargo Check
         uses: actions-rs/cargo@v1
         with:
