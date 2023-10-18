@@ -151,12 +151,19 @@ pub async fn get_upload(
         default_context()
     };
 
+    let exhausted = if let Some(limit) = upload.limit {
+        limit <= upload.downloads
+    } else {
+        false
+    };
+
     let expired = if let Some(expiry) = upload.expiry_date {
         expiry < OffsetDateTime::now_utc().date()
     } else {
         false
     };
 
+    context.insert("exhausted", &exhausted);
     context.insert("expired", &expired);
     context.insert("upload", &upload);
     context.insert("uploader", &uploader);
