@@ -19,6 +19,7 @@ FROM scratch
 EXPOSE 3000
 COPY --from=builder /usr/src/parcel/target/x86_64-unknown-linux-musl/release/parcel .
 COPY --from=builder /usr/src/parcel/templates ./templates
+COPY --from=builder /usr/src/parcel/static ./static
 ENTRYPOINT ["./parcel"]
 
 
