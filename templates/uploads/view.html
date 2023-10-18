@@ -17,7 +17,12 @@
           {% include "icons/lucide/download.svg" %}
         </div>
         <div>
-          <h1 class="heading">{{ upload.filename }}</h1>
+          <h1 class="heading">
+            {{ upload.filename }}
+            <span class="text-gray-400">
+              ({{ upload.size | filesizeformat }})
+            </span>
+          </h1>
           <div>
             Uploaded {{ upload.uploaded_at | datetime_offset }}
             by {{ uploader.username }}
