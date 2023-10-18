@@ -15,8 +15,15 @@ jobs:
       - name: Install Node Packages
         run: npm install
       - name: Install the Stable Rust Toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy
       - name: Run Cargo Check
         uses: actions-rs/cargo@v1
         with:
           command: check
+      - name: Run Cargo Clippy
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
