@@ -21,7 +21,10 @@ use crate::{
 pub async fn get_uploads(env: Data<&Env>, user: User) -> poem::Result<Html<String>> {
     let uploads = Upload::get_for_user(&env.pool, user.id)
         .await
-        .map_err(InternalServerError)?;
+        .map_err(|err| {
+            tracing::error!(user = user.id, err = ?err, "Unable to get uploads for user");
+            InternalServerError(err)
+        })?;
 
     let total: i32 = uploads.iter().map(|upload| upload.size).sum();
 
@@ -51,6 +54,8 @@ pub async fn post_uploads(
     let mut limit = None;
     let mut expiry_date = None;
 
+    // TODO: Other fields and CSRF token
+
     while let Ok(Some(field)) = form.next_field().await {
         if field.name() == Some("filename") {
             filename = Some(field.text().await?);
@@ -62,21 +67,29 @@ pub async fn post_uploads(
             }
 
             let mut field = field.into_async_read();
-
             let path = env.cache_dir.join(&slug);
 
             {
-                let mut file = tokio::fs::File::create(&path)
-                    .await
-                    .map_err(InternalServerError)?;
+                let mut file = tokio::fs::File::create(&path).await.map_err(|err| {
+                    tracing::error!(err = ?err, path = ?path,
+                                        "Unable to create file");
+                    InternalServerError(err)
+                })?;
+
                 tokio::io::copy(&mut field, &mut file)
                     .await
-                    .map_err(InternalServerError)?;
+                    .map_err(|err| {
+                        tracing::error!(err = ?err, path = ?path,
+                                        "Unable to copy file");
+                        InternalServerError(err)
+                    })?;
             }
 
-            let meta = tokio::fs::metadata(&path)
-                .await
-                .map_err(InternalServerError)?;
+            let meta = tokio::fs::metadata(&path).await.map_err(|err| {
+                tracing::error!(err = ?err, path = ?path,
+                                    "Unable to get metadata for file");
+                InternalServerError(err)
+            })?;
             size = meta.len() as i32;
         } else {
             tracing::info!(field_name = field.name(), "Ignoring unrecognized field");
@@ -99,10 +112,12 @@ pub async fn post_uploads(
         remote_addr: ip.as_ref().map(ToString::to_string),
     };
 
-    upload
-        .create(&env.pool)
-        .await
-        .map_err(InternalServerError)?;
+    upload.create(&env.pool).await.map_err(|err| {
+        tracing::error!(err = ?err, "Unable to create upload");
+        InternalServerError(err)
+    })?;
+
+    tracing::info!(upload = ?upload, "Created upload");
 
     Ok(slug)
 }
@@ -113,9 +128,10 @@ pub async fn get_upload(
     user: Option<User>,
     Path(slug): Path<String>,
 ) -> poem::Result<Html<String>> {
-    let Some(upload) = Upload::get_by_slug(&env.pool, &slug)
-        .await
-        .map_err(InternalServerError)?
+    let Some(upload) = Upload::get_by_slug(&env.pool, &slug).await.map_err(|err| {
+        tracing::error!(err = ?err, slug = ?slug, "Unable to get upload by slug");
+        InternalServerError(err)
+    })?
     else {
         tracing::error!(slug = ?slug, "Unable to find upload with given ID");
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
@@ -139,7 +155,11 @@ pub async fn get_upload(
 
     let Some(uploader) = User::get(&env.pool, upload.uploaded_by)
         .await
-        .map_err(InternalServerError)?
+        .map_err(|err| {
+            tracing::error!(err = ?err, user_id = ?upload.uploaded_by,
+                            "Unable to get user by ID");
+            InternalServerError(err)
+        })?
     else {
         tracing::error!(user_id = ?upload.uploaded_by, "Unable to find user with given ID");
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
@@ -178,9 +198,10 @@ pub async fn get_upload_download(
     user: Option<User>,
     Path(slug): Path<String>,
 ) -> poem::Result<Response> {
-    let Some(upload) = Upload::get_by_slug(&env.pool, &slug)
-        .await
-        .map_err(InternalServerError)?
+    let Some(upload) = Upload::get_by_slug(&env.pool, &slug).await.map_err(|err| {
+        tracing::error!(err = ?err, slug = ?slug, "Unable to get upload by slug");
+        InternalServerError(err)
+    })?
     else {
         tracing::error!(slug = ?slug, "Unable to find upload with given ID");
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
@@ -219,15 +240,24 @@ pub async fn get_upload_download(
     }
 
     let path = env.cache_dir.join(&upload.slug);
-    let file = tokio::fs::File::open(path)
-        .await
-        .map_err(InternalServerError)?;
-    let meta = file.metadata().await.map_err(InternalServerError)?;
+    tracing::info!(upload = upload.id, path = ?path, "Opening file for upload");
+    let file = tokio::fs::File::open(&path).await.map_err(|err| {
+        tracing::error!(err = ?err, path = ?path, "Unable to open file");
+        InternalServerError(err)
+    })?;
 
-    upload
-        .record_download(&env.pool)
-        .await
-        .map_err(InternalServerError)?;
+    let meta = file.metadata().await.map_err(|err| {
+        tracing::error!(err = ?err, path = ?path, "Unable to get metadata for file");
+        InternalServerError(err)
+    })?;
+
+    upload.record_download(&env.pool).await.map_err(|err| {
+        tracing::error!(err = ?err, upload = ?upload, "Unable to record download");
+        InternalServerError(err)
+    })?;
+
+    tracing::info!(upload = upload.id, meta = ?meta,
+                   "Sending file to client");
 
     Ok(Response::builder()
         .status(StatusCode::OK)
@@ -245,22 +275,29 @@ pub async fn delete_upload(
     user: User,
     Path(id): Path<i32>,
 ) -> poem::Result<Redirect> {
-    let Some(upload) = Upload::get(&env.pool, id)
-        .await
-        .map_err(InternalServerError)?
+    let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
+        tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
+        InternalServerError(err)
+    })?
     else {
         tracing::error!(id = ?id, "Unable to find upload with given ID");
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
     if !user.admin && upload.uploaded_by != user.id {
+        tracing::error!(
+            user = user.id,
+            upload = upload.id,
+            "User tried to delete upload without permission"
+        );
+
         return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
     }
 
-    upload
-        .delete(&env.pool)
-        .await
-        .map_err(InternalServerError)?;
+    upload.delete(&env.pool).await.map_err(|err| {
+        tracing::error!(err = ?err, upload = ?upload, "Unable to delete upload");
+        InternalServerError(err)
+    })?;
 
     Ok(Redirect::see_other("/uploads"))
 }
@@ -272,15 +309,22 @@ pub async fn get_upload_edit(
     user: User,
     Path(id): Path<i32>,
 ) -> poem::Result<Html<String>> {
-    let Some(upload) = Upload::get(&env.pool, id)
-        .await
-        .map_err(InternalServerError)?
+    let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
+        tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
+        InternalServerError(err)
+    })?
     else {
         tracing::error!("Unrecognized upload ID '{id}'");
         return render_404("Unrecognized upload ID");
     };
 
     if !user.admin && upload.uploaded_by != user.id {
+        tracing::error!(
+            user = user.id,
+            upload = upload.id,
+            "User tried to edit upload without permission"
+        );
+
         return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
     }
 
@@ -317,13 +361,14 @@ pub async fn put_upload_edit(
     }): Form<UploadEditForm>,
 ) -> poem::Result<Redirect> {
     if !verifier.is_valid(&token) {
-        tracing::error!("CSRF token is invalid");
+        tracing::error!("CSRF token is invalid in upload edit");
         return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
     }
 
-    let Some(mut upload) = Upload::get(&env.pool, id)
-        .await
-        .map_err(InternalServerError)?
+    let Some(mut upload) = Upload::get(&env.pool, id).await.map_err(|err| {
+        tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
+        InternalServerError(err)
+    })?
     else {
         tracing::error!("Unrecognized upload ID '{id}'");
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
@@ -335,6 +380,7 @@ pub async fn put_upload_edit(
             upload = upload.id,
             "User tried to edit upload without permission"
         );
+
         return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
     }
 

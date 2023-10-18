@@ -18,9 +18,7 @@ use crate::{
 
 #[handler]
 pub fn get_signin(token: &CsrfToken, session: &Session) -> poem::Result<Html<String>> {
-    let error = session.get::<String>("error");
-    session.remove("error");
-
+    let error = session.take::<String>("error");
     let mut context = default_context();
     context.insert("token", &token.0);
     context.insert("error", &error);
@@ -46,29 +44,42 @@ pub async fn post_signin(
     }): Form<SignInForm>,
 ) -> poem::Result<Redirect> {
     if !verifier.is_valid(&token) {
+        tracing::error!("Invalid CSRF token in sign in form");
         return Err(CsrfError.into());
     }
 
     let user = match User::get_by_username(&env.pool, &username)
         .await
-        .map_err(InternalServerError)?
-    {
+        .map_err(|err| {
+            tracing::error!(username = ?username, err = ?err,
+                            "Failed to get user by username");
+            InternalServerError(err)
+        })? {
         Some(user) => user,
         None => {
+            tracing::info!(username = ?username, "User not found");
             session.set("error", "Invalid username or password");
             return Ok(Redirect::see_other("/user/signin"));
         }
     };
 
     if !user.verify_password(&password) {
+        tracing::info!(username = ?username, "Invalid password");
         session.set("error", "Invalid username or password");
+        return Ok(Redirect::see_other("/user/signin"));
+    }
+
+    if !user.enabled {
+        tracing::info!(username = ?username, "User is disabled");
+        session.set("error", "Your account is disabled");
         return Ok(Redirect::see_other("/user/signin"));
     }
 
     session.set("user_id", user.id);
 
-    if let Some(destination) = session.get::<String>("destination") {
-        session.remove("destination");
+    tracing::info!(user_id = user.id, username = ?username, "User signed in");
+
+    if let Some(destination) = session.take::<String>("destination") {
         Ok(Redirect::see_other(destination))
     } else {
         Ok(Redirect::see_other(if user.admin { "/admin" } else { "/" }))
@@ -77,7 +88,7 @@ pub async fn post_signin(
 
 #[handler]
 pub async fn get_signout(session: &Session) -> poem::Result<Redirect> {
-    session.remove("user_id");
+    session.clear();
     Ok(Redirect::see_other("/"))
 }
 
@@ -115,23 +126,28 @@ pub async fn post_settings(
     Form(SettingsForm { token, username }): Form<SettingsForm>,
 ) -> poem::Result<Redirect> {
     if !verifier.is_valid(&token) {
+        tracing::error!("Invalid CSRF token in settings form");
         return Err(CsrfError.into());
     }
 
     if user.username == username {
-        tracing::trace!("Username is not changed");
+        tracing::info!("Username was not changed; ignoring settings change");
         return Ok(Redirect::see_other("/user/settings"));
     }
 
     if let Some(existing) = User::get_by_username(&env.pool, &username)
         .await
-        .map_err(InternalServerError)?
+        .map_err(|err| {
+            tracing::error!(username = ?username, err = ?err,
+                    "Failed to get user by username");
+            InternalServerError(err)
+        })?
     {
         tracing::error!(
             user_id = user.id,
             username = user.username,
             new_username = username,
-            existing = existing.id,
+            existing_id = existing.id,
             "Username is already taken"
         );
 
@@ -148,7 +164,11 @@ pub async fn post_settings(
 
     user.set_username(&env.pool, &username)
         .await
-        .map_err(InternalServerError)?;
+        .map_err(|err| {
+            tracing::error!(user_id = user.id, username = ?username, err = ?err,
+                    "Failed to set username");
+            InternalServerError(err)
+        })?;
 
     session.set(
         "settings_success",
@@ -173,6 +193,7 @@ pub async fn post_settings_password(
     Form(PasswordForm { token, password }): Form<PasswordForm>,
 ) -> poem::Result<Redirect> {
     if !verifier.is_valid(&token) {
+        tracing::error!("Invalid CSRF token in password form");
         return Err(CsrfError.into());
     }
 
@@ -184,7 +205,11 @@ pub async fn post_settings_password(
 
     user.set_password(&env.pool, &password)
         .await
-        .map_err(InternalServerError)?;
+        .map_err(|err| {
+            tracing::error!(user_id = user.id, username = ?user.username, err = ?err,
+                    "Failed to set password");
+            InternalServerError(err)
+        })?;
 
     session.set(
         "password_success",

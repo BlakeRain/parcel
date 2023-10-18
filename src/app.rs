@@ -28,7 +28,7 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> impl IntoEndpoint {
     let cookie_key = if let Some(key) = cookie_key {
         CookieKey::derive_from(key)
     } else {
-        tracing::info!("Generating new cookie key");
+        tracing::info!("Generating new cookie key (no 'COOKIE_SECRET' or '--cookie-secret')");
         CookieKey::generate()
     };
 

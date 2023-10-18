@@ -19,13 +19,15 @@ pub mod users;
 
 #[handler]
 pub async fn get_admin(env: Data<&Env>, Admin(admin): Admin) -> poem::Result<Html<String>> {
-    let users = UserStats::get(&env.pool)
-        .await
-        .map_err(InternalServerError)?;
+    let users = UserStats::get(&env.pool).await.map_err(|err| {
+        tracing::error!(err = ?err, "Failed to get user stats for admin dashboard");
+        InternalServerError(err)
+    })?;
 
-    let uploads = UploadStats::get(&env.pool)
-        .await
-        .map_err(InternalServerError)?;
+    let uploads = UploadStats::get(&env.pool).await.map_err(|err| {
+        tracing::error!(err = ?err, "Failed to get upload stats for admin dashboard");
+        InternalServerError(err)
+    })?;
 
     let mut context = authorized_context(&admin);
     context.insert("users", &users);

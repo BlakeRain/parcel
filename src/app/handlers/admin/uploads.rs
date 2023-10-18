@@ -45,7 +45,10 @@ pub async fn get_uploads(env: Data<&Env>, Admin(admin): Admin) -> poem::Result<H
     )
     .fetch_all(&env.pool)
     .await
-    .map_err(InternalServerError)?;
+    .map_err(|err| {
+        tracing::error!(err = ?err, "Failed to fetch list of uploads");
+        InternalServerError(err)
+    })?;
 
     let mut context = authorized_context(&admin);
     context.insert("uploads", &uploads);

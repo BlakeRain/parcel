@@ -109,7 +109,7 @@ pub fn render_template(name: &str, context: &Context) -> poem::Result<Html<Strin
     TEMPLATES
         .render(name, context)
         .map_err(|err| {
-            tracing::error!("render '{name}' failed: {err:?}");
+            tracing::error!(template_name = ?name, "Template render failed: {err:?}");
             InternalServerError(err)
         })
         .map(Html)

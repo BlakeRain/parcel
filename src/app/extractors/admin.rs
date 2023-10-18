@@ -27,6 +27,7 @@ impl<'r> FromRequest<'r> for Admin {
                 user.username,
                 user.id
             );
+
             Err(poem::Error::from_status(StatusCode::FORBIDDEN))
         }
     }
