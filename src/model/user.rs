@@ -18,7 +18,7 @@ pub struct User {
     pub password: String,
     pub enabled: bool,
     pub admin: bool,
-    pub limit: Option<i32>,
+    pub limit: Option<i64>,
     pub created_at: OffsetDateTime,
     pub created_by: Option<i32>,
 }
@@ -100,7 +100,7 @@ impl User {
         username: &str,
         admin: bool,
         enabled: bool,
-        limit: Option<i32>,
+        limit: Option<i64>,
     ) -> sqlx::Result<()> {
         sqlx::query(
             "UPDATE users SET 

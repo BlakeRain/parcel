@@ -43,7 +43,7 @@ pub struct NewUserForm {
     password: String,
     admin: Option<String>,
     enabled: Option<String>,
-    limit: Option<i32>,
+    limit: Option<i64>,
 }
 
 #[handler]
@@ -117,7 +117,7 @@ pub struct EditUserForm {
     username: String,
     admin: Option<String>,
     enabled: Option<String>,
-    limit: Option<i32>,
+    limit: Option<i64>,
 }
 
 #[handler]

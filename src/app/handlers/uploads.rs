@@ -26,7 +26,7 @@ pub async fn get_uploads(env: Data<&Env>, user: User) -> poem::Result<Html<Strin
             InternalServerError(err)
         })?;
 
-    let total: i32 = uploads.iter().map(|upload| upload.size).sum();
+    let total: i64 = uploads.iter().map(|upload| upload.size).sum();
 
     let mut context = authorized_context(&user);
     context.insert("uploads", &uploads);
@@ -90,7 +90,7 @@ pub async fn post_uploads(
                                     "Unable to get metadata for file");
                 InternalServerError(err)
             })?;
-            size = meta.len() as i32;
+            size = meta.len() as i64;
         } else {
             tracing::info!(field_name = field.name(), "Ignoring unrecognized field");
         }
@@ -341,7 +341,7 @@ pub struct UploadEditForm {
     token: String,
     filename: String,
     public: Option<String>,
-    limit: Option<i32>,
+    limit: Option<i64>,
     #[serde(default, with = "iso8601_date::option")]
     expiry_date: Option<Date>,
 }

@@ -7,10 +7,10 @@ pub struct Upload {
     pub id: i32,
     pub slug: String,
     pub filename: String,
-    pub size: i32,
+    pub size: i64,
     pub public: bool,
-    pub downloads: i32,
-    pub limit: Option<i32>,
+    pub downloads: i64,
+    pub limit: Option<i64>,
     pub expiry_date: Option<Date>,
     pub uploaded_by: i32,
     pub uploaded_at: OffsetDateTime,
@@ -49,7 +49,7 @@ impl Upload {
         pool: &SqlitePool,
         filename: &str,
         public: bool,
-        limit: Option<i32>,
+        limit: Option<i64>,
         expiry: Option<Date>,
     ) -> sqlx::Result<()> {
         sqlx::query(
@@ -117,8 +117,8 @@ impl Upload {
 pub struct UploadStats {
     pub total: i32,
     pub public: i32,
-    pub downloads: i32,
-    pub size: i32,
+    pub downloads: i64,
+    pub size: i64,
 }
 
 impl UploadStats {
