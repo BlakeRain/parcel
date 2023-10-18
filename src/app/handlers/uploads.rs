@@ -195,11 +195,32 @@ pub async fn get_upload_download(
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     }
 
+    if !owner {
+        if let Some(limit) = upload.limit {
+            if upload.downloads >= limit {
+                tracing::error!(upload = ?upload, "Download limit was reached");
+                return Err(poem::Error::from_status(StatusCode::GONE));
+            }
+        }
+
+        if let Some(expiry) = upload.expiry_date {
+            if expiry < OffsetDateTime::now_utc().date() {
+                tracing::error!(upload = ?upload, "Upload has expired");
+                return Err(poem::Error::from_status(StatusCode::GONE));
+            }
+        }
+    }
+
     let path = env.cache_dir.join(&upload.slug);
     let file = tokio::fs::File::open(path)
         .await
         .map_err(InternalServerError)?;
     let meta = file.metadata().await.map_err(InternalServerError)?;
+
+    upload
+        .record_download(&env.pool)
+        .await
+        .map_err(InternalServerError)?;
 
     Ok(Response::builder()
         .status(StatusCode::OK)
