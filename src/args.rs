@@ -26,7 +26,7 @@ pub struct Args {
 impl Args {
     pub fn get_cookie_key(&self) -> Result<Option<Vec<u8>>, base64::DecodeError> {
         Ok(if let Some(secret) = &self.cookie_secret {
-            Some(base64::engine::general_purpose::URL_SAFE.decode(secret)?)
+            Some(base64::engine::general_purpose::STANDARD.decode(secret)?)
         } else {
             None
         })
