@@ -1,125 +1,191 @@
-<div
-  class="flex flex-col border border-slate-400 dark:border-gray-700 dark:bg-gray-800 rounded-md shadow-md"
-  id="upload-list-container">
-  <div class="flex flex-row justify-between p-4">
-    <h1 class="text-4xl font-bold">
-      Your uploads
-      {% if uploads | length > 0 %}
-        ({{ uploads | length }})
-      {% endif %}
-    </h1>
-    <div class="flex flex-row items-center gap-2">
-      <button
-        id="upload-refresh"
-        type="button"
-        class="button"
-        hx-trigger="click,refresh-event"
-        hx-get="/uploads"
-        hx-target="#upload-list-container"
-        hx-select="#upload-list-container"
-        hx-swap="outerHTML">
-        {% include "icons/lucide/refresh-cw.svg" %}
-        Refresh
-      </button>
-      {% if user.limit %}
-        <div class="flex flex-col gap-1 text-sm">
-          <progress value="{{ total }}" max="{{ user.limit }}"></progress>
-          <div class="whitespace-nowrap">
-            You're using {{ total | filesizeformat }} of your {{ user.limit | filesizeformat }} storage.
-          </div>
-        </div>
-      {% endif %}
-    </div>
-  </div>
-  <div class="table">
-    <table>
-      <thead>
-        <tr>
-          <th class="text-left">File</th>
-          <th class="text-right">Size</th>
-          <th class="text-right">Downloads</th>
-          <th class="text-right">Remaining</th>
-          <th class="text-left">Expires</th>
-          <th>Public</th>
-          <th class="text-left">Uploaded</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {% if uploads | length == 0 %}
-        <tr>
-          <td colspan="8" class="text-center italic">
-            Nothing to show
-          </td>
-        </tr>
+<form id="upload-list-container">
+  <div class="flex flex-col border border-slate-400 dark:border-gray-700 dark:bg-gray-800 rounded-md shadow-md">
+    <div class="flex flex-row justify-between p-4">
+      <h1 class="text-4xl font-bold">
+        Your uploads
+        {% if uploads | length > 0 %}
+          ({{ uploads | length }})
         {% endif %}
-        {% for upload in uploads %}
-        <tr>
-          <td>
-            <div class="flex flex-row gap-1">
-              <a href="/uploads/{{ upload.slug }}">{{ upload.filename }}</a>
-              <div id="{{ upload.id }}_copy" class="clipboard-copy" _="on click call handleCopyClick(me)">
-                <span>{% include "icons/lucide/clipboard-copy.svg" %}</span>
-                <span>{% include "icons/lucide/clipboard-check.svg" %}</span>
-              </div>
+      </h1>
+      <div class="flex flex-row items-center gap-2">
+        <button
+          id="delete_selected"
+          type="button"
+          class="button"
+          hx-trigger="click"
+          hx-delete="/uploads"
+          hx-target="#upload-list-container"
+          hx-select="#upload-list-container"
+          hx-confirm="Are you sure you want to delete the selected files?"
+          hx-swap="outerHTML"
+          disabled>
+          {% include "icons/lucide/trash-2.svg" %}
+          Delete
+        </button>
+        <button
+          id="upload-refresh"
+          type="button"
+          class="button"
+          hx-trigger="click,refresh-event"
+          hx-get="/uploads"
+          hx-target="#upload-list-container"
+          hx-select="#upload-list-container"
+          hx-swap="outerHTML">
+          {% include "icons/lucide/refresh-cw.svg" %}
+          Refresh
+        </button>
+        {% if user.limit %}
+          <div class="flex flex-col gap-1 text-sm">
+            <progress value="{{ total }}" max="{{ user.limit }}"></progress>
+            <div class="whitespace-nowrap">
+              You're using {{ total | filesizeformat }} of your {{ user.limit | filesizeformat }} storage.
             </div>
-          </td>
-          <td class="text-right">{{ upload.size | filesizeformat }}</td>
-          <td class="text-right">{{ upload.downloads }}</td>
-          <td class="text-right">
-            {% if upload.limit is number %}
-            {{ upload.limit - upload.downloads }}
-            {% else %}
-            <i>Unlimited</i>
-            {% endif %}
-          </td>
-          <td>
-            {% if upload.expiry_date %}
-            {{ upload.expiry_date | date }} ({{ upload.expiry_date | date_offset }})
-            {% else %}
-            <i>Never</i>
-            {% endif %}
-          </td>
-          {% if upload.public %}
-          <td class="text-center text-danger">Yes</td>
-          {% else %}
-          <td class="text-center text-success">No</td>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="table">
+      <table>
+        <thead>
+          <tr>
+            <th class="slim">
+              <input
+                id="mass_checkbox"
+                type="checkbox"
+                _="on click call handleMassCheckboxClick(me)" />
+            <th class="text-left">File</th>
+            <th class="text-right">Size</th>
+            <th class="text-right">Downloads</th>
+            <th class="text-right">Remaining</th>
+            <th class="text-left">Expires</th>
+            <th>Public</th>
+            <th class="text-left">Uploaded</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if uploads | length == 0 %}
+          <tr>
+            <td colspan="9" class="text-center italic">
+              Nothing to show
+            </td>
+          </tr>
           {% endif %}
-          <td class="text-left">
-            {{ upload.uploaded_at | datetime }}
-          </td>
-          <td class="text-right">
-            <a href="/uploads/{{ upload.slug }}/download" title="Download {{ upload.filename }}">
-              {% include "icons/lucide/download.svg" %}
-            </a>
-            <a
-              href="#"
-              title="Edit upload"
-              hx-get="/uploads/{{ upload.id }}/edit"
-              hx-target="body"
-              hx-swap="beforeend">
-              {% include "icons/lucide/pencil.svg" %}
-            </a>
-            <a
-              href="#"
-              title="Delete upload"
-              hx-delete="/uploads/{{ upload.id }}"
-              hx-trigger="click"
-              hx-target="#upload-list-container"
-              hx-select="#upload-list-container"
-              hx-swap="outerHTML"
-              hx-confirm="Are you sure you want to delete this upload?">
-              {% include "icons/lucide/trash-2.svg" %}
-            </a>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+          {% for upload in uploads %}
+          <tr>
+            <td class="slim text-center">
+              <input
+                id="{{ loop.index }}_checkbox"
+                type="checkbox"
+                name="selected"
+                value="{{ upload.id }}"
+                _="on click call handleCheckboxClick(me, event, {{ loop.index }})" />
+            </td>
+            <td>
+              <div class="flex flex-row gap-1">
+                <a href="/uploads/{{ upload.slug }}">{{ upload.filename }}</a>
+                <div id="{{ upload.id }}_copy" class="clipboard-copy" _="on click call handleCopyClick(me)">
+                  <span>{% include "icons/lucide/clipboard-copy.svg" %}</span>
+                  <span>{% include "icons/lucide/clipboard-check.svg" %}</span>
+                </div>
+              </div>
+            </td>
+            <td class="text-right">{{ upload.size | filesizeformat }}</td>
+            <td class="text-right">{{ upload.downloads }}</td>
+            <td class="text-right">
+              {% if upload.limit is number %}
+              {{ upload.limit - upload.downloads }}
+              {% else %}
+              <i>Unlimited</i>
+              {% endif %}
+            </td>
+            <td>
+              {% if upload.expiry_date %}
+              {{ upload.expiry_date | date }} ({{ upload.expiry_date | date_offset }})
+              {% else %}
+              <i>Never</i>
+              {% endif %}
+            </td>
+            {% if upload.public %}
+            <td class="text-center text-danger">Yes</td>
+            {% else %}
+            <td class="text-center text-success">No</td>
+            {% endif %}
+            <td class="text-left">
+              {{ upload.uploaded_at | datetime }}
+            </td>
+            <td class="text-right">
+              <a href="/uploads/{{ upload.slug }}/download" title="Download {{ upload.filename }}">
+                {% include "icons/lucide/download.svg" %}
+              </a>
+              <a
+                href="#"
+                title="Edit upload"
+                hx-get="/uploads/{{ upload.id }}/edit"
+                hx-target="body"
+                hx-swap="beforeend">
+                {% include "icons/lucide/pencil.svg" %}
+              </a>
+              <a
+                href="#"
+                title="Delete upload"
+                hx-delete="/uploads/{{ upload.id }}"
+                hx-trigger="click"
+                hx-target="#upload-list-container"
+                hx-select="#upload-list-container"
+                hx-swap="outerHTML"
+                hx-confirm="Are you sure you want to delete this upload?">
+                {% include "icons/lucide/trash-2.svg" %}
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
 <script>
+  function handleMassCheckboxClick(element) {
+    const checkboxes = document.querySelectorAll("input[name=selected]");
+    checkboxes.forEach(checkbox => {
+      checkbox.checked = element.checked;
+    });
+
+    const massDelete = document.getElementById("delete_selected");
+    massDelete.disabled = !element.checked;
+  }
+
+  function updateMassCheckbox() {
+    const checkboxes = document.querySelectorAll("input[name=selected]");
+    const checked = Array.from(checkboxes).filter(checkbox => checkbox.checked);
+
+    const massCheckbox = document.getElementById("mass_checkbox");
+    massCheckbox.checked = checked.length === checkboxes.length;
+    massCheckbox.indeterminate = checked.length > 0 && checked.length < checkboxes.length;
+
+    const massDelete = document.getElementById("delete_selected");
+    massDelete.disabled = checked.length === 0;
+  }
+
+  var lastChecked = null, lastCheckedIndex = 0;
+  function handleCheckboxClick(element, event, index) {
+    if (event.shiftKey) {
+      if (lastChecked) {
+        const start = Math.min(index, lastCheckedIndex);
+        const end = Math.max(index, lastCheckedIndex);
+        for (let i = start; i <= end; i++) {
+          document.getElementById(`${i}_checkbox`).checked = lastChecked.checked;
+        }
+      }
+    }
+
+    lastChecked = element;
+    lastCheckedIndex = index;
+    updateMassCheckbox();
+  }
+
   function handleCopyClick(element) {
     const text = element.previousElementSibling.href;
     const blob = new Blob([text], { type: "text/plain" });
