@@ -122,6 +122,7 @@
                 href="#"
                 title="Edit upload"
                 hx-get="/uploads/{{ upload.id }}/edit"
+                hx-trigger="click"
                 hx-target="body"
                 hx-swap="beforeend">
                 {% include "icons/lucide/pencil.svg" %}

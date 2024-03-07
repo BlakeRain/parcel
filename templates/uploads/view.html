@@ -4,49 +4,58 @@
 
 {% block content %}
   <div class="container mx-auto flex flex-col items-center">
-    <a
+    <div class="panel thin">
+      <a
       {% if expired or exhausted %}
         href="#"
         onclick="event.preventDefault()"
       {% else %}
         href="/uploads/{{ upload.slug }}/download"
       {% endif %}
-      class="panel thin cursor-pointer group">
-      <div class="flex flex-row items-center gap-2">
-        <div class="big-icon text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400">
-          {% include "icons/lucide/download.svg" %}
-        </div>
-        <div>
-          <h1 class="heading">
-            {{ upload.filename }}
-            <span class="text-gray-400">
-              ({{ upload.size | filesizeformat }})
-            </span>
-          </h1>
-          <div>
-            Uploaded {{ upload.uploaded_at | datetime_offset }}
-            by {{ uploader.username }}
+        class="no-color group">
+        <div class="flex flex-row items-center gap-2">
+          <div class="big-icon text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-500">
+            {% include "icons/lucide/download.svg" %}
           </div>
           <div>
-            Downloaded {{ upload.downloads }} time{% if upload.downloads != 1 %}s{% endif %}
-            {% if upload.limit %}
-            <span class="{% if upload.downloads >= upload.limit %}text-danger{% else %}text-success{% endif %}">
-                ({{ upload.limit - upload.downloads }} remaining)
+            <h1 class="heading group-hover:text-blue-600 dark:group-hover:text-blue-500">
+              {{ upload.filename }}
+              <span class="text-gray-400 group-hover:text-blue-500 dark:group-hover:text-blue-400">
+                ({{ upload.size | filesizeformat }})
               </span>
+            </h1>
+
+            <div>
+              Uploaded {{ upload.uploaded_at | datetime_offset }}
+              by {{ uploader.username }}
+              {% if user and uploader.id == user.id %}
+                (your upload)
+              {% endif %}
+            </div>
+
+            <div>
+              Downloaded {{ upload.downloads }} time{% if upload.downloads != 1 %}s{% endif %}
+              {% if upload.limit %}
+              <span class="{% if upload.downloads >= upload.limit %}text-danger{% else %}text-success{% endif %}">
+                  ({{ upload.limit - upload.downloads }} remaining)
+                </span>
+              {% endif %}
+            </div>
+
+            {% if upload.expiry_date %}
+              <div class="{% if expired %}text-danger{% else %}text-success{% endif %}">
+                Upload expires {{ upload.expiry_date | date_offset }}
+              </div>
+            {% endif %}
+
+            {% if not expired and not exhausted %}
+              <div class="text-gray-500 mt-4">
+                Click to download
+              </div>
             {% endif %}
           </div>
-          {% if upload.expiry_date %}
-            <div class="{% if expired %}text-danger{% else %}text-success{% endif %}">
-              Upload expires {{ upload.expiry_date | date_offset }}
-            </div>
-          {% endif %}
-          {% if not expired and not exhausted %}
-            <div class="text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 mt-4">
-              Click to download
-            </div>
-          {% endif %}
         </div>
-      </div>
-    </a>
+      </a>
+    </div>
   </div>
 {% endblock %}

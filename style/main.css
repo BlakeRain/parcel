@@ -14,6 +14,14 @@
     &:hover {
       @apply text-blue-700 dark:text-blue-400;
     }
+
+    &.no-color {
+      @apply text-inherit;
+
+      &:hover {
+        @apply text-inherit;
+      }
+    }
   }
 
   header {
