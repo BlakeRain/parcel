@@ -58,7 +58,7 @@
           <td>
             <div class="flex flex-row gap-1">
               <a href="/uploads/{{ upload.slug }}">{{ upload.filename }}</a>
-              <div id="{{ upload.id }}_copy" class="clipboard-copy">
+              <div id="{{ upload.id }}_copy" class="clipboard-copy" _="on click call handleCopyClick(me)">
                 <span>{% include "icons/lucide/clipboard-copy.svg" %}</span>
                 <span>{% include "icons/lucide/clipboard-check.svg" %}</span>
               </div>
@@ -116,3 +116,17 @@
   </div>
 </div>
 
+<script>
+  function handleCopyClick(element) {
+    const text = element.previousElementSibling.href;
+    const blob = new Blob([text], { type: "text/plain" });
+    const data = [new ClipboardItem({ ["text/plain"]: blob })];
+    navigator.clipboard.write(data);
+
+    document.querySelectorAll(".clipboard-copy").forEach(other => {
+      other.classList.remove("copied");
+    });
+
+    element.classList.add("copied");
+  }
+</script>

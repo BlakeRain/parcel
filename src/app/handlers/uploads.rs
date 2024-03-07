@@ -46,25 +46,16 @@ pub async fn post_uploads(
     RealIp(ip): RealIp,
     user: User,
     mut form: Multipart,
-) -> poem::Result<String> {
-    let slug = nanoid::nanoid!();
-    let mut filename = None;
-    let mut size = 0;
-    let mut public = false;
-    let mut limit = None;
-    let mut expiry_date = None;
-
+) -> poem::Result<()> {
     // TODO: Other fields and CSRF token
 
     while let Ok(Some(field)) = form.next_field().await {
-        if field.name() == Some("filename") {
-            filename = Some(field.text().await?);
-        } else if field.name() == Some("file") {
-            if let Some(name) = field.file_name() {
-                if filename.is_none() {
-                    filename = Some(name.to_string());
-                }
-            }
+        if field.name() == Some("file") {
+            let slug = nanoid::nanoid!();
+            let filename = field
+                .file_name()
+                .map(ToString::to_string)
+                .unwrap_or_else(|| "unnamed.ext".to_string());
 
             let mut field = field.into_async_read();
             let path = env.cache_dir.join(&slug);
@@ -90,36 +81,36 @@ pub async fn post_uploads(
                                     "Unable to get metadata for file");
                 InternalServerError(err)
             })?;
-            size = meta.len() as i64;
+
+            let size = meta.len() as i64;
+            tracing::info!(slug = slug, size = size, "Upload to cache complete");
+
+            let mut upload = Upload {
+                id: 0,
+                slug,
+                filename,
+                size,
+                public: false,
+                downloads: 0,
+                limit: None,
+                expiry_date: None,
+                uploaded_by: user.id,
+                uploaded_at: OffsetDateTime::now_utc(),
+                remote_addr: ip.as_ref().map(ToString::to_string),
+            };
+
+            upload.create(&env.pool).await.map_err(|err| {
+                tracing::error!(err = ?err, "Unable to create upload");
+                InternalServerError(err)
+            })?;
+
+            tracing::info!(upload = ?upload, "Created upload");
         } else {
             tracing::info!(field_name = field.name(), "Ignoring unrecognized field");
         }
     }
 
-    let filename = filename.unwrap_or_else(|| "unnamed".to_string());
-
-    let mut upload = Upload {
-        id: 0,
-        slug: slug.clone(),
-        filename,
-        size,
-        public,
-        downloads: 0,
-        limit,
-        expiry_date,
-        uploaded_by: user.id,
-        uploaded_at: OffsetDateTime::now_utc(),
-        remote_addr: ip.as_ref().map(ToString::to_string),
-    };
-
-    upload.create(&env.pool).await.map_err(|err| {
-        tracing::error!(err = ?err, "Unable to create upload");
-        InternalServerError(err)
-    })?;
-
-    tracing::info!(upload = ?upload, "Created upload");
-
-    Ok(slug)
+    Ok(())
 }
 
 #[handler]
