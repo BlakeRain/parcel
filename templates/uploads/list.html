@@ -89,6 +89,9 @@
             {{ upload.uploaded_at | datetime }}
           </td>
           <td class="text-right">
+            <a href="/uploads/{{ upload.slug }}/download" title="Download {{ upload.filename }}">
+              {% include "icons/lucide/download.svg" %}
+            </a>
             <a
               href="#"
               title="Edit upload"
