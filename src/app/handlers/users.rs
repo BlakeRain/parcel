@@ -3,6 +3,7 @@ use poem::{
     handler,
     session::Session,
     web::{CsrfToken, CsrfVerifier, Data, Form, Html, Redirect},
+    IntoResponse, Response,
 };
 use serde::Deserialize;
 
@@ -12,17 +13,31 @@ use crate::{
         templates::{authorized_context, default_context, render_template},
     },
     env::Env,
-    model::user::User,
+    model::user::{requires_setup, User},
     utils::SessionExt,
 };
 
 #[handler]
-pub fn get_signin(token: &CsrfToken, session: &Session) -> poem::Result<Html<String>> {
+pub async fn get_signin(
+    env: Data<&Env>,
+    token: &CsrfToken,
+    session: &Session,
+) -> poem::Result<Response> {
+    let setup = requires_setup(&env.pool).await.map_err(|err| {
+        tracing::error!(error = ?err, "Failed to check if setup is required");
+        InternalServerError(err)
+    })?;
+
+    if setup {
+        return Ok(Redirect::see_other("/admin/setup").into_response());
+    }
+
     let error = session.take::<String>("error");
     let mut context = default_context();
     context.insert("token", &token.0);
     context.insert("error", &error);
-    render_template("user/signin.html", &context)
+
+    render_template("user/signin.html", &context).map(IntoResponse::into_response)
 }
 
 #[derive(Debug, Deserialize)]
@@ -48,13 +63,15 @@ pub async fn post_signin(
         return Err(CsrfError.into());
     }
 
-    let user = match User::get_by_username(&env.pool, &username)
+    let user = User::get_by_username(&env.pool, &username)
         .await
         .map_err(|err| {
             tracing::error!(username = ?username, err = ?err,
                             "Failed to get user by username");
             InternalServerError(err)
-        })? {
+        })?;
+
+    let user = match user {
         Some(user) => user,
         None => {
             tracing::info!(username = ?username, "User not found");
