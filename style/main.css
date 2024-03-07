@@ -65,6 +65,7 @@
             @apply hidden absolute top-full left-0 w-full;
             @apply bg-slate-900;
             @apply w-max;
+            @apply z-50;
           }
 
           &.open {
