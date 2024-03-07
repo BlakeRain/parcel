@@ -31,6 +31,10 @@ pub struct Inner {
 impl Env {
     pub async fn new(Args { db, cache_dir, .. }: &Args) -> sqlx::Result<Self> {
         let cache_dir = cache_dir.clone();
+        if !cache_dir.exists() {
+            std::fs::create_dir_all(&cache_dir)?;
+        }
+
         let opts = SqliteConnectOptions::from_str(db)?.create_if_missing(true);
         let pool = SqlitePool::connect_with(opts).await?;
         MIGRATOR.run(&pool).await?;
