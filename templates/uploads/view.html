@@ -3,18 +3,18 @@
 {% block title %}{{ upload.filename }}{% endblock %}
 
 {% block content %}
-  <div class="container mx-auto flex flex-col items-center">
+  <div id="upload-view-container" class="container mx-auto flex flex-col items-center">
     <div class="panel thin">
       <a
       {% if expired or exhausted %}
         href="#"
         onclick="event.preventDefault()"
       {% else %}
-        href="/uploads/{{ upload.slug }}/download"
+        href="/uploads/{{ upload.slug | urlencode }}/download"
       {% endif %}
         class="no-color group">
         <div class="flex flex-row items-center gap-2">
-          <div class="big-icon text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-500">
+          <div class="big-icon text-slate-400 hidden md:block group-hover:text-blue-600 dark:group-hover:text-blue-500">
             {% include "icons/lucide/download.svg" %}
           </div>
           <div>
@@ -32,6 +32,12 @@
                 (your upload)
               {% endif %}
             </div>
+
+            {% if user and uploader.id == user.id and upload.public %}
+              <div class="text-danger">
+                Publicly accessible
+              </div>
+            {% endif %}
 
             <div>
               Downloaded {{ upload.downloads }} time{% if upload.downloads != 1 %}s{% endif %}
@@ -56,6 +62,48 @@
           </div>
         </div>
       </a>
+      {% if user and uploader.id == user.id %}
+        <div class="flex flex-col md:flex-row gap-4 mt-8">
+          <a
+            href="#"
+            title="Edit upload settings"
+            hx-get="/uploads/{{ upload.id }}/edit?hx_target=%23upload-view-container&ult_dest=/uploads/{{ upload.slug | urlencode }}"
+            hx-trigger="click"
+            hx-target="body"
+            hx-swap="beforeend">
+            {% include "icons/lucide/pencil.svg" %}
+            Edit settings
+          </a>
+          <a
+            href="#"
+            title="Delete upload"
+            hx-delete="/uploads/{{ upload.id }}"
+            hx-trigger="click"
+            hx-confirm="Are you sure you want to delete this upload?">
+            {% include "icons/lucide/trash-2.svg" %}
+            Delete upload
+          </a>
+          {% set opposite = "public" %}
+          {% if upload.public %}
+            {% set opposite = "private" %}
+          {% endif %}
+          <a
+            href="#"
+            title="Make upload {{ opposite }}"
+            hx-post="/uploads/{{ upload.id }}/public?public={{ not upload.public }}&ult_dest=/uploads/{{ upload.slug | urlencode }}"
+            hx-trigger="click"
+            hx-target="#upload-view-container"
+            hx-select="#upload-view-container"
+            hx-swap="outerHTML">
+            {% if upload.public %}
+              {% include "icons/lucide/lock.svg" %}
+            {% else %}
+              {% include "icons/lucide/unlock.svg" %}
+            {% endif %}
+            Make {{ opposite }}
+          </a>
+        </div>
+      {% endif %}
     </div>
   </div>
 {% endblock %}

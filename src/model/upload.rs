@@ -74,6 +74,21 @@ impl Upload {
         Ok(())
     }
 
+    pub async fn set_public(&mut self, pool: &SqlitePool, public: bool) -> sqlx::Result<()> {
+        if public == self.public {
+            return Ok(());
+        }
+
+        sqlx::query("UPDATE uploads SET public = $1 WHERE id = $2")
+            .bind(public)
+            .bind(self.id)
+            .execute(pool)
+            .await?;
+
+        self.public = public;
+        Ok(())
+    }
+
     pub async fn get(pool: &SqlitePool, id: i32) -> sqlx::Result<Option<Self>> {
         sqlx::query_as("SELECT * FROM uploads WHERE id = $1")
             .bind(id)

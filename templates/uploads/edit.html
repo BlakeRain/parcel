@@ -1,14 +1,22 @@
 <form
   class="modal"
   hx-put="/uploads/{{ upload.id }}/edit"
-  hx-target="#upload-list-container"
-  hx-select="#upload-list-container"
+  {% if hx_target %}
+    hx-target="{{ hx_target }}"
+    hx-select="{{ hx_target }}"
+  {% else %}
+    hx-target="#upload-list-container"
+    hx-select="#upload-list-container"
+  {% endif %}
   hx-swap="outerHTML"
   _="on closeModal add .closing then wait for animationend then remove me"
 >
   <div class="underlay" _="on click trigger closeModal"></div>
   <div class="content flex flex-col gap-2">
     <input type="hidden" name="token" value="{{ token }}" />
+    {% if ult_dest %}
+      <input type="hidden" name="ult_dest" value="{{ ult_dest }}" />
+    {% endif %}
     <label for="filename">Filename</label>
     <input
       class="field"

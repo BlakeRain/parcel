@@ -5,8 +5,8 @@ use poem::{
         header::{CONTENT_DISPOSITION, CONTENT_LENGTH},
         StatusCode,
     },
-    web::{CsrfToken, CsrfVerifier, Data, Form, Html, Multipart, Path, RealIp, Redirect},
-    Body, Response,
+    web::{CsrfToken, CsrfVerifier, Data, Form, Html, Multipart, Path, Query, RealIp, Redirect},
+    Body, IntoResponse, Response,
 };
 use serde::Deserialize;
 use time::{Date, OffsetDateTime};
@@ -312,7 +312,7 @@ pub async fn delete_upload(
     env: Data<&Env>,
     user: User,
     Path(id): Path<i32>,
-) -> poem::Result<Redirect> {
+) -> poem::Result<Response> {
     let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
         tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
         InternalServerError(err)
@@ -343,7 +343,13 @@ pub async fn delete_upload(
         tracing::error!(path = ?path, err = ?err, id = id, "Failed to delete cached upload");
     }
 
-    Ok(Redirect::see_other("/uploads"))
+    Ok(Html("").with_header("HX-Redirect", "/").into_response())
+}
+
+#[derive(Debug, Deserialize)]
+pub struct EditQuery {
+    hx_target: Option<String>,
+    ult_dest: Option<String>,
 }
 
 #[handler]
@@ -352,6 +358,10 @@ pub async fn get_upload_edit(
     token: &CsrfToken,
     user: User,
     Path(id): Path<i32>,
+    Query(EditQuery {
+        hx_target,
+        ult_dest,
+    }): Query<EditQuery>,
 ) -> poem::Result<Html<String>> {
     let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
         tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
@@ -375,6 +385,8 @@ pub async fn get_upload_edit(
     let mut context = authorized_context(&user);
     context.insert("token", &token.0);
     context.insert("upload", &upload);
+    context.insert("hx_target", &hx_target);
+    context.insert("ult_dest", &ult_dest);
     render_template("uploads/edit.html", &context)
 }
 
@@ -383,6 +395,7 @@ time::serde::format_description!(iso8601_date, Date, "[year]-[month]-[day]");
 #[derive(Debug, Deserialize)]
 pub struct UploadEditForm {
     token: String,
+    ult_dest: Option<String>,
     filename: String,
     public: Option<String>,
     limit: Option<i64>,
@@ -398,6 +411,7 @@ pub async fn put_upload_edit(
     Path(id): Path<i32>,
     Form(UploadEditForm {
         token,
+        ult_dest,
         filename,
         public,
         limit,
@@ -442,5 +456,52 @@ pub async fn put_upload_edit(
         .await
         .map_err(InternalServerError)?;
 
-    Ok(Redirect::see_other("/uploads"))
+    Ok(Redirect::see_other(
+        ult_dest.unwrap_or_else(|| "/uploads".to_string()),
+    ))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct MakePublicQuery {
+    public: bool,
+    ult_dest: Option<String>,
+}
+
+#[handler]
+pub async fn post_upload_public(
+    env: Data<&Env>,
+    user: User,
+    Path(id): Path<i32>,
+    Query(MakePublicQuery { public, ult_dest }): Query<MakePublicQuery>,
+) -> poem::Result<Response> {
+    let Some(mut upload) = Upload::get(&env.pool, id).await.map_err(|err| {
+        tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
+        InternalServerError(err)
+    })?
+    else {
+        tracing::error!("Unrecognized upload ID '{id}'");
+        return render_404("Unrecognized upload ID").map(IntoResponse::into_response);
+    };
+
+    if !user.admin && upload.uploaded_by != user.id {
+        tracing::error!(
+            user = user.id,
+            upload = upload.id,
+            "User tried to edit upload without permission"
+        );
+
+        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+    }
+
+    tracing::info!(id = id, public = public, "Setting upload public state");
+    upload
+        .set_public(&env.pool, public)
+        .await
+        .map_err(InternalServerError)?;
+
+    if let Some(ult_dest) = ult_dest {
+        Ok(Redirect::see_other(ult_dest).into_response())
+    } else {
+        Ok(Html("").with_header("HX-Redirect", "/").into_response())
+    }
 }
