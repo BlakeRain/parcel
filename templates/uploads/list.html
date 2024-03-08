@@ -34,14 +34,6 @@
           {% include "icons/lucide/refresh-cw.svg" %}
           Refresh
         </button>
-        {% if user.limit %}
-          <div class="flex flex-col gap-1 text-sm">
-            <progress value="{{ total }}" max="{{ user.limit }}"></progress>
-            <div class="whitespace-nowrap">
-              You're using {{ total | filesizeformat }} of your {{ user.limit | filesizeformat }} storage.
-            </div>
-          </div>
-        {% endif %}
       </div>
     </div>
     <div class="table">

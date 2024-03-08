@@ -146,4 +146,16 @@ impl UploadStats {
         .fetch_one(pool)
         .await
     }
+
+    pub async fn get_for(pool: &SqlitePool, owner: i32) -> sqlx::Result<UploadStats> {
+        sqlx::query_as(
+            "SELECT COUNT(*) AS total, COUNT(public) AS public,
+            SUM(downloads) AS downloads, SUM(size) AS size
+            FROM uploads
+            WHERE uploaded_by = ?",
+        )
+        .bind(owner)
+        .fetch_one(pool)
+        .await
+    }
 }

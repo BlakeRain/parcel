@@ -14,7 +14,10 @@ use time::{Date, OffsetDateTime};
 use crate::{
     app::templates::{authorized_context, default_context, render_404, render_template},
     env::Env,
-    model::{upload::Upload, user::User},
+    model::{
+        upload::{Upload, UploadStats},
+        user::User,
+    },
 };
 
 #[handler]
@@ -26,17 +29,18 @@ pub async fn get_uploads(env: Data<&Env>, user: User) -> poem::Result<Html<Strin
             InternalServerError(err)
         })?;
 
-    let total: i64 = uploads.iter().map(|upload| upload.size).sum();
-
     let mut context = authorized_context(&user);
     context.insert("uploads", &uploads);
-    context.insert("total", &total);
     render_template("uploads/list.html", &context)
 }
 
 #[handler]
-pub fn get_new_upload(user: User) -> poem::Result<Html<String>> {
+pub async fn get_new_upload(env: Data<&Env>, user: User) -> poem::Result<Html<String>> {
     let mut context = authorized_context(&user);
+    let stats = UploadStats::get_for(&env.pool, user.id)
+        .await
+        .map_err(InternalServerError)?;
+    context.insert("stats", &stats);
     render_template("uploads/new.html", &context)
 }
 
