@@ -12,7 +12,6 @@ impl std::ops::Deref for Admin {
     }
 }
 
-#[poem::async_trait]
 impl<'r> FromRequest<'r> for Admin {
     async fn from_request(
         request: &'r Request,

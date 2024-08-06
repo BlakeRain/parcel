@@ -103,7 +103,7 @@ impl User {
         limit: Option<i64>,
     ) -> sqlx::Result<()> {
         sqlx::query(
-            "UPDATE users SET 
+            "UPDATE users SET
                     username = $1, enabled = $2, admin = $3, \"limit\" = $4
                     WHERE id = $5",
         )
@@ -160,7 +160,6 @@ impl User {
     }
 }
 
-#[poem::async_trait]
 impl<'r> FromRequest<'r> for User {
     async fn from_request(
         request: &'r Request,
