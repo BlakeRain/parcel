@@ -32,8 +32,9 @@ fn main() {
         panic!("failed to copy HTMX");
     }
 
-    println!("cargo:rerun-if-changed=templates");
+    println!("cargo:rerun-if-changed=scripts");
     println!("cargo:rerun-if-changed=style");
+    println!("cargo:rerun-if-changed=templates");
     println!("cargo:rerun-if-changed=package.json");
     println!("cargo:rerun-if-changed=postcss.config.js");
     println!("cargo:rerun-if-changed=tailwind.config.js");
