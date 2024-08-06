@@ -17,8 +17,5 @@
   "scripts": {
     "build-dev": "tailwindcss --postcss -i style/main.css -o static/main.css",
     "build": "tailwindcss --postcss -i style/main.css -o static/main.css -m",
-    "copy-dev": "mkdir -p static/scripts/vendor && cp node_modules/htmx.org/dist/htmx.js static/scripts/vendor/htmx.js && cp node_modules/hyperscript.org/dist/_hyperscript.js static/hyperscript.js",
-    "copy": "mkdir -p static/scripts/vendor && cp node_modules/htmx.org/dist/htmx.min.js static/scripts/vendor/htmx.js && cp node_modules/hyperscript.org/dist/_hyperscript.min.js static/hyperscript.js",
-    "copy-icons": "mkdir -p static/icons && cp node_modules/lucide-static/font/lucide.{css,eot,woff,woff2,ttf,svg} static/icons/"
   }
 }
