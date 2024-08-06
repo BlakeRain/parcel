@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{% endblock %} - Parcel File Sharing</title>
     <link rel="shortcut icon" type="image/png" href="/static/favicon.png">
-    <link href="/static/main.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/main.css">
+    <link rel="stylesheet" href="/static/icons/lucide.css" />
     {% if env.analytics_domain and env.plausible_script %}
       <script defer data-domain="{{ env.plausible_domain }}" src="{{ env.plausible_script }}"></script>
     {% else %}
@@ -60,36 +61,14 @@
     <footer>
       <div>
         Powered by
-        <a
-          title="Git repository"
-          href="https://git.blakerain.com/BlakeRain/parcel"
-          >Parcel</a
-        >
+        <a title="Git repository" href="https://git.blakerain.com/BlakeRain/parcel">Parcel</a>
         v{{ build.version }}
         </a>
       </div>
     </footer>
-    <script src="/static/htmx.js"></script>
-    <script src="/static/hyperscript.js"></script>
+    <script type="text/javascript" src="/static/vendor/htmx.js"></script>
+    <script type="text/javascript" src="/static/vendor/hyperscript.js"></script>
     <script type="module" src="/{{ env.init_js }}"></script>
-    <script>
-      document.querySelectorAll(".dropdown").forEach(element => {
-        element.addEventListener("click", (event) => {
-          element.classList.toggle("open");
-          event.stopPropagation();
-        });
-      });
-
-      document.addEventListener("click", (event) => {
-        if (event.target.closest(".dropdown")) {
-          return;
-        }
-
-        document.querySelectorAll(".dropdown").forEach(element => {
-          element.classList.remove("open");
-        });
-      });
-    </script>
     {% block scripts %}{% endblock %}
   </body>
 </html>

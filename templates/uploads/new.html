@@ -1,4 +1,6 @@
-<div id="new-upload-container" class="flex flex-col md:flex-row gap-4">
+<div id="new-upload-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <parcel-upload-form class="panel gap-2" csrf_token="{{ csrf_token }}"></parcel-upload-form>
+  <!--
   <div class="panel thin gap-2">
     <h1 class="heading">New upload</h1>
 
@@ -16,7 +18,8 @@
       </div>
     </form>
   </div>
-  <div class="panel thin gap-2">
+  -->
+  <div class="panel gap-2">
     <div class="flex flex-row justify-between align-middle mb-auto">
       <h1 class="heading">
         {% if user.limit is number %}
@@ -62,7 +65,9 @@
     </div>
   </div>
 </div>
+<script type="module" src="/{{ upload_js }}"></script>
 
+<!--
 <script>
   function handleUploadFieldChange(event) {
     console.log("Number of selected files changed to", event.target.files.length);
@@ -189,3 +194,4 @@
     request.send(form_data);
   }
 </script>
+-->

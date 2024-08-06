@@ -1,3 +1,4 @@
+use esbuild_bundle::javascript;
 use minijinja::context;
 use poem::{
     error::InternalServerError,
@@ -40,7 +41,11 @@ pub async fn get_uploads(env: Data<&Env>, user: User) -> poem::Result<Html<Strin
 }
 
 #[handler]
-pub async fn get_new_upload(env: Data<&Env>, user: User) -> poem::Result<Html<String>> {
+pub async fn get_new_upload(
+    env: Data<&Env>,
+    csrf_token: &CsrfToken,
+    user: User,
+) -> poem::Result<Html<String>> {
     let stats = UploadStats::get_for(&env.pool, user.id)
         .await
         .map_err(InternalServerError)?;
@@ -49,6 +54,8 @@ pub async fn get_new_upload(env: Data<&Env>, user: User) -> poem::Result<Html<St
         "uploads/new.html",
         context! {
             stats,
+            csrf_token => csrf_token.0,
+            upload_js => javascript!("scripts/components/upload.js"),
             ..authorized_context(&env, &user)
         },
     )

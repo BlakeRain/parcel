@@ -28,7 +28,6 @@ parcel.db
 
 # Ignore the generated CSS and the copied HTMX and Hyperscript bundles
 static/main.css
-static/htmx.js
-static/hyperscript.js
-
+static/icons/
 static/scripts/bundles/
+static/scripts/vendor/
