@@ -1,0 +1,30 @@
+@layer components {
+  .form {
+    @apply flex flex-col gap-2;
+  }
+
+  label {
+    @apply block mb-2;
+    @apply text-sm font-medium;
+    @apply text-gray-900 dark:text-white;
+  }
+
+  input + label {
+    @apply mt-2;
+  }
+
+  .field {
+    @apply block w-full p-2.5;
+    @apply sm:text-sm;
+    @apply outline-none border rounded-lg;
+    @apply bg-gray-50 border-gray-300 text-gray-900;
+    @apply dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white;
+    @apply focus:ring-primary-600 focus:border-primary-600;
+    @apply dark:focus:ring-blue-500 dark:focus:border-blue-500;
+
+    &:disabled {
+      @apply bg-gray-100 border-gray-200 text-gray-500;
+      @apply dark:bg-gray-800 dark:border-gray-700 dark:text-gray-500;
+    }
+  }
+}

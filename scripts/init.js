@@ -3,7 +3,8 @@ import register from "./components/date.js";
 function add_dropdowns() {
   document.querySelectorAll(".dropdown").forEach((element) => {
     element.addEventListener("click", (event) => {
-      element.classList.toggle("open");
+      element.querySelector("ul").classList.toggle("invisible");
+      // element.classList.toggle("open");
       event.stopPropagation();
     });
   });
@@ -13,8 +14,8 @@ function add_dropdowns() {
       return;
     }
 
-    document.querySelectorAll(".dropdown").forEach((element) => {
-      element.classList.remove("open");
+    document.querySelectorAll(".dropdown > ul").forEach((element) => {
+      element.classList.add("invisible");
     });
   });
 }

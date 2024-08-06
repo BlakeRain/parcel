@@ -14,37 +14,52 @@
     {% endif %}
   </head>
   <body>
-    <header>
-      <nav>
-        <ul>
-          <li class="logo">
-            <a href="/" class="font-semibold">
-              {% include "icons/lucide/package-open.svg" %} Parcel
+    <header class="bg-neutral-100 dark:bg-gray-900 text-neutral-800 dark:text-neutral-200 border-b
+      border-gray-400 dark:border-gray-700 w-full mb-4 shadow-sm">
+      <nav class="container mx-auto flex flex-row align-center justify-between">
+        <ul class="list-none flex flex-row">
+          <li>
+            <a href="/" class="flex flex-row items-center gap-1 text-neutral-800
+              dark:text-neutral-200 hover:bg-slate-700/10 hover:text-neutral-800
+              dark:hover:text-neutral-200">
+              <div class="ml-4 text-xl">
+                <span class="icon-package-open"></span>
+              </div>
+              <div class="mr-4 my-4 font-semibold">Parcel</div>
             </a>
           </li>
         </ul>
-        <ul>
+        <ul class="list-none flex flex-row">
           {% if user %}
-            <li class="dropdown">
-              <span>
+            <li class="relative dropdown">
+              <span class="cursor-pointer select-none block px-4 py-4 text-neutral-800
+                dark:text-neutral-200 hover:bg-slate-700/10">
                 {% include "icons/lucide/user-circle-2.svg" %}
                 {{ user.username }}
               </span>
-              <ul>
-                <li>
-                  {% if user.admin %}
-                    <a href="/admin">
+              <ul class="invisible absolute top-full right-0 left-auto bg-slate-100
+                dark:bg-slate-800 border border-gray-400 dark:border-gray-700 rounded w-max z-50">
+                {% if user.admin %}
+                  <li>
+                    <a href="/admin" class="block px-4 py-4 text-neutral-800 dark:text-neutral-200
+                      hover:bg-slate-700/10 hover:text-neutral-800 dark:hover:text-neutral-200">
                       {% include "icons/lucide/cog.svg" %}
                       Administration
                     </a>
-                  {% endif %}
-                  <a href="/user/settings">
+                  </li>
+                {% endif %}
+                <li>
+                  <a href="/user/settings" class="block px-4 py-4 text-neutral-800
+                    dark:text-neutral-200 hover:bg-slate-700/10 hover:text-neutral-800
+                    dark:hover:text-neutral-200">
                     {% include "icons/lucide/settings-2.svg" %}
                     Account Settings
                   </a>
                 </li>
                 <li>
-                  <a href="/user/signout">
+                  <a href="/user/signout" class="block px-4 py-4 text-neutral-800
+                    dark:text-neutral-200 hover:bg-slate-700/10 hover:text-neutral-800
+                    dark:hover:text-neutral-200">
                     {% include "icons/lucide/log-out.svg" %}
                     Sign Out
                   </a>
@@ -52,22 +67,28 @@
               </ul>
             </li>
           {% else %}
-            <li><a href="/user/signin">Sign In</a></li>
+            <li>
+              <a href="/user/signin" class="block px-4 py-4 text-neutral-800 dark:text-neutral-200
+                hover:bg-slate-700/10 hover:text-neutral-100 dark:hover:text-neutral-200">Sign In</a>
+            </li>
           {% endif %}
         </ul>
       </nav>
     </header>
     {% block content %}{% endblock %}
-    <footer>
+    <footer class="container mx-auto mt-8 mb-4 flex flex-col items-center text-sm text-neutral-600 dark:text-netural-400">
       <div>
         Powered by
-        <a title="Git repository" href="https://git.blakerain.com/BlakeRain/parcel">Parcel</a>
+        <a
+          class="text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
+          title="Git repository"
+          href="https://git.blakerain.com/BlakeRain/parcel">Parcel</a>
         v{{ build.version }}
         </a>
       </div>
     </footer>
-    <script type="text/javascript" src="/static/vendor/htmx.js"></script>
-    <script type="text/javascript" src="/static/vendor/hyperscript.js"></script>
+    <script type="text/javascript" src="/static/scripts/vendor/htmx.js"></script>
+    <script type="text/javascript" src="/static/scripts/vendor/hyperscript.js"></script>
     <script type="module" src="/{{ env.init_js }}"></script>
     {% block scripts %}{% endblock %}
   </body>

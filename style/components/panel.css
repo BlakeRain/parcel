@@ -1,0 +1,18 @@
+@layer components {
+  .panel {
+    @apply w-full;
+    @apply flex flex-col;
+    @apply border rounded-md shadow-md;
+    @apply border-slate-400 dark:border-gray-700 dark:bg-gray-800;
+    @apply p-6 sm:p-8;
+
+    &.thin {
+      @apply md:w-2/3 lg:w-1/2;
+    }
+
+    .heading {
+      @apply text-xl md:text-2xl font-bold leading-tight tracking-tight;
+      @apply text-gray-900 dark:text-white;
+    }
+  }
+}

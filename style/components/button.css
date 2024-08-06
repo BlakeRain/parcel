@@ -1,0 +1,45 @@
+@layer components {
+  .button {
+    @apply w-full rounded-lg flex flex-row gap-1;
+    @apply px-5 pt-3 pb-2;
+    @apply text-white bg-primary-600 hover:text-white hover:bg-primary-700;
+    @apply focus:ring-4 focus:outline-none focus:ring-primary-300;
+    @apply dark:focus:ring-primary-800;
+    @apply text-center text-sm font-medium;
+
+    > svg.lucide {
+      @apply relative -top-0.5;
+    }
+
+    &:disabled {
+      @apply text-white/75 dark:text-white/50;
+      @apply bg-primary-400 dark:bg-primary-900;
+    }
+
+    &.success {
+      @apply bg-green-600 text-white;
+      @apply dark:bg-green-500 dark:text-black;
+
+      &:disabled {
+        @apply bg-green-600/50 text-white/50;
+        @apply dark:bg-green-500/25;
+      }
+    }
+  }
+
+  .buttons {
+    @apply flex flex-col md:flex-row md:items-center gap-2;
+
+    &.end {
+      @apply justify-end;
+    }
+
+    > .button {
+      @apply w-auto;
+    }
+  }
+
+  input + .buttons {
+    @apply mt-2;
+  }
+}

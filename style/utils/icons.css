@@ -1,0 +1,7 @@
+@layer utilities {
+  [class^="icon-"] {
+    @apply inline-block relative;
+
+    vertical-align: -0.125rem;
+  }
+}
