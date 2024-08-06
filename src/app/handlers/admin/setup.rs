@@ -32,7 +32,7 @@ pub async fn get_setup(
         ));
     }
 
-    let mut context = default_context();
+    let mut context = default_context(&env);
     context.insert("token", &token.0);
     let body = render_template("admin/setup.html", &context)?;
     Ok((StatusCode::OK, HeaderMap::new(), body))
@@ -63,7 +63,7 @@ pub async fn post_setup(
     if !required {
         tracing::error!("Setup form submitted, but setup was already completed");
 
-        let mut context = default_context();
+        let mut context = default_context(&env);
         context.insert("error", &true);
         let body = render_template("admin/setup.html", &context)?;
         return Ok((StatusCode::OK, HeaderMap::new(), body));

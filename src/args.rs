@@ -21,6 +21,14 @@ pub struct Args {
     /// Cookie secret (must be 32-bytes, base64-encoded).
     #[arg(long, env)]
     pub cookie_secret: Option<String>,
+
+    /// Plausible analytics domain.
+    #[arg(long, env)]
+    pub analytics_domain: Option<String>,
+
+    /// Plausible analytics script URL.
+    #[arg(long, env)]
+    pub plausible_script: Option<String>,
 }
 
 impl Args {

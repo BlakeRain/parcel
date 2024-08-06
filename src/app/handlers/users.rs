@@ -33,7 +33,7 @@ pub async fn get_signin(
     }
 
     let error = session.take::<String>("error");
-    let mut context = default_context();
+    let mut context = default_context(&env);
     context.insert("token", &token.0);
     context.insert("error", &error);
 
@@ -111,6 +111,7 @@ pub async fn get_signout(session: &Session) -> poem::Result<Redirect> {
 
 #[handler]
 pub async fn get_settings(
+    env: Data<&Env>,
     user: User,
     session: &Session,
     token: &CsrfToken,
@@ -119,7 +120,7 @@ pub async fn get_settings(
     let settings_success = session.take::<String>("settings_success");
     let password_error = session.take::<String>("password_error");
     let password_success = session.take::<String>("password_success");
-    let mut context = authorized_context(&user);
+    let mut context = authorized_context(&env, &user);
     context.insert("token", &token.0);
     context.insert("settings_error", &settings_error);
     context.insert("settings_success", &settings_success);

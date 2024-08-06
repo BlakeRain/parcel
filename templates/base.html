@@ -6,7 +6,11 @@
     <title>{% block title %}{% endblock %} - Parcel File Sharing</title>
     <link rel="shortcut icon" type="image/png" href="/static/favicon.png">
     <link href="/static/main.css" rel="stylesheet">
-    <script defer data-domain="share.blakerain.com" src="https://pa.blakerain.com/js/script.js"></script>
+    {% if env.analytics_domain and env.plausible_script %}
+      <script defer data-domain="{{ env.plausible_domain }}" src="{{ env.plausible_script }}"></script>
+    {% else %}
+      <!-- No analytics domain or script provided -->
+    {% endif %}
   </head>
   <body>
     <header>

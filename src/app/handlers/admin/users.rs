@@ -24,14 +24,18 @@ pub async fn get_users(env: Data<&Env>, Admin(admin): Admin) -> poem::Result<Htm
         InternalServerError(err)
     })?;
 
-    let mut context = authorized_context(&admin);
+    let mut context = authorized_context(&env, &admin);
     context.insert("users", &users);
     render_template("admin/users.html", &context)
 }
 
 #[handler]
-pub fn get_users_new(Admin(admin): Admin, token: &CsrfToken) -> poem::Result<Html<String>> {
-    let mut context = authorized_context(&admin);
+pub fn get_users_new(
+    env: Data<&Env>,
+    Admin(admin): Admin,
+    token: &CsrfToken,
+) -> poem::Result<Html<String>> {
+    let mut context = authorized_context(&env, &admin);
     context.insert("token", &token.0);
     render_template("admin/users/new.html", &context)
 }
@@ -105,7 +109,7 @@ pub async fn get_user_edit(
         return render_404("Unrecognized user ID");
     };
 
-    let mut context = authorized_context(&admin);
+    let mut context = authorized_context(&env, &admin);
     context.insert("token", &token.0);
     context.insert("user", &user);
     render_template("admin/users/edit.html", &context)
@@ -152,7 +156,7 @@ pub async fn put_user(
         let existing = User::get_by_username(&env.pool, &username)
             .await
             .map_err(|err| {
-                tracing::error!(err = ?err, username = ?username, 
+                tracing::error!(err = ?err, username = ?username,
                                 "Failed to query for user with existing username");
                 InternalServerError(err)
             })?;

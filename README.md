@@ -14,6 +14,28 @@ The easiest way to run Parcel is with Docker, using the
 docker run blakerain/parcel
 ```
 
+Parcel can be controlled through arguments or environment variables. The environment variables are a
+useful way to control Parcel when creating a Docker container.
+
+| Environment Name   | Default              | Description                               |
+|--------------------|----------------------|-------------------------------------------|
+| `DB`               | `sqlite://parcel.db` | SQLite connection string                  |
+| `CACHE_DIR`        | `./cache`            | Directory for file cache                  |
+| `COOKIE_SECRET`    |                      | Secret used for session cookie encryption |
+| `ANALYTICS_DOMAIN` |                      | Domain to use for analytics script        |
+| `PLAUSIBLE_SCRIPT` |                      | URL for [Plausible Analytics] script      |
+
+For example, if you had created a volume `parcel_data` and mounted it under `/data` you could tell
+Parcel to store the DB and file cache in that location:
+
+```
+docker run -d \
+  -v parcel_data:/data \
+  -e DB=sqlite:///data/parcel.db \
+  -e CACHE_DIR=/data/cache \
+  blakerain/parcel
+```
+
 ## Development
 
 When running as a development server, [cargo watch] is mighty helpful. You may also wish to set up a
@@ -34,3 +56,4 @@ cargo watch -L debug -x run
 [package-open]: https://lucide.dev/icons/package-open
 [lucide]: https://lucide.dev/
 [cargo watch]: https://github.com/watchexec/cargo-watch
+[plausible analytics]: https://plausible.io/

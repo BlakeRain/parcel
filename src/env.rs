@@ -26,10 +26,20 @@ impl std::ops::Deref for Env {
 pub struct Inner {
     pub pool: SqlitePool,
     pub cache_dir: PathBuf,
+    pub analytics_domain: Option<String>,
+    pub plausible_script: Option<String>,
 }
 
 impl Env {
-    pub async fn new(Args { db, cache_dir, .. }: &Args) -> sqlx::Result<Self> {
+    pub async fn new(
+        Args {
+            db,
+            cache_dir,
+            analytics_domain,
+            plausible_script,
+            ..
+        }: &Args,
+    ) -> sqlx::Result<Self> {
         let cache_dir = cache_dir.clone();
         if !cache_dir.exists() {
             std::fs::create_dir_all(&cache_dir)?;
@@ -39,7 +49,14 @@ impl Env {
         let pool = SqlitePool::connect_with(opts).await?;
         MIGRATOR.run(&pool).await?;
 
-        let inner = Inner { pool, cache_dir };
+        let analytics_domain = analytics_domain.clone();
+        let plausible_script = plausible_script.clone();
+        let inner = Inner {
+            pool,
+            cache_dir,
+            analytics_domain,
+            plausible_script,
+        };
         let inner = Arc::new(inner);
 
         Ok(Self { inner })

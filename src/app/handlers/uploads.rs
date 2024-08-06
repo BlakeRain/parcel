@@ -29,14 +29,14 @@ pub async fn get_uploads(env: Data<&Env>, user: User) -> poem::Result<Html<Strin
             InternalServerError(err)
         })?;
 
-    let mut context = authorized_context(&user);
+    let mut context = authorized_context(&env, &user);
     context.insert("uploads", &uploads);
     render_template("uploads/list.html", &context)
 }
 
 #[handler]
 pub async fn get_new_upload(env: Data<&Env>, user: User) -> poem::Result<Html<String>> {
-    let mut context = authorized_context(&user);
+    let mut context = authorized_context(&env, &user);
     let stats = UploadStats::get_for(&env.pool, user.id)
         .await
         .map_err(InternalServerError)?;
@@ -208,9 +208,9 @@ pub async fn get_upload(
     };
 
     let mut context = if let Some(user) = &user {
-        authorized_context(user)
+        authorized_context(&env, user)
     } else {
-        default_context()
+        default_context(&env)
     };
 
     let exhausted = if let Some(limit) = upload.limit {
@@ -386,7 +386,7 @@ pub async fn get_upload_edit(
         return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
     }
 
-    let mut context = authorized_context(&user);
+    let mut context = authorized_context(&env, &user);
     context.insert("token", &token.0);
     context.insert("upload", &upload);
     context.insert("hx_target", &hx_target);

@@ -50,7 +50,7 @@ pub async fn get_uploads(env: Data<&Env>, Admin(admin): Admin) -> poem::Result<H
         InternalServerError(err)
     })?;
 
-    let mut context = authorized_context(&admin);
+    let mut context = authorized_context(&env, &admin);
     context.insert("uploads", &uploads);
     render_template("admin/uploads.html", &context)
 }

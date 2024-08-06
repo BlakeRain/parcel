@@ -10,6 +10,7 @@ use time::Date;
 use time::OffsetDateTime;
 use time::Time;
 
+use crate::env::Env;
 use crate::model::user::User;
 
 lazy_static! {
@@ -95,12 +96,47 @@ lazy_static! {
     };
 }
 
-pub fn default_context() -> Context {
-    BASE_CONTEXT.clone()
+#[derive(Default)]
+pub struct TemplateEnv<'a> {
+    pub analytics_domain: Option<&'a str>,
+    pub plausible_script: Option<&'a str>,
 }
 
-pub fn authorized_context(user: &User) -> Context {
-    let mut context = default_context();
+impl<'a> From<&'a Env> for TemplateEnv<'a> {
+    fn from(env: &'a Env) -> Self {
+        Self {
+            analytics_domain: env.analytics_domain.as_deref(),
+            plausible_script: env.plausible_script.as_deref(),
+        }
+    }
+}
+
+impl<'a> From<&poem::web::Data<&'a Env>> for TemplateEnv<'a> {
+    fn from(env: &poem::web::Data<&'a Env>) -> Self {
+        Self {
+            analytics_domain: env.analytics_domain.as_deref(),
+            plausible_script: env.plausible_script.as_deref(),
+        }
+    }
+}
+
+pub fn default_context<'e, E: Into<TemplateEnv<'e>>>(env: E) -> Context {
+    let env = env.into();
+    let mut context = BASE_CONTEXT.clone();
+
+    context.insert(
+        "env",
+        &serde_json::json!({
+            "analytics_domain": &env.analytics_domain,
+            "plausible_script": &env.plausible_script,
+        }),
+    );
+
+    context
+}
+
+pub fn authorized_context<'e, E: Into<TemplateEnv<'e>>>(env: E, user: &User) -> Context {
+    let mut context = default_context(env);
     context.insert("user", user);
     context
 }
@@ -116,7 +152,7 @@ pub fn render_template(name: &str, context: &Context) -> poem::Result<Html<Strin
 }
 
 pub fn render_404(message: &str) -> poem::Result<Html<String>> {
-    let mut context = default_context();
+    let mut context = default_context(TemplateEnv::default());
     context.insert("message", message);
     render_template("errors/404.html", &context)
 }

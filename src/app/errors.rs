@@ -1,6 +1,6 @@
 use poem::{error::ResponseError, http::StatusCode, web::Html, IntoResponse, Response};
 
-use super::templates::{default_context, render_template};
+use super::templates::{default_context, render_template, TemplateEnv};
 
 #[derive(Debug, thiserror::Error)]
 #[error("Not signed in")]
@@ -27,7 +27,7 @@ pub struct CsrfError;
 
 impl CsrfError {
     pub async fn handle(self) -> impl IntoResponse {
-        let context = default_context();
+        let context = default_context(TemplateEnv::default());
         let Html(body) =
             render_template("errors/csrf-detected.html", &context).expect("template to render");
         Response::builder().status(self.status()).body(body)
