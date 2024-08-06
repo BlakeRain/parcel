@@ -1,14 +1,20 @@
 # parcel
 
-A simple light-weight file upload tool
+A simple file upload tool.
+
+- Uploaded files can be made public to allow download from anywhere.
+- Number of downloads can be limited, and downloads can have an expiry date.
+
+## Running Parcel
+
+The easiest way to run Parcel is with Docker, using the
+[blakerain/parcel](https://hub.docker.com/r/blakerain/parcel) image on Dockerhub:
+
+```
+docker run blakerain/parcel
+```
 
 ## Development
-
-Before development starts, you will need to install the Node dependencies:
-
-```
-npm install
-```
 
 When running as a development server, [cargo watch] is mighty helpful. You may also wish to set up a
 cookie key (in the `COOKIE_SECRET` environment variable) to avoid being signed out after a restart:
