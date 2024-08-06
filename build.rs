@@ -7,6 +7,15 @@ fn main() {
 
     let is_debug = std::env::var("PROFILE").expect("PROFILE") == "debug";
 
+    // Run `npm install` to install the npm packages
+    let status = Command::new("npm")
+        .args(["install"])
+        .status()
+        .expect("to install npm packages");
+    if !status.success() {
+        panic!("failed to install npm packages");
+    }
+
     // Run `npm run build` to build the Tailwind CSS
     let status = Command::new("npm")
         .args(["run", if is_debug { "build-dev" } else { "build" }])
