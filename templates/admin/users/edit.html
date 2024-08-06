@@ -1,6 +1,6 @@
 <form
   class="modal"
-  hx-put="/admin/users/{{ user.id }}"
+  hx-post="/admin/users/{{ user.id }}"
   hx-target="#user-list-container"
   hx-select="#user-list-container"
   hx-swap="outerHTML"

@@ -1,3 +1,4 @@
+use minijinja::context;
 use poem::{
     error::InternalServerError,
     handler,
@@ -29,19 +30,28 @@ pub async fn get_uploads(env: Data<&Env>, user: User) -> poem::Result<Html<Strin
             InternalServerError(err)
         })?;
 
-    let mut context = authorized_context(&env, &user);
-    context.insert("uploads", &uploads);
-    render_template("uploads/list.html", &context)
+    render_template(
+        "uploads/list.html",
+        context! {
+            uploads,
+            ..authorized_context(&env, &user)
+        },
+    )
 }
 
 #[handler]
 pub async fn get_new_upload(env: Data<&Env>, user: User) -> poem::Result<Html<String>> {
-    let mut context = authorized_context(&env, &user);
     let stats = UploadStats::get_for(&env.pool, user.id)
         .await
         .map_err(InternalServerError)?;
-    context.insert("stats", &stats);
-    render_template("uploads/new.html", &context)
+
+    render_template(
+        "uploads/new.html",
+        context! {
+            stats,
+            ..authorized_context(&env, &user)
+        },
+    )
 }
 
 #[handler]
@@ -207,12 +217,6 @@ pub async fn get_upload(
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
-    let mut context = if let Some(user) = &user {
-        authorized_context(&env, user)
-    } else {
-        default_context(&env)
-    };
-
     let exhausted = if let Some(limit) = upload.limit {
         limit <= upload.downloads
     } else {
@@ -225,13 +229,21 @@ pub async fn get_upload(
         false
     };
 
-    context.insert("exhausted", &exhausted);
-    context.insert("expired", &expired);
-    context.insert("upload", &upload);
-    context.insert("uploader", &uploader);
-
-    context.insert("owner", &owner);
-    render_template("uploads/view.html", &context)
+    render_template(
+        "uploads/view.html",
+        context! {
+            exhausted,
+            expired,
+            upload,
+            uploader,
+            owner,
+            ..if let Some(user) = &user {
+                authorized_context(&env, user)
+            } else {
+                default_context(&env)
+            }
+        },
+    )
 }
 
 #[handler]
@@ -386,12 +398,16 @@ pub async fn get_upload_edit(
         return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
     }
 
-    let mut context = authorized_context(&env, &user);
-    context.insert("token", &token.0);
-    context.insert("upload", &upload);
-    context.insert("hx_target", &hx_target);
-    context.insert("ult_dest", &ult_dest);
-    render_template("uploads/edit.html", &context)
+    render_template(
+        "uploads/edit.html",
+        context! {
+            token => token.0,
+            upload,
+            hx_target,
+            ult_dest,
+            ..authorized_context(&env, &user)
+        },
+    )
 }
 
 time::serde::format_description!(iso8601_date, Date, "[year]-[month]-[day]");
@@ -408,7 +424,7 @@ pub struct UploadEditForm {
 }
 
 #[handler]
-pub async fn put_upload_edit(
+pub async fn post_upload_edit(
     env: Data<&Env>,
     verifier: &CsrfVerifier,
     user: User,

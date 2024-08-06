@@ -75,7 +75,7 @@
                 <a
                   href="#"
                   title="{% if user.enabled %}Disable{% else %}Enable{% endif %} user"
-                  hx-put="/admin/users/{{ user.id }}/{% if user.enabled %}disable{% else %}enable{% endif %}"
+                  hx-post="/admin/users/{{ user.id }}/{% if user.enabled %}disable{% else %}enable{% endif %}"
                   hx-trigger="click"
                   hx-target="#user-list-container"
                   hx-select="#user-list-container"

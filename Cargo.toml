@@ -8,16 +8,17 @@ publish = false
 base64 = { version = "0.22" }
 clap = { version = "4.4", features = ["derive", "env"] }
 futures-util = { version = "0.3" }
-lazy_static = { version = "1.4" }
+humansize = { version = "2.1" }
+minijinja = { version = "2.0", features = ["unicode", "loader", "json", "urlencode", "speedups"] }
 nanoid = { version = "0.4" }
 pbkdf2 = { version = "0.12", features = ["simple"] }
 poem = { version = "3.0", features = ["cookie", "csrf", "multipart", "session", "static-files"] }
 rand_core = { version = "0.6", features = ["std"] }
 rand = { version = "0.8" }
+rust-embed = { version = "8.0", features = ["debug-embed", "interpolate-folder-path"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
 sqlx = { version = "0.8", features = ["sqlite", "runtime-tokio", "time"] }
-tera = { version = "1.19" }
 thiserror = { version = "1.0" }
 time = { version = "0.3", features = ["formatting", "macros", "serde"] }
 time-humanize = { version = "0.1" }
@@ -25,6 +26,9 @@ tokio = { version = "1.32", features = ["full"] }
 toml = { version = "0.8" }
 tracing = { version = "0.1", features = ["log"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+esbuild-bundle = { git = "https://git.blakerain.com/BlakeRain/esbuild-bundle" }
+poem-route-macro = { git = "https://git.blakerain.com/BlakeRain/poem-route-macro" }
 
 [build-dependencies]
 build-data = { version = "0.2" }

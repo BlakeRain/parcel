@@ -1,3 +1,4 @@
+use minijinja::context;
 use poem::{
     error::InternalServerError,
     handler,
@@ -24,9 +25,13 @@ pub async fn get_users(env: Data<&Env>, Admin(admin): Admin) -> poem::Result<Htm
         InternalServerError(err)
     })?;
 
-    let mut context = authorized_context(&env, &admin);
-    context.insert("users", &users);
-    render_template("admin/users.html", &context)
+    render_template(
+        "admin/users.html",
+        context! {
+            users,
+            ..authorized_context(&env, &admin)
+        },
+    )
 }
 
 #[handler]
@@ -35,9 +40,13 @@ pub fn get_users_new(
     Admin(admin): Admin,
     token: &CsrfToken,
 ) -> poem::Result<Html<String>> {
-    let mut context = authorized_context(&env, &admin);
-    context.insert("token", &token.0);
-    render_template("admin/users/new.html", &context)
+    render_template(
+        "admin/users/new.html",
+        context! {
+            token => token.0,
+            ..authorized_context(&env, &admin)
+        },
+    )
 }
 
 #[derive(Debug, Deserialize)]
@@ -94,7 +103,7 @@ pub async fn post_users_new(
 }
 
 #[handler]
-pub async fn get_user_edit(
+pub async fn get_user(
     env: Data<&Env>,
     token: &CsrfToken,
     Path(user_id): Path<i32>,
@@ -109,10 +118,14 @@ pub async fn get_user_edit(
         return render_404("Unrecognized user ID");
     };
 
-    let mut context = authorized_context(&env, &admin);
-    context.insert("token", &token.0);
-    context.insert("user", &user);
-    render_template("admin/users/edit.html", &context)
+    render_template(
+        "admin/users/edit.html",
+        context! {
+            token => token.0,
+            user,
+            ..authorized_context(&env, &admin)
+        },
+    )
 }
 
 #[derive(Debug, Deserialize)]
@@ -125,7 +138,7 @@ pub struct EditUserForm {
 }
 
 #[handler]
-pub async fn put_user(
+pub async fn post_user(
     env: Data<&Env>,
     Admin(_): Admin,
     Path(user_id): Path<i32>,
@@ -202,7 +215,7 @@ pub async fn delete_user(
 }
 
 #[handler]
-pub async fn put_disable_user(
+pub async fn post_disable_user(
     env: Data<&Env>,
     Path(user_id): Path<i32>,
     Admin(_): Admin,
@@ -226,7 +239,7 @@ pub async fn put_disable_user(
 }
 
 #[handler]
-pub async fn put_enable_user(
+pub async fn post_enable_user(
     env: Data<&Env>,
     Path(user_id): Path<i32>,
     Admin(_): Admin,

@@ -1,6 +1,6 @@
 <form
   class="modal"
-  hx-put="/uploads/{{ upload.id }}/edit"
+  hx-post="/uploads/{{ upload.id }}/edit"
   {% if hx_target %}
     hx-target="{{ hx_target }}"
     hx-select="{{ hx_target }}"

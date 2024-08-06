@@ -1,3 +1,4 @@
+use minijinja::context;
 use poem::{
     error::InternalServerError,
     handler,
@@ -32,9 +33,14 @@ pub async fn get_setup(
         ));
     }
 
-    let mut context = default_context(&env);
-    context.insert("token", &token.0);
-    let body = render_template("admin/setup.html", &context)?;
+    let body = render_template(
+        "admin/setup.html",
+        context! {
+            token => token.0,
+            ..default_context(&env)
+        },
+    )?;
+
     Ok((StatusCode::OK, HeaderMap::new(), body))
 }
 
@@ -63,9 +69,14 @@ pub async fn post_setup(
     if !required {
         tracing::error!("Setup form submitted, but setup was already completed");
 
-        let mut context = default_context(&env);
-        context.insert("error", &true);
-        let body = render_template("admin/setup.html", &context)?;
+        let body = render_template(
+            "admin/setup.html",
+            context! {
+                error => true,
+                ..default_context(&env)
+            },
+        )?;
+
         return Ok((StatusCode::OK, HeaderMap::new(), body));
     }
 

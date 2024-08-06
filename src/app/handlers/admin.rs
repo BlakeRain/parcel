@@ -1,3 +1,4 @@
+use minijinja::context;
 use poem::{
     error::InternalServerError,
     handler,
@@ -29,8 +30,12 @@ pub async fn get_admin(env: Data<&Env>, Admin(admin): Admin) -> poem::Result<Htm
         InternalServerError(err)
     })?;
 
-    let mut context = authorized_context(&env, &admin);
-    context.insert("users", &users);
-    context.insert("uploads", &uploads);
-    render_template("admin/index.html", &context)
+    render_template(
+        "admin/index.html",
+        context! {
+            users,
+            uploads,
+            ..authorized_context(&env, &admin)
+        },
+    )
 }

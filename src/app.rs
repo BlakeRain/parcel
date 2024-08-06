@@ -1,12 +1,11 @@
 use poem::{
     endpoint::StaticFilesEndpoint,
-    get,
-    middleware::Csrf,
-    post, put,
+    middleware::{Csrf, Tracing},
     session::{CookieConfig, CookieSession},
     web::cookie::{CookieKey, SameSite},
-    EndpointExt, IntoEndpoint, Route,
+    EndpointExt, IntoEndpoint,
 };
+use poem_route_macro::define_routes;
 
 use crate::env::Env;
 
@@ -32,131 +31,38 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> impl IntoEndpoint {
         CookieKey::generate()
     };
 
-    Route::new()
-        .nest("/static", StaticFilesEndpoint::new("./static"))
-        //
-        //
-        // --- Uploads ----------------------------------------------------------------------------
-        .at("/", get(handlers::index::get_index))
-        //
-        // GET    /uploads
-        // POST   /uploads
-        // DELETE /uploads
-        .at(
-            "/uploads",
-            get(handlers::uploads::get_uploads)
-                .post(handlers::uploads::post_uploads)
-                .delete(handlers::uploads::delete_uploads),
-        )
-        //
-        // GET /uploads/new
-        .at("/uploads/new", get(handlers::uploads::get_new_upload))
-        //
-        //
-        // GET    /uploads/:slug
-        // DELETE /uploads/:id
-        .at(
-            "/uploads/:id",
-            get(handlers::uploads::get_upload).delete(handlers::uploads::delete_upload),
-        )
-        //
-        // GET  /uploads/:id/edit
-        // POST /uploads/:id/edit
-        .at(
-            "/uploads/:id/edit",
-            get(handlers::uploads::get_upload_edit).put(handlers::uploads::put_upload_edit),
-        )
-        //
-        // POST /uploads/:id/public
-        .at(
-            "/uploads/:id/public",
-            post(handlers::uploads::post_upload_public),
-        )
-        //
-        // GET /uploads/:slug/download
-        .at(
-            "/uploads/:slug/download",
-            get(handlers::uploads::get_upload_download),
-        )
-        //
-        //
-        // --- Users ------------------------------------------------------------------------------
-        //
-        // GET  /user/signin
-        // POST /user/signin
-        .at(
-            "/user/signin",
-            get(handlers::users::get_signin).post(handlers::users::post_signin),
-        )
-        //
-        // GET  /user/settings
-        // POST /user/settings
-        // POST /user/settings/password
-        .at(
-            "/user/settings",
-            get(handlers::users::get_settings).post(handlers::users::post_settings),
-        )
-        .at(
-            "/user/settings/password",
-            post(handlers::users::post_settings_password),
-        )
-        //
-        // GET /user/signout
-        .at("/user/signout", get(handlers::users::get_signout))
-        //
-        //
-        // --- Administration ---------------------------------------------------------------------
-        //
-        // GET /admin
-        .at("/admin", get(handlers::admin::get_admin))
-        //
-        // GET /admin/setup
-        // PUT /admin/setup
-        .at(
-            "/admin/setup",
-            get(handlers::admin::setup::get_setup).post(handlers::admin::setup::post_setup),
-        )
-        //
-        // GET /admin/users
-        // GET /admin/users/new
-        .at("/admin/users", get(handlers::admin::users::get_users))
-        .at(
-            "/admin/users/new",
-            get(handlers::admin::users::get_users_new).post(handlers::admin::users::post_users_new),
-        )
-        //
-        // GET    /admin/users/:id
-        // PUT    /admin/users/:id
-        // DELETE /admin/users/:id
-        .at(
-            "/admin/users/:id",
-            get(handlers::admin::users::get_user_edit)
-                .put(handlers::admin::users::put_user)
-                .delete(handlers::admin::users::delete_user),
-        )
-        //
-        // PUT /admin/users/:id/disable
-        .at(
-            "/admin/users/:id/disable",
-            put(handlers::admin::users::put_disable_user),
-        )
-        //
-        // PUT /admin/users/:id/enable
-        .at(
-            "/admin/users/:id/enable",
-            put(handlers::admin::users::put_enable_user),
-        )
-        //
-        // GET /admin/uploads
-        .at("/admin/uploads", get(handlers::admin::uploads::get_uploads))
-        .catch_error(errors::NotSignedInError::handle)
-        .catch_error(errors::CsrfError::handle)
-        .data(env)
-        .with(Csrf::new())
-        .with(CookieSession::new(
-            CookieConfig::private(cookie_key)
-                .name("parcel")
-                .same_site(Some(SameSite::Strict))
-                .max_age(Some(std::time::Duration::from_secs(14 * 24 * 60 * 60))),
-        ))
+    define_routes!({
+        *"/static" { StaticFilesEndpoint::new("./static") }
+
+        "/"                         handlers::index::index                GET
+        "/uploads"                  handlers::uploads::uploads            GET POST DELETE
+        "/uploads/new"              handlers::uploads::new_upload         GET
+        "/uploads/:id"              handlers::uploads::upload             GET      DELETE
+        "/uploads/:id/edit"         handlers::uploads::upload_edit        GET POST
+        "/uploads/:id/public"       handlers::uploads::upload_public          POST
+        "/uploads/:id/downoad"      handlers::uploads::upload_download    GET
+        "/user/signin"              handlers::users::signin               GET POST
+        "/user/signout"             handlers::users::signout              GET
+        "/user/settings"            handlers::users::settings             GET POST
+        "/user/settings/password"   handlers::users::settings_password        POST
+        "/admin"                    handlers::admin::admin                GET
+        "/admin/setup"              handlers::admin::setup::setup         GET POST
+        "/admin/uploads"            handlers::admin::uploads::uploads     GET
+        "/admin/users"              handlers::admin::users::users         GET
+        "/admin/users/new"          handlers::admin::users::users_new     GET POST
+        "/admin/users/:id"          handlers::admin::users::user          GET POST DELETE
+        "/admin/users/:id/disable"  handlers::admin::users::disable_user      POST
+        "/admin/users/:id/enable"   handlers::admin::users::enable_user       POST
+    })
+    .catch_error(errors::NotSignedInError::handle)
+    .catch_error(errors::CsrfError::handle)
+    .data(env)
+    .with(Csrf::new())
+    .with(Tracing)
+    .with(CookieSession::new(
+        CookieConfig::private(cookie_key)
+            .name("parcel")
+            .same_site(Some(SameSite::Strict))
+            .max_age(Some(std::time::Duration::from_secs(14 * 24 * 60 * 60))),
+    ))
 }

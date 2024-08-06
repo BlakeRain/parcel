@@ -193,7 +193,7 @@
 
   div.table {
     @apply bg-slate-50 dark:bg-slate-800/25;
-    @apply rounded-xl overflow-auto;
+    @apply rounded-xl flex flex-col overflow-auto;
 
     table {
       @apply text-slate-400 dark:text-slate-200;

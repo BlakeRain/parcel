@@ -1,11 +1,9 @@
 use std::process::Command;
 
 fn main() {
-    let git_commit = build_data::get_git_commit().unwrap_or_default();
-    let git_short = build_data::get_git_commit_short().unwrap_or_else(|_| "unknown".to_string());
     let build_date = build_data::format_date(build_data::now());
-
-    let is_debug = std::env::var("PROFILE").expect("PROFILE") == "debug";
+    let profile = std::env::var("PROFILE").expect("PROFILE");
+    let is_debug = profile == "debug";
 
     // Run `npm install` to install the npm packages
     let status = Command::new("npm")
@@ -36,10 +34,10 @@ fn main() {
 
     println!("cargo:rerun-if-changed=templates");
     println!("cargo:rerun-if-changed=style");
+    println!("cargo:rerun-if-changed=package.json");
     println!("cargo:rerun-if-changed=postcss.config.js");
     println!("cargo:rerun-if-changed=tailwind.config.js");
 
-    println!("cargo:rustc-env=CARGO_BUILD_DATE={}", build_date);
-    println!("cargo:rustc-env=CARGO_GIT_COMMIT={git_commit}");
-    println!("cargo:rustc-env=CARGO_GIT_SHORT={git_short}");
+    println!("cargo:rustc-env=CARGO_PROFILE={profile}");
+    println!("cargo:rustc-env=CARGO_BUILD_DATE={build_date}");
 }

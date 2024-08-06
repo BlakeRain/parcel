@@ -65,27 +65,13 @@
           href="https://git.blakerain.com/BlakeRain/parcel"
           >Parcel</a
         >
-        file sharing
-        <a
-          title="Repository version tag"
-          href="https://git.blakerain.com/BlakeRain/parcel/src/tag/{{ build.version }}"
-        >
-          v{{ build.version }}
+        v{{ build.version }}
         </a>
-      </div>
-      <div>
-        Build of
-        <a
-          title="Commit hash"
-          href="https://git.blakerain.com/BlakeRain/parcel/commit/{{
-        build.git.commit }}"
-          >{{ build.git.short }}</a
-        >
-        on {{ build.date }}
       </div>
     </footer>
     <script src="/static/htmx.js"></script>
     <script src="/static/hyperscript.js"></script>
+    <script type="module" src="/{{ env.init_js }}"></script>
     <script>
       document.querySelectorAll(".dropdown").forEach(element => {
         element.addEventListener("click", (event) => {

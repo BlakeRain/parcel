@@ -1,158 +1,64 @@
-use std::collections::HashMap;
+use std::sync::OnceLock;
 
-use lazy_static::lazy_static;
-use poem::error::InternalServerError;
-use poem::web::Html;
-use tera::Context;
-use tera::Tera;
-use time::macros::format_description;
-use time::Date;
-use time::OffsetDateTime;
-use time::Time;
+use minijinja::{context, Environment};
+use poem::{error::InternalServerError, web::Html};
+use rust_embed::RustEmbed;
+use serde::Serialize;
 
-use crate::env::Env;
-use crate::model::user::User;
+mod context;
+mod functions;
 
-lazy_static! {
-    pub static ref TEMPLATES: Tera = {
-        let mut tera = Tera::new("templates/**/*").expect("to load templates");
-        tera.autoescape_on(vec![".html", ".svg"]);
+pub use context::*;
 
-        tera.register_filter(
-            "datetime",
-            |value: &tera::Value, _: &HashMap<String, tera::Value>| -> tera::Result<tera::Value> {
-                let time = serde_json::from_value::<OffsetDateTime>(value.clone())?;
-                Ok(tera::to_value(
-                    time.format(format_description!(
-                        "[year]-[month]-[day] [hour]:[minute]:[second]"
-                    ))
-                    .expect("formatted time"),
-                )?)
-            },
-        );
+#[derive(RustEmbed)]
+#[folder = "$CARGO_MANIFEST_DIR/templates/"]
+struct TemplatesEmbed;
 
-        tera.register_filter(
-            "datetime_offset",
-            |value: &tera::Value, _: &HashMap<String, tera::Value>| -> tera::Result<tera::Value> {
-                let time = serde_json::from_value::<OffsetDateTime>(value.clone())?;
-                let offset = time - OffsetDateTime::now_utc();
-                Ok(tera::to_value(
-                    time_humanize::HumanTime::from(offset.whole_seconds()).to_string(),
-                )?)
-            },
-        );
+fn get_templates() -> &'static Environment<'static> {
+    static TEMPLATES: OnceLock<Environment<'static>> = OnceLock::new();
+    TEMPLATES.get_or_init(|| {
+        let mut environment = Environment::new();
 
-        tera.register_filter(
-            "date",
-            |value: &tera::Value, _: &HashMap<String, tera::Value>| -> tera::Result<tera::Value> {
-                let time = serde_json::from_value::<Date>(value.clone())?;
-                Ok(tera::to_value(
-                    time.format(format_description!("[year]-[month]-[day]"))
-                        .expect("formatted time"),
-                )?)
-            },
-        );
-
-        tera.register_filter(
-            "date_offset",
-            |value: &tera::Value, _: &HashMap<String, tera::Value>| -> tera::Result<tera::Value> {
-                let time = serde_json::from_value::<Date>(value.clone())?;
-                let offset = time - time::OffsetDateTime::now_utc().date();
-                Ok(tera::to_value(
-                    time_humanize::HumanTime::from(offset.whole_seconds()).to_string(),
-                )?)
-            },
-        );
-
-        tera.register_filter(
-            "time",
-            |value: &tera::Value, _: &HashMap<String, tera::Value>| -> tera::Result<tera::Value> {
-                let time = serde_json::from_value::<Time>(value.clone())?;
-                Ok(tera::to_value(
-                    time.format(format_description!("[hour]:[minute]:[second]"))
-                        .expect("formatted time"),
-                )?)
-            },
-        );
-
-        tera
-    };
-    pub static ref BASE_CONTEXT: Context = {
-        let mut context = Context::new();
-
-        context.insert(
-            "build",
-            &serde_json::json!({
-                "version": env!("CARGO_PKG_VERSION"),
-                "date": env!("CARGO_BUILD_DATE"),
-                "git": {
-                    "commit": env!("CARGO_GIT_COMMIT"),
-                    "short": env!("CARGO_GIT_SHORT"),
-                },
-            }),
-        );
-
-        context
-    };
-}
-
-#[derive(Default)]
-pub struct TemplateEnv<'a> {
-    pub analytics_domain: Option<&'a str>,
-    pub plausible_script: Option<&'a str>,
-}
-
-impl<'a> From<&'a Env> for TemplateEnv<'a> {
-    fn from(env: &'a Env) -> Self {
-        Self {
-            analytics_domain: env.analytics_domain.as_deref(),
-            plausible_script: env.plausible_script.as_deref(),
+        tracing::info!("Loading embedded templates");
+        for path in TemplatesEmbed::iter() {
+            if let Some(file) = TemplatesEmbed::get(&path) {
+                if let Ok(content) = std::str::from_utf8(file.data.as_ref()) {
+                    if let Err(err) =
+                        environment.add_template_owned(path.clone(), content.to_owned())
+                    {
+                        tracing::error!("Failed to load embedded template {}: {}", path, err);
+                    }
+                }
+            }
         }
-    }
+
+        functions::add_to_environment(&mut environment);
+
+        environment
+    })
 }
 
-impl<'a> From<&poem::web::Data<&'a Env>> for TemplateEnv<'a> {
-    fn from(env: &poem::web::Data<&'a Env>) -> Self {
-        Self {
-            analytics_domain: env.analytics_domain.as_deref(),
-            plausible_script: env.plausible_script.as_deref(),
-        }
-    }
-}
-
-pub fn default_context<'e, E: Into<TemplateEnv<'e>>>(env: E) -> Context {
-    let env = env.into();
-    let mut context = BASE_CONTEXT.clone();
-
-    context.insert(
-        "env",
-        &serde_json::json!({
-            "analytics_domain": &env.analytics_domain,
-            "plausible_script": &env.plausible_script,
-        }),
-    );
-
-    context
-}
-
-pub fn authorized_context<'e, E: Into<TemplateEnv<'e>>>(env: E, user: &User) -> Context {
-    let mut context = default_context(env);
-    context.insert("user", user);
-    context
-}
-
-pub fn render_template(name: &str, context: &Context) -> poem::Result<Html<String>> {
-    TEMPLATES
-        .render(name, context)
+pub fn render_template<S: Serialize>(name: &str, context: S) -> poem::Result<Html<String>> {
+    let result = get_templates()
+        .get_template(name)
         .map_err(|err| {
             tracing::error!(template_name = ?name, "Template render failed: {err:?}");
             InternalServerError(err)
-        })
-        .map(Html)
+        })?
+        .render(context)
+        .map_err(|err| {
+            tracing::error!(template_name = ?name, "Template render feailed: {err:?}");
+            InternalServerError(err)
+        })?;
+
+    Ok(Html(result))
 }
 
 pub fn render_404(message: &str) -> poem::Result<Html<String>> {
-    let mut context = default_context(TemplateEnv::default());
-    context.insert("message", message);
-    render_template("errors/404.html", &context)
+    let context = context! {
+        message => message,
+        ..default_context(TemplateEnv::default())
+    };
+
+    render_template("errors/404.html", context)
 }

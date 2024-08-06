@@ -30,3 +30,5 @@ parcel.db
 static/main.css
 static/htmx.js
 static/hyperscript.js
+
+static/scripts/bundles/

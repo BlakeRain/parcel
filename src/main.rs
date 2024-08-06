@@ -16,9 +16,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
     {
-        let fmt = tracing_subscriber::fmt::layer()
-            .with_target(false)
-            .without_time();
+        let fmt = tracing_subscriber::fmt::layer();
         let sub = tracing_subscriber::registry()
             .with(tracing_subscriber::EnvFilter::new(match args.verbose {
                 0 => std::env::var("RUST_LOG").unwrap_or_else(|_| "info".into()),

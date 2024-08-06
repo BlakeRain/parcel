@@ -1,3 +1,4 @@
+use minijinja::context;
 use poem::{
     error::InternalServerError,
     handler,
@@ -32,12 +33,15 @@ pub async fn get_signin(
         return Ok(Redirect::see_other("/admin/setup").into_response());
     }
 
-    let error = session.take::<String>("error");
-    let mut context = default_context(&env);
-    context.insert("token", &token.0);
-    context.insert("error", &error);
-
-    render_template("user/signin.html", &context).map(IntoResponse::into_response)
+    render_template(
+        "user/signin.html",
+        context! {
+            token => token.0,
+            error => session.take::<String>("error"),
+            ..default_context(&env)
+        },
+    )
+    .map(IntoResponse::into_response)
 }
 
 #[derive(Debug, Deserialize)]
@@ -116,17 +120,17 @@ pub async fn get_settings(
     session: &Session,
     token: &CsrfToken,
 ) -> poem::Result<Html<String>> {
-    let settings_error = session.take::<String>("settings_error");
-    let settings_success = session.take::<String>("settings_success");
-    let password_error = session.take::<String>("password_error");
-    let password_success = session.take::<String>("password_success");
-    let mut context = authorized_context(&env, &user);
-    context.insert("token", &token.0);
-    context.insert("settings_error", &settings_error);
-    context.insert("settings_success", &settings_success);
-    context.insert("password_error", &password_error);
-    context.insert("password_success", &password_success);
-    render_template("user/settings.html", &context)
+    render_template(
+        "user/settings.html",
+        context! {
+            token => token.0,
+            settings_error => session.take::<String>("settings_error"),
+            settings_success => session.take::<String>("settings_success"),
+            password_error => session.take::<String>("password_error"),
+            password_success => session.take::<String>("password_success"),
+            ..authorized_context(&env, &user)
+        },
+    )
 }
 
 #[derive(Debug, Deserialize)]
