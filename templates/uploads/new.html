@@ -11,7 +11,7 @@
       <div class="buttons end mt-4">
         <button type="submit" class="button" disabled>
           {% include "icons/lucide/upload.svg" %}
-          Upload file
+          <span>Upload file</span>
         </button>
       </div>
     </form>
@@ -67,7 +67,12 @@
   function handleUploadFieldChange(event) {
     console.log("Number of selected files changed to", event.target.files.length);
     const form = document.querySelector("#upload-form");
-    form.querySelector("button[type='submit']").disabled = event.target.files.length === 0;
+
+    const submit = form.querySelector("button[type='submit']");
+    submit.disabled = event.target.files.length === 0;
+    submit.querySelector("span").textContent = event.target.files.length === 1 ? "Upload file" :
+      "Upload files";
+
   }
 
   function handleUploadSubmit(form) {
