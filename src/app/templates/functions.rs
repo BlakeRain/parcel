@@ -85,7 +85,7 @@ const ISO_FORMAT: &[FormatItem<'static>] = format_description!(
 ///
 /// This can be used as: `{{ some.value | datetime }}`. By default, an `OffsetDateTime` will be
 /// parsed from the value and rendered in an ISO format, which is useful with elements like
-/// `<scotty-datetime>`.
+/// `<parcel-datetime>`.
 ///
 /// An optional `format` argument can be used to override the formatting of the `OffsetDateTime`.
 /// The format should match the format descriptor of the `time` crate, e.g. `[hour]:[minute]`.

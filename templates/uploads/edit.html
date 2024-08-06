@@ -67,7 +67,7 @@
           id="expiry_date"
           name="expiry_date"
           {% if upload.expiry_date %}
-            value="{{ upload.expiry_date | date }}"
+            value="{{ upload.expiry_date | datetime(format="[year]-[month]-[day]") }}"
           {% endif %}
           {% if not upload.expiry_date %}disabled{% endif %} />
       </div>
