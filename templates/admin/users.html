@@ -45,6 +45,7 @@
           </tr>
         </thead>
         <tbody>
+          {% set self_id = user.id %}
           {% for user in users %}
             <tr>
               <td class="text-right">{{ user.id }}</td>
@@ -64,6 +65,22 @@
                 {% endif %}
               </td>
               <td class="text-right">
+                {% if user.id != self_id %}
+                  <a
+                    href="#"
+                    title="{% if user.enabled %}Disable{% else %}Enable{% endif %} user"
+                    hx-post="/admin/users/{{ user.id }}/{% if user.enabled %}disable{% else %}enable{% endif %}"
+                    hx-trigger="click"
+                    hx-target="#user-list-container"
+                    hx-select="#user-list-container"
+                    hx-swap="outerHTML">
+                    {% if user.enabled %}
+                      <span class="icon-lock"></span>
+                    {% else %}
+                      <span class="icon-lock-open"></span>
+                    {% endif %}
+                  </a>
+                {% endif %}
                 <a
                   href="#"
                   title="Edit user"
@@ -71,20 +88,6 @@
                   hx-target="body"
                   hx-swap="beforeend">
                   <span class="icon-pencil"></span>
-                </a>
-                <a
-                  href="#"
-                  title="{% if user.enabled %}Disable{% else %}Enable{% endif %} user"
-                  hx-post="/admin/users/{{ user.id }}/{% if user.enabled %}disable{% else %}enable{% endif %}"
-                  hx-trigger="click"
-                  hx-target="#user-list-container"
-                  hx-select="#user-list-container"
-                  hx-swap="outerHTML">
-                  {% if user.enabled %}
-                    <span class="icon-lock"></span>
-                  {% else %}
-                    <span class="icon-unlock"></span>
-                  {% endif %}
                 </a>
                 <a
                   href="#"
