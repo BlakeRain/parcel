@@ -303,7 +303,19 @@ pub async fn delete_upload(
         tracing::error!(path = ?path, err = ?err, id = id, "Failed to delete cached upload");
     }
 
-    Ok(Html("").with_header("HX-Trigger", "parcelRefresh"))
+    let remaining = Upload::count_for_user(&env.pool, user.id)
+        .await
+        .map_err(|err| {
+            tracing::error!(err = ?err, "Failed to count remaining uploads for user");
+            InternalServerError(err)
+        })?;
+
+    Ok(Html(if remaining == 0 {
+        "<tr><td colspan=\"9\" class=\"text-center italic\">Nothing to show</td></tr>"
+    } else {
+        ""
+    })
+    .with_header("HX-Trigger", "parcelRefresh"))
 }
 
 #[derive(Debug, Deserialize)]

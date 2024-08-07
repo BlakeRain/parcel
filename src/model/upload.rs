@@ -103,6 +103,13 @@ impl Upload {
             .await
     }
 
+    pub async fn count_for_user(pool: &SqlitePool, owner: i32) -> sqlx::Result<i32> {
+        sqlx::query_scalar("SELECT COUNT(*) FROM uploads WHERE uploaded_by = $1")
+            .bind(owner)
+            .fetch_one(pool)
+            .await
+    }
+
     pub async fn get_by_slug(pool: &SqlitePool, slug: &str) -> sqlx::Result<Option<Self>> {
         sqlx::query_as("SELECT * FROM uploads WHERE slug = ?")
             .bind(slug)
@@ -111,7 +118,7 @@ impl Upload {
     }
 
     pub async fn record_download(&self, pool: &SqlitePool) -> sqlx::Result<()> {
-        sqlx::query("UPDATE uploads SET downloads = downloads + 1 WHERE id = ?")
+        sqlx::query("UPDATE uploads SET downloads = downloads + 1 WHERE id = $1")
             .bind(self.id)
             .execute(pool)
             .await?;
@@ -119,7 +126,7 @@ impl Upload {
     }
 
     pub async fn delete(&self, pool: &SqlitePool) -> sqlx::Result<()> {
-        sqlx::query("DELETE FROM uploads WHERE id = ?")
+        sqlx::query("DELETE FROM uploads WHERE id = $1")
             .bind(self.id)
             .execute(pool)
             .await?;
@@ -159,7 +166,7 @@ impl UploadStats {
             "SELECT COUNT(*) AS total, COUNT(public) AS public,
             SUM(downloads) AS downloads, SUM(size) AS size
             FROM uploads
-            WHERE uploaded_by = ?",
+            WHERE uploaded_by = $1",
         )
         .bind(owner)
         .fetch_one(pool)
