@@ -33,16 +33,6 @@ fn main() {
             "static/scripts/vendor/htmx.js",
         ),
         (
-            !is_debug,
-            "node_modules/hyperscript.org/dist/_hyperscript.js",
-            "static/scripts/vendor/hyperscript.js",
-        ),
-        (
-            is_debug,
-            "node_modules/hyperscript.org/dist/_hyperscript.min.js",
-            "static/scripts/vendor/hyperscript.js",
-        ),
-        (
             true,
             "node_modules/lucide-static/font/lucide.css",
             "static/icons/lucide.css",
