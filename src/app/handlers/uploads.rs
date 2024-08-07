@@ -84,7 +84,7 @@ pub async fn delete_list(
         }
     }
 
-    Ok(Html("").with_header("HX-Refresh", ""))
+    Ok(Html("").with_header("HX-Refresh", "true"))
 }
 
 #[handler]
