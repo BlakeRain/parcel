@@ -32,18 +32,18 @@
         <ul class="list-none flex flex-row">
           {% if user %}
             <li class="relative dropdown">
-              <span class="cursor-pointer select-none block px-4 py-4 text-neutral-800
+              <div class="cursor-pointer select-none block px-4 py-4 text-neutral-800
                 dark:text-neutral-200 hover:bg-slate-700/10">
-                {% include "icons/lucide/user-circle-2.svg" %}
+                <span class="icon-circle-user-round"></span>
                 {{ user.username }}
-              </span>
+              </div>
               <ul class="invisible absolute top-full right-0 left-auto bg-slate-100
                 dark:bg-slate-800 border border-gray-400 dark:border-gray-700 rounded w-max z-50">
                 {% if user.admin %}
                   <li>
                     <a href="/admin" class="block px-4 py-4 text-neutral-800 dark:text-neutral-200
                       hover:bg-slate-700/10 hover:text-neutral-800 dark:hover:text-neutral-200">
-                      {% include "icons/lucide/cog.svg" %}
+                      <span class="icon-cog"></span>
                       Administration
                     </a>
                   </li>
@@ -52,7 +52,7 @@
                   <a href="/user/settings" class="block px-4 py-4 text-neutral-800
                     dark:text-neutral-200 hover:bg-slate-700/10 hover:text-neutral-800
                     dark:hover:text-neutral-200">
-                    {% include "icons/lucide/settings-2.svg" %}
+                    <span class="icon-settings-2"></span>
                     Account Settings
                   </a>
                 </li>
@@ -60,7 +60,7 @@
                   <a href="/user/signout" class="block px-4 py-4 text-neutral-800
                     dark:text-neutral-200 hover:bg-slate-700/10 hover:text-neutral-800
                     dark:hover:text-neutral-200">
-                    {% include "icons/lucide/log-out.svg" %}
+                    <span class="icon-log-out"></span>
                     Sign Out
                   </a>
                 </li>
@@ -69,7 +69,10 @@
           {% else %}
             <li>
               <a href="/user/signin" class="block px-4 py-4 text-neutral-800 dark:text-neutral-200
-                hover:bg-slate-700/10 hover:text-neutral-100 dark:hover:text-neutral-200">Sign In</a>
+                hover:bg-slate-700/10 hover:text-neutral-100 dark:hover:text-neutral-200">
+                <span class="icon-log-in"></span>
+                Sign In
+              </a>
             </li>
           {% endif %}
         </ul>

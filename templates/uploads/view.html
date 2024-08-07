@@ -15,7 +15,7 @@
         class="no-color group">
         <div class="flex flex-row items-center gap-2">
           <div class="big-icon text-slate-400 hidden md:block group-hover:text-blue-600 dark:group-hover:text-blue-500">
-            {% include "icons/lucide/download.svg" %}
+            <span class="icon-download"></span>
           </div>
           <div>
             <h1 class="heading group-hover:text-blue-600 dark:group-hover:text-blue-500">
@@ -71,7 +71,7 @@
             hx-trigger="click"
             hx-target="body"
             hx-swap="beforeend">
-            {% include "icons/lucide/pencil.svg" %}
+            <span class="icon-pencil"></span>
             Edit settings
           </a>
           <a
@@ -80,7 +80,7 @@
             hx-delete="/uploads/{{ upload.id }}"
             hx-trigger="click"
             hx-confirm="Are you sure you want to delete this upload?">
-            {% include "icons/lucide/trash-2.svg" %}
+            <span class="icon-trash-2"></span>
             Delete upload
           </a>
           {% set opposite = "public" %}
@@ -96,9 +96,9 @@
             hx-select="#upload-view-container"
             hx-swap="outerHTML">
             {% if upload.public %}
-              {% include "icons/lucide/lock.svg" %}
+              <span class="icon-lock"></span>
             {% else %}
-              {% include "icons/lucide/unlock.svg" %}
+              <span class="icon-unlock"></span>
             {% endif %}
             Make {{ opposite }}
           </a>

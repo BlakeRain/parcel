@@ -17,7 +17,7 @@
           hx-target="#user-list-container"
           hx-select="#user-list-container"
           hx-swap="outerHTML">
-          {% include "icons/lucide/refresh-cw.svg" %}
+          <span class="icon-refresh-cw"></span>
           Refresh
         </button>
         <button
@@ -26,7 +26,7 @@
           hx-get="/admin/users/new"
           hx-target="body"
           hx-swap="beforeend">
-          {% include "icons/lucide/plus.svg" %}
+          <span class="icon-plus"></span>
           Add User
         </button>
       </div>
@@ -70,7 +70,7 @@
                   hx-get="/admin/users/{{ user.id }}"
                   hx-target="body"
                   hx-swap="beforeend">
-                  {% include "icons/lucide/pencil.svg" %}
+                  <span class="icon-pencil"></span>
                 </a>
                 <a
                   href="#"
@@ -81,9 +81,9 @@
                   hx-select="#user-list-container"
                   hx-swap="outerHTML">
                   {% if user.enabled %}
-                    {% include "icons/lucide/lock.svg" %}
+                    <span class="icon-lock"></span>
                   {% else %}
-                    {% include "icons/lucide/unlock.svg" %}
+                    <span class="icon-unlock"></span>
                   {% endif %}
                 </a>
                 <a
@@ -96,7 +96,7 @@
                   hx-select="#user-list-container"
                   hx-swap="outerHTML"
                   hx-confirm="Are you sure you want to delete this user?">
-                  {% include "icons/lucide/trash-2.svg" %}
+                  <span class="icon-trash"></span>
                 </a>
               </td>
             </tr>
