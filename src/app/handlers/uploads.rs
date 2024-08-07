@@ -529,10 +529,12 @@ pub async fn get_download(
         InternalServerError(err)
     })?;
 
-    upload.record_download(&env.pool).await.map_err(|err| {
-        tracing::error!(err = ?err, upload = ?upload, "Unable to record download");
-        InternalServerError(err)
-    })?;
+    if !owner {
+        upload.record_download(&env.pool).await.map_err(|err| {
+            tracing::error!(err = ?err, upload = ?upload, "Unable to record download");
+            InternalServerError(err)
+        })?;
+    }
 
     tracing::info!(upload = upload.id, meta = ?meta,
                    "Sending file to client");
