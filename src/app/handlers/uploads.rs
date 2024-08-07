@@ -292,16 +292,16 @@ pub async fn delete_upload(
         return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
     }
 
-    // upload.delete(&env.pool).await.map_err(|err| {
-    //     tracing::error!(err = ?err, upload = ?upload, "Unable to delete upload");
-    //     InternalServerError(err)
-    // })?;
+    upload.delete(&env.pool).await.map_err(|err| {
+        tracing::error!(err = ?err, upload = ?upload, "Unable to delete upload");
+        InternalServerError(err)
+    })?;
 
-    // let path = env.cache_dir.join(&upload.slug);
-    // tracing::info!(path = ?path, id = id, "Deleting cached upload");
-    // if let Err(err) = tokio::fs::remove_file(&path).await {
-    //     tracing::error!(path = ?path, err = ?err, id = id, "Failed to delete cached upload");
-    // }
+    let path = env.cache_dir.join(&upload.slug);
+    tracing::info!(path = ?path, id = id, "Deleting cached upload");
+    if let Err(err) = tokio::fs::remove_file(&path).await {
+        tracing::error!(path = ?path, err = ?err, id = id, "Failed to delete cached upload");
+    }
 
     Ok(Html("").with_header("HX-Trigger", "parcelRefresh"))
 }
