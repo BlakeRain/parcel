@@ -136,44 +136,6 @@
 </div>
 
 <script>
-  // function handleMassCheckboxClick(element) {
-  //   const checkboxes = document.querySelectorAll("input[name=selected]");
-  //   checkboxes.forEach(checkbox => {
-  //     checkbox.checked = element.checked;
-  //   });
-  //
-  //   const massDelete = document.getElementById("delete_selected");
-  //   massDelete.disabled = !element.checked;
-  // }
-  //
-  // function updateMassCheckbox() {
-  //   const checkboxes = document.querySelectorAll("input[name=selected]");
-  //   const checked = Array.from(checkboxes).filter(checkbox => checkbox.checked);
-  //
-  //   const massCheckbox = document.getElementById("mass_checkbox");
-  //   massCheckbox.checked = checked.length === checkboxes.length;
-  //   massCheckbox.indeterminate = checked.length > 0 && checked.length < checkboxes.length;
-  //
-  //   const massDelete = document.getElementById("delete_selected");
-  //   massDelete.disabled = checked.length === 0;
-  // }
-  //
-  // var lastChecked = null, lastCheckedIndex = 0;
-  // function handleCheckboxClick(element, event, index) {
-  //   if (event.shiftKey) {
-  //     if (lastChecked) {
-  //       const start = Math.min(index, lastCheckedIndex);
-  //       const end = Math.max(index, lastCheckedIndex);
-  //       for (let i = start; i <= end; i++) {
-  //         document.getElementById(`${i}_checkbox`).checked = lastChecked.checked;
-  //       }
-  //     }
-  //   }
-  //
-  //   lastChecked = element;
-  //   lastCheckedIndex = index;
-  //   updateMassCheckbox();
-  // }
   (function() {
     document.getElementById("uploads_group").addEventListener("changed", (event) => {
       document.getElementById("delete_selected").disabled = !event.detail.any;
