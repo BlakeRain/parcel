@@ -1,11 +1,5 @@
-<form
-  class="modal"
-  method="POST"
-  action="/admin/users/new"
-  _="on closeModal add .closing then wait for animationend then remove me"
->
-  <div class="underlay" _="on click trigger closeModal"></div>
-  <div class="content flex flex-col gap-2">
+<parcel-modal class="hidden" with-htmx>
+  <form method="POST" action="/admin/users/new" class="flex flex-col gap-1">
     <input type="hidden" name="token" value="{{ token }}" />
     <label for="username">Username</label>
     <input
@@ -48,7 +42,7 @@
           class="field"
           name="limit"
           id="limit"
-          value="100"
+          value="1024"
           min="0"
         />
       </div>
@@ -57,19 +51,18 @@
       <a
         class="mx-2"
         href="#"
-        _="on click call event.preventDefault() then trigger closeModal"
-      >
+        onclick="event.preventDefault(); event.target.closest('parcel-modal').closeModal();">
         Cancel
       </a>
-      <button type="submit" class="button">Add user</button>
+      <button type="submit" class="button">
+        <span class="icon-plus"></span>
+        Add user
+      </button>
     </div>
-  </div>
-  <script>
-    document
-      .querySelector("input[name='limit_check']")
-      .addEventListener("change", (event) => {
-        event.target.form.querySelector("input[name='limit']").disabled =
-          !event.target.checked;
-      });
-  </script>
-</form>
+    <script type="text/javascript">
+      document.querySelector("input[name='limit_check']").addEventListener("change", (event) => {
+        event.target.form.querySelector("input[name='limit']").disabled = !event.target.checked;
+      })
+    </script>
+  </form>
+</parcel-modal>
