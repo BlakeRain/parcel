@@ -1,15 +1,11 @@
 @layer components {
   .button {
     @apply w-full rounded-lg flex flex-row gap-1;
-    @apply px-5 pt-3 pb-2;
+    @apply px-5 py-2;
     @apply text-white bg-primary-600 hover:text-white hover:bg-primary-700;
     @apply focus:ring-4 focus:outline-none focus:ring-primary-300;
     @apply dark:focus:ring-primary-800;
     @apply text-center text-sm font-medium;
-
-    > svg.lucide {
-      @apply relative -top-0.5;
-    }
 
     &:disabled {
       @apply text-white/75 dark:text-white/50;
@@ -24,6 +20,12 @@
         @apply bg-green-600/50 text-white/50;
         @apply dark:bg-green-500/25;
       }
+    }
+
+    &.hollow {
+      @apply bg-transparent text-primary-600 dark:text-primary-400;
+      @apply border border-primary-600;
+      @apply hover:bg-primary-600/25;
     }
   }
 
