@@ -143,7 +143,7 @@ pub struct EditUserForm {
 #[handler]
 pub async fn post_user(
     env: Data<&Env>,
-    Admin(_): Admin,
+    Admin(auth): Admin,
     Path(user_id): Path<i32>,
     verifier: &CsrfVerifier,
     Form(EditUserForm {
@@ -186,6 +186,9 @@ pub async fn post_user(
     let admin = admin.as_deref() == Some("on");
     let enabled = enabled.as_deref() == Some("on");
     let limit = limit.map(|limit| limit * 1024 * 1024);
+
+    // Override the 'enabled' selection if the user being edited is the same as the admin
+    let enabled = user.id == auth.id || enabled;
 
     user.update(&env.pool, &username, admin, enabled, limit)
         .await

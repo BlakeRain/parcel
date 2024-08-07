@@ -31,8 +31,12 @@
         <div class="flex flex-row gap-2">
           <input
               type="checkbox"
-              name="enabled"
-              id="enabled"
+              {% if user.id == auth.id %}
+                disabled
+              {% else %}
+                name="enabled"
+                id="enabled"
+              {% endif %}
               {% if user.enabled %}checked{% endif %} />
           <label for="enabled">User account is enabled</label>
         </div>
