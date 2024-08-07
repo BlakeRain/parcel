@@ -1,70 +1,8 @@
-<div id="new-upload-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-  <parcel-upload-form class="panel gap-2" csrf_token="{{ csrf_token }}"></parcel-upload-form>
-  <!--
-  <div class="panel thin gap-2">
-    <h1 class="heading">New upload</h1>
-
-    <form id="upload-form" class="form" _="on submit halt the event then call handleUploadSubmit(me)">
-      <input type="file" class="field" name="file" multiple _="on change call handleUploadFieldChange(event)">
-      <div class="progress-container flex flex-row gap-2 invisible">
-        <progress id="progress" value="0" max="100" class="grow"></progress>
-        <div class="text-right" style="min-width: 8rem"></div>
-      </div>
-      <div class="buttons end mt-4">
-        <button type="submit" class="button" disabled>
-          <span>Upload file</span>
-        </button>
-      </div>
-    </form>
-  </div>
-  -->
-  <div class="panel gap-2">
-    <div class="flex flex-row justify-between align-middle mb-auto">
-      <h1 class="heading">
-        {% if user.limit is number %}
-          {{ (user.limit - stats.size) | filesizeformat }} available
-        {% else %}
-            Space usage
-        {% endif %}
-      </h1>
-      <div>
-        <button
-          id="space-refresh"
-          type="button"
-          class="button"
-          hx-trigger="click,refresh-event"
-          hx-get="/uploads/new"
-          hx-target="#new-upload-container"
-          hx-select="#new-upload-container"
-          hx-swap="outerHTML">
-          <span class="icon-refresh-cw"></span>
-          Refresh
-        </button>
-      </div>
-    </div>
-    <div class="flex flex-col gap-2">
-      <div class="flex flex-row gap-2 justify-between">
-        <div>
-          {{ stats.total }} file{% if stats.total != 1 %}s{% endif %}
-        </div>
-        <div>
-          <span>Used</span>
-          <span>{{ stats.size | filesizeformat }}</span>
-          <span>
-            /
-            {% if user.limit %}
-              {{ user.limit | filesizeformat }}
-            {% else %}
-              ∞
-            {% endif %}
-          </span>
-        </div>
-      </div>
-      <progress value="{{ stats.size }}" max="{{ user.limit | default(value = 0) }}" class=""></progress>
-    </div>
-  </div>
-</div>
+<parcel-modal class="hidden" with-htmx>
+  <parcel-upload-form csrf_token="{{ csrf_token }}"></parcel-upload-form>
+</parcel-modal>
 <script type="module" src="/{{ upload_js }}"></script>
+
 
 <!--
 <script>

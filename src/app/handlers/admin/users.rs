@@ -35,7 +35,7 @@ pub async fn get_users(env: Data<&Env>, Admin(admin): Admin) -> poem::Result<Htm
 }
 
 #[handler]
-pub fn get_users_new(
+pub fn get_new(
     env: Data<&Env>,
     Admin(admin): Admin,
     token: &CsrfToken,
@@ -60,7 +60,7 @@ pub struct NewUserForm {
 }
 
 #[handler]
-pub async fn post_users_new(
+pub async fn post_new(
     env: Data<&Env>,
     verifier: &CsrfVerifier,
     Admin(admin_user): Admin,

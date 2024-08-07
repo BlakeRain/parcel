@@ -1,0 +1,45 @@
+<div
+  id="upload-stats-container"
+  hx-get="/uploads/stats"
+  hx-trigger="refresh"
+  hx-target="this"
+  hx-swap="outerHTML"
+  class="flex flex-row justify-between gap-2 p-4 border border-slate-400 dark:border-gray-700 dark:bg-gray-800 rounded-md shadow-md">
+  <div class="flex flex-row items-center gap-2">
+    <div class="w-40 md:w-80 rounded-full dark:bg-gray-700">
+      {% set percent = (stats.size / (user.limit | default(value = 0)) * 100) | round | int %}
+      <div
+        id="upload-stats-progress-inner"
+        class="smoothly bg-blue-600 text-xs font-medium text-blue-100 text-center p-0.5 leading-none rounded-full"
+        style="width: {{ percent }}%;">
+        {% if percent > 10 %}
+          {{ percent }}%
+        {% endif %}
+      </div>
+    </div>
+    <div>
+      <span>Used</span>
+      <span>{{ stats.size | filesizeformat }}</span>
+      <span>of</span>
+      <span>
+        {% if user.limit is number %}
+          {{ user.limit | filesizeformat }}
+        {% else %}
+          ∞
+        {% endif %}
+      </span>
+    </div>
+  </div>
+  <div>
+    <button
+      type="button"
+      class="button"
+      hx-get="/uploads/new"
+      hx-trigger="click"
+      hx-target="body"
+      hx-swap="beforeend">
+      <span class="icon-upload"></span>
+      Upload
+    </button>
+  </div>
+</div>

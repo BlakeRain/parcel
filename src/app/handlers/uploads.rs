@@ -23,7 +23,7 @@ use crate::{
 };
 
 #[handler]
-pub async fn get_uploads(env: Data<&Env>, user: User) -> poem::Result<Html<String>> {
+pub async fn get_list(env: Data<&Env>, user: User) -> poem::Result<Html<String>> {
     let uploads = Upload::get_for_user(&env.pool, user.id)
         .await
         .map_err(|err| {
@@ -41,19 +41,80 @@ pub async fn get_uploads(env: Data<&Env>, user: User) -> poem::Result<Html<Strin
 }
 
 #[handler]
-pub async fn get_new_upload(
+pub async fn delete_list(
     env: Data<&Env>,
-    csrf_token: &CsrfToken,
     user: User,
-) -> poem::Result<Html<String>> {
+    Form(form): Form<Vec<(String, i32)>>,
+) -> poem::Result<impl IntoResponse> {
+    let ids = form
+        .into_iter()
+        .filter(|(name, _)| name == "selected")
+        .map(|(_, id)| id)
+        .collect::<Vec<_>>();
+
+    for id in ids {
+        let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
+            tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
+            InternalServerError(err)
+        })?
+        else {
+            tracing::error!(id = ?id, "Unable to find upload with given ID");
+            return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
+        };
+
+        if !user.admin && upload.uploaded_by != user.id {
+            tracing::error!(
+                user = user.id,
+                upload = upload.id,
+                "User tried to delete upload without permission"
+            );
+
+            return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+        }
+
+        upload.delete(&env.pool).await.map_err(|err| {
+            tracing::error!(err = ?err, upload = ?upload, "Unable to delete upload");
+            InternalServerError(err)
+        })?;
+
+        let path = env.cache_dir.join(&upload.slug);
+        tracing::info!(path = ?path, id = id, "Deleting cached upload");
+        if let Err(err) = tokio::fs::remove_file(&path).await {
+            tracing::error!(path = ?path, err = ?err, id = id, "Failed to delete cached upload");
+        }
+    }
+
+    Ok(Html("").with_header("HX-Refresh", ""))
+}
+
+#[handler]
+pub async fn get_stats(env: Data<&Env>, user: User) -> poem::Result<Html<String>> {
     let stats = UploadStats::get_for(&env.pool, user.id)
         .await
         .map_err(InternalServerError)?;
 
+    // Generate a random int between 10 and 90
+    let random = rand::random::<i8>() % 80 + 10;
+
+    render_template(
+        "uploads/stats.html",
+        context! {
+            stats,
+            random,
+            ..authorized_context(&env, &user)
+        },
+    )
+}
+
+#[handler]
+pub async fn get_new(
+    env: Data<&Env>,
+    csrf_token: &CsrfToken,
+    user: User,
+) -> poem::Result<Html<String>> {
     render_template(
         "uploads/new.html",
         context! {
-            stats,
             csrf_token => csrf_token.0,
             upload_js => javascript!("scripts/components/upload.js"),
             ..authorized_context(&env, &user)
@@ -62,7 +123,7 @@ pub async fn get_new_upload(
 }
 
 #[handler]
-pub async fn post_uploads(
+pub async fn post_new(
     env: Data<&Env>,
     RealIp(ip): RealIp,
     user: User,
@@ -132,53 +193,6 @@ pub async fn post_uploads(
     }
 
     Ok(())
-}
-
-#[handler]
-pub async fn delete_uploads(
-    env: Data<&Env>,
-    user: User,
-    Form(form): Form<Vec<(String, i32)>>,
-) -> poem::Result<Redirect> {
-    let ids = form
-        .into_iter()
-        .filter(|(name, _)| name == "selected")
-        .map(|(_, id)| id)
-        .collect::<Vec<_>>();
-
-    for id in ids {
-        let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
-            tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
-            InternalServerError(err)
-        })?
-        else {
-            tracing::error!(id = ?id, "Unable to find upload with given ID");
-            return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
-        };
-
-        if !user.admin && upload.uploaded_by != user.id {
-            tracing::error!(
-                user = user.id,
-                upload = upload.id,
-                "User tried to delete upload without permission"
-            );
-
-            return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
-        }
-
-        upload.delete(&env.pool).await.map_err(|err| {
-            tracing::error!(err = ?err, upload = ?upload, "Unable to delete upload");
-            InternalServerError(err)
-        })?;
-
-        let path = env.cache_dir.join(&upload.slug);
-        tracing::info!(path = ?path, id = id, "Deleting cached upload");
-        if let Err(err) = tokio::fs::remove_file(&path).await {
-            tracing::error!(path = ?path, err = ?err, id = id, "Failed to delete cached upload");
-        }
-    }
-
-    Ok(Redirect::see_other("/uploads"))
 }
 
 #[handler]
@@ -254,7 +268,210 @@ pub async fn get_upload(
 }
 
 #[handler]
-pub async fn get_upload_download(
+pub async fn delete_upload(
+    env: Data<&Env>,
+    user: User,
+    Path(id): Path<i32>,
+) -> poem::Result<impl IntoResponse> {
+    let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
+        tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
+        InternalServerError(err)
+    })?
+    else {
+        tracing::error!(id = ?id, "Unable to find upload with given ID");
+        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
+    };
+
+    if !user.admin && upload.uploaded_by != user.id {
+        tracing::error!(
+            user = user.id,
+            upload = upload.id,
+            "User tried to delete upload without permission"
+        );
+
+        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+    }
+
+    // upload.delete(&env.pool).await.map_err(|err| {
+    //     tracing::error!(err = ?err, upload = ?upload, "Unable to delete upload");
+    //     InternalServerError(err)
+    // })?;
+
+    // let path = env.cache_dir.join(&upload.slug);
+    // tracing::info!(path = ?path, id = id, "Deleting cached upload");
+    // if let Err(err) = tokio::fs::remove_file(&path).await {
+    //     tracing::error!(path = ?path, err = ?err, id = id, "Failed to delete cached upload");
+    // }
+
+    Ok(Html("").with_header("HX-Trigger", "parcelRefresh"))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct EditQuery {
+    hx_target: Option<String>,
+    ult_dest: Option<String>,
+}
+
+#[handler]
+pub async fn get_edit(
+    env: Data<&Env>,
+    token: &CsrfToken,
+    user: User,
+    Path(id): Path<i32>,
+    Query(EditQuery {
+        hx_target,
+        ult_dest,
+    }): Query<EditQuery>,
+) -> poem::Result<Html<String>> {
+    let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
+        tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
+        InternalServerError(err)
+    })?
+    else {
+        tracing::error!("Unrecognized upload ID '{id}'");
+        return render_404("Unrecognized upload ID");
+    };
+
+    if !user.admin && upload.uploaded_by != user.id {
+        tracing::error!(
+            user = user.id,
+            upload = upload.id,
+            "User tried to edit upload without permission"
+        );
+
+        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+    }
+
+    render_template(
+        "uploads/edit.html",
+        context! {
+            token => token.0,
+            upload,
+            hx_target,
+            ult_dest,
+            ..authorized_context(&env, &user)
+        },
+    )
+}
+
+time::serde::format_description!(iso8601_date, Date, "[year]-[month]-[day]");
+
+#[derive(Debug, Deserialize)]
+pub struct UploadEditForm {
+    token: String,
+    ult_dest: Option<String>,
+    filename: String,
+    public: Option<String>,
+    limit: Option<i64>,
+    #[serde(default, with = "iso8601_date::option")]
+    expiry_date: Option<Date>,
+}
+
+#[handler]
+pub async fn post_edit(
+    env: Data<&Env>,
+    verifier: &CsrfVerifier,
+    user: User,
+    Path(id): Path<i32>,
+    Form(UploadEditForm {
+        token,
+        ult_dest,
+        filename,
+        public,
+        limit,
+        expiry_date,
+    }): Form<UploadEditForm>,
+) -> poem::Result<Redirect> {
+    if !verifier.is_valid(&token) {
+        tracing::error!("CSRF token is invalid in upload edit");
+        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+    }
+
+    let Some(mut upload) = Upload::get(&env.pool, id).await.map_err(|err| {
+        tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
+        InternalServerError(err)
+    })?
+    else {
+        tracing::error!("Unrecognized upload ID '{id}'");
+        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
+    };
+
+    if !user.admin && upload.uploaded_by != user.id {
+        tracing::error!(
+            user = user.id,
+            upload = upload.id,
+            "User tried to edit upload without permission"
+        );
+
+        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+    }
+
+    let public = public.as_deref() == Some("on");
+
+    tracing::info!(
+        upload = id,
+        filename = ?filename,
+        limit = ?limit,
+        expiry = ?expiry_date,
+        "Updating upload");
+
+    upload
+        .edit(&env.pool, &filename, public, limit, expiry_date)
+        .await
+        .map_err(InternalServerError)?;
+
+    Ok(Redirect::see_other(
+        ult_dest.unwrap_or_else(|| "/uploads".to_string()),
+    ))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct MakePublicQuery {
+    public: bool,
+    ult_dest: Option<String>,
+}
+
+#[handler]
+pub async fn post_public(
+    env: Data<&Env>,
+    user: User,
+    Path(id): Path<i32>,
+    Query(MakePublicQuery { public, ult_dest }): Query<MakePublicQuery>,
+) -> poem::Result<Response> {
+    let Some(mut upload) = Upload::get(&env.pool, id).await.map_err(|err| {
+        tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
+        InternalServerError(err)
+    })?
+    else {
+        tracing::error!("Unrecognized upload ID '{id}'");
+        return render_404("Unrecognized upload ID").map(IntoResponse::into_response);
+    };
+
+    if !user.admin && upload.uploaded_by != user.id {
+        tracing::error!(
+            user = user.id,
+            upload = upload.id,
+            "User tried to edit upload without permission"
+        );
+
+        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+    }
+
+    tracing::info!(id = id, public = public, "Setting upload public state");
+    upload
+        .set_public(&env.pool, public)
+        .await
+        .map_err(InternalServerError)?;
+
+    if let Some(ult_dest) = ult_dest {
+        Ok(Redirect::see_other(ult_dest).into_response())
+    } else {
+        Ok(Html("").with_header("HX-Redirect", "/").into_response())
+    }
+}
+
+#[handler]
+pub async fn get_download(
     env: Data<&Env>,
     user: Option<User>,
     Path(slug): Path<String>,
@@ -328,207 +545,4 @@ pub async fn get_upload_download(
         )
         .header(CONTENT_LENGTH, meta.len())
         .body(Body::from_async_read(file)))
-}
-
-#[handler]
-pub async fn delete_upload(
-    env: Data<&Env>,
-    user: User,
-    Path(id): Path<i32>,
-) -> poem::Result<Response> {
-    let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
-        tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
-        InternalServerError(err)
-    })?
-    else {
-        tracing::error!(id = ?id, "Unable to find upload with given ID");
-        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
-    };
-
-    if !user.admin && upload.uploaded_by != user.id {
-        tracing::error!(
-            user = user.id,
-            upload = upload.id,
-            "User tried to delete upload without permission"
-        );
-
-        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
-    }
-
-    upload.delete(&env.pool).await.map_err(|err| {
-        tracing::error!(err = ?err, upload = ?upload, "Unable to delete upload");
-        InternalServerError(err)
-    })?;
-
-    let path = env.cache_dir.join(&upload.slug);
-    tracing::info!(path = ?path, id = id, "Deleting cached upload");
-    if let Err(err) = tokio::fs::remove_file(&path).await {
-        tracing::error!(path = ?path, err = ?err, id = id, "Failed to delete cached upload");
-    }
-
-    Ok(Html("").with_header("HX-Redirect", "/").into_response())
-}
-
-#[derive(Debug, Deserialize)]
-pub struct EditQuery {
-    hx_target: Option<String>,
-    ult_dest: Option<String>,
-}
-
-#[handler]
-pub async fn get_upload_edit(
-    env: Data<&Env>,
-    token: &CsrfToken,
-    user: User,
-    Path(id): Path<i32>,
-    Query(EditQuery {
-        hx_target,
-        ult_dest,
-    }): Query<EditQuery>,
-) -> poem::Result<Html<String>> {
-    let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
-        tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
-        InternalServerError(err)
-    })?
-    else {
-        tracing::error!("Unrecognized upload ID '{id}'");
-        return render_404("Unrecognized upload ID");
-    };
-
-    if !user.admin && upload.uploaded_by != user.id {
-        tracing::error!(
-            user = user.id,
-            upload = upload.id,
-            "User tried to edit upload without permission"
-        );
-
-        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
-    }
-
-    render_template(
-        "uploads/edit.html",
-        context! {
-            token => token.0,
-            upload,
-            hx_target,
-            ult_dest,
-            ..authorized_context(&env, &user)
-        },
-    )
-}
-
-time::serde::format_description!(iso8601_date, Date, "[year]-[month]-[day]");
-
-#[derive(Debug, Deserialize)]
-pub struct UploadEditForm {
-    token: String,
-    ult_dest: Option<String>,
-    filename: String,
-    public: Option<String>,
-    limit: Option<i64>,
-    #[serde(default, with = "iso8601_date::option")]
-    expiry_date: Option<Date>,
-}
-
-#[handler]
-pub async fn post_upload_edit(
-    env: Data<&Env>,
-    verifier: &CsrfVerifier,
-    user: User,
-    Path(id): Path<i32>,
-    Form(UploadEditForm {
-        token,
-        ult_dest,
-        filename,
-        public,
-        limit,
-        expiry_date,
-    }): Form<UploadEditForm>,
-) -> poem::Result<Redirect> {
-    if !verifier.is_valid(&token) {
-        tracing::error!("CSRF token is invalid in upload edit");
-        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
-    }
-
-    let Some(mut upload) = Upload::get(&env.pool, id).await.map_err(|err| {
-        tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
-        InternalServerError(err)
-    })?
-    else {
-        tracing::error!("Unrecognized upload ID '{id}'");
-        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
-    };
-
-    if !user.admin && upload.uploaded_by != user.id {
-        tracing::error!(
-            user = user.id,
-            upload = upload.id,
-            "User tried to edit upload without permission"
-        );
-
-        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
-    }
-
-    let public = public.as_deref() == Some("on");
-
-    tracing::info!(
-        upload = id,
-        filename = ?filename,
-        limit = ?limit,
-        expiry = ?expiry_date,
-        "Updating upload");
-
-    upload
-        .edit(&env.pool, &filename, public, limit, expiry_date)
-        .await
-        .map_err(InternalServerError)?;
-
-    Ok(Redirect::see_other(
-        ult_dest.unwrap_or_else(|| "/uploads".to_string()),
-    ))
-}
-
-#[derive(Debug, Deserialize)]
-pub struct MakePublicQuery {
-    public: bool,
-    ult_dest: Option<String>,
-}
-
-#[handler]
-pub async fn post_upload_public(
-    env: Data<&Env>,
-    user: User,
-    Path(id): Path<i32>,
-    Query(MakePublicQuery { public, ult_dest }): Query<MakePublicQuery>,
-) -> poem::Result<Response> {
-    let Some(mut upload) = Upload::get(&env.pool, id).await.map_err(|err| {
-        tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
-        InternalServerError(err)
-    })?
-    else {
-        tracing::error!("Unrecognized upload ID '{id}'");
-        return render_404("Unrecognized upload ID").map(IntoResponse::into_response);
-    };
-
-    if !user.admin && upload.uploaded_by != user.id {
-        tracing::error!(
-            user = user.id,
-            upload = upload.id,
-            "User tried to edit upload without permission"
-        );
-
-        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
-    }
-
-    tracing::info!(id = id, public = public, "Setting upload public state");
-    upload
-        .set_public(&env.pool, public)
-        .await
-        .map_err(InternalServerError)?;
-
-    if let Some(ult_dest) = ult_dest {
-        Ok(Redirect::see_other(ult_dest).into_response())
-    } else {
-        Ok(Html("").with_header("HX-Redirect", "/").into_response())
-    }
 }

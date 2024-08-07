@@ -2,9 +2,26 @@
 
 {% block title %}Home{% endblock %}
 
+{% block head %}
+  <style>
+    #upload-list-container tr.htmx-swapping td {
+      opacity: 0;
+      transition: opacity 0.5s ease-out;
+    }
+  </style>
+{% endblock %}
+
 {% block content %}
   <div class="container mx-auto flex flex-col gap-4">
-    <div hx-get="/uploads/new" hx-target="this" hx-trigger="load" hx-target="outerHTML"></div>
-    <div hx-get="/uploads" hx-target="this" hx-trigger="load" hx-target="outerHTML"></div>
+    <div hx-get="/uploads/stats" hx-target="this" hx-trigger="load" hx-swap="outerHTML"></div>
+    <div hx-get="/uploads/list" hx-target="this" hx-trigger="load" hx-swap="outerHTML"></div>
   </div>
+{% endblock %}
+
+{% block scripts %}
+  <script type="text/javascript">
+    document.body.addEventListener("parcelRefresh", () => {
+      htmx.trigger("#upload-stats-container", "refresh");
+    })
+  </script>
 {% endblock %}

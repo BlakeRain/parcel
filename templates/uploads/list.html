@@ -3,9 +3,6 @@
     <div class="flex flex-row justify-between p-4">
       <h1 class="text-4xl font-bold">
         Your uploads
-        {% if uploads | length > 0 %}
-          ({{ uploads | length }})
-        {% endif %}
       </h1>
       <div class="flex flex-row items-center gap-2">
         <button
@@ -13,7 +10,7 @@
           type="button"
           class="button"
           hx-trigger="click"
-          hx-delete="/uploads"
+          hx-delete="/uploads/list"
           hx-target="#upload-list-container"
           hx-select="#upload-list-container"
           hx-confirm="Are you sure you want to delete the selected files?"
@@ -27,7 +24,7 @@
           type="button"
           class="button"
           hx-trigger="click,refresh-event"
-          hx-get="/uploads"
+          hx-get="/uploads/list"
           hx-target="#upload-list-container"
           hx-select="#upload-list-container"
           hx-swap="outerHTML">
@@ -63,75 +60,74 @@
           </tr>
           {% endif %}
           {% for upload in uploads %}
-          <tr>
-            <td class="slim text-center">
-              <parcel-grouped-checkbox
-                name="selected"
-                group="uploads"
-                value="{{ upload.id }}">
-              </parcel-grouped-checkbox>
-            </td>
-            <td>
-              <div class="flex flex-row gap-1">
-                <a class="text-nowrap" href="/uploads/{{ upload.slug }}">{{ upload.filename }}</a>
-                <parcel-clipboard url="true" value="/upload/{{ upload.slug }}"></parcel-clipboard>
-              </div>
-            </td>
-            <td class="text-right text-nowrap">{{ upload.size | filesizeformat }}</td>
-            <td class="text-right text-nowrap">{{ upload.downloads }}</td>
-            <td class="text-right text-nowrap">
-              {% if upload.limit is number %}
-              {{ upload.limit - upload.downloads }}
+            <tr>
+              <td class="slim text-center">
+                <parcel-grouped-checkbox
+                  name="selected"
+                  group="uploads"
+                  value="{{ upload.id }}">
+                </parcel-grouped-checkbox>
+              </td>
+              <td>
+                <div class="flex flex-row gap-1">
+                  <a class="text-nowrap" href="/uploads/{{ upload.slug }}">{{ upload.filename }}</a>
+                  <parcel-clipboard url="true" value="/upload/{{ upload.slug }}"></parcel-clipboard>
+                </div>
+              </td>
+              <td class="text-right text-nowrap">{{ upload.size | filesizeformat }}</td>
+              <td class="text-right text-nowrap">{{ upload.downloads }}</td>
+              <td class="text-right text-nowrap">
+                {% if upload.limit is number %}
+                {{ upload.limit - upload.downloads }}
+                {% else %}
+                <i>Unlimited</i>
+                {% endif %}
+              </td>
+              <td class="text-nowrap">
+                {% if upload.expiry_date %}
+                  <parcel-date value="{{ upload.expiry_date | datetime }}">
+                    {{ upload.expiry_date | datetime }}
+                  </parcel-date>
+                  ({{ upload.expiry_date | datetime_offset }})
+                {% else %}
+                <i>Never</i>
+                {% endif %}
+              </td>
+              {% if upload.public %}
+              <td class="text-center text-danger">Yes</td>
               {% else %}
-              <i>Unlimited</i>
+              <td class="text-center text-success">No</td>
               {% endif %}
-            </td>
-            <td class="text-nowrap">
-              {% if upload.expiry_date %}
-                <parcel-date value="{{ upload.expiry_date | datetime }}">
-                  {{ upload.expiry_date | datetime }}
-                </parcel-date>
-                ({{ upload.expiry_date | datetime_offset }})
-              {% else %}
-              <i>Never</i>
-              {% endif %}
-            </td>
-            {% if upload.public %}
-            <td class="text-center text-danger">Yes</td>
-            {% else %}
-            <td class="text-center text-success">No</td>
-            {% endif %}
-            <td class="text-left text-nowrap">
-              <parcel-datetime value="{{ upload.uploaded_at | datetime }}">
-                {{ upload.uploaded_at | datetime }}
-              </parcel-datetime>
-            </td>
-            <td class="text-right">
-              <a href="/uploads/{{ upload.slug }}/download" title="Download {{ upload.filename }}">
-                <span class="icon-download"></span>
-              </a>
-              <a
-                href="#"
-                title="Edit upload settings"
-                hx-get="/uploads/{{ upload.id }}/edit"
-                hx-trigger="click"
-                hx-target="body"
-                hx-swap="beforeend">
-                <span class="icon-pencil"></span>
-              </a>
-              <a
-                href="#"
-                title="Delete upload"
-                hx-delete="/uploads/{{ upload.id }}"
-                hx-trigger="click"
-                hx-target="#upload-list-container"
-                hx-select="#upload-list-container"
-                hx-swap="outerHTML"
-                hx-confirm="Are you sure you want to delete this upload?">
-                <span class="icon-trash-2"></span>
-              </a>
-            </td>
-          </tr>
+              <td class="text-left text-nowrap">
+                <parcel-datetime value="{{ upload.uploaded_at | datetime }}">
+                  {{ upload.uploaded_at | datetime }}
+                </parcel-datetime>
+              </td>
+              <td class="text-right">
+                <a href="/uploads/{{ upload.slug }}/download" title="Download {{ upload.filename }}">
+                  <span class="icon-download"></span>
+                </a>
+                <a
+                  href="#"
+                  title="Edit upload settings"
+                  hx-get="/uploads/{{ upload.id }}/edit"
+                  hx-trigger="click"
+                  hx-target="body"
+                  hx-swap="beforeend">
+                  <span class="icon-pencil"></span>
+                </a>
+                <a
+                  href="#"
+                  title="Delete upload"
+                  hx-delete="/uploads/{{ upload.id }}"
+                  hx-trigger="click"
+                  hx-target="closest tr"
+                  hx-swap="outerHTML swap:0.5s"
+                  hx-confirm="Are you sure you want to delete this upload?">
+                  <span class="icon-trash-2"></span>
+                </a>
+              </td>
+            </tr>
           {% endfor %}
         </tbody>
       </table>

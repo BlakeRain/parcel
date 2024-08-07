@@ -207,7 +207,7 @@ pub struct PasswordForm {
 }
 
 #[handler]
-pub async fn post_settings_password(
+pub async fn post_password(
     env: Data<&Env>,
     mut user: User,
     verifier: &CsrfVerifier,

@@ -35,21 +35,22 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> impl IntoEndpoint {
         *"/static" { StaticFilesEndpoint::new("./static") }
 
         "/"                         handlers::index::index                GET
-        "/uploads"                  handlers::uploads::uploads            GET POST DELETE
-        "/uploads/new"              handlers::uploads::new_upload         GET
+        "/uploads/list"             handlers::uploads::list               GET      DELETE
+        "/uploads/new"              handlers::uploads::new                GET POST
+        "/uploads/stats"            handlers::uploads::stats              GET
         "/uploads/:id"              handlers::uploads::upload             GET      DELETE
-        "/uploads/:id/edit"         handlers::uploads::upload_edit        GET POST
-        "/uploads/:id/public"       handlers::uploads::upload_public          POST
-        "/uploads/:id/download"     handlers::uploads::upload_download    GET
+        "/uploads/:id/edit"         handlers::uploads::edit               GET POST
+        "/uploads/:id/public"       handlers::uploads::public                 POST
+        "/uploads/:id/download"     handlers::uploads::download           GET
         "/user/signin"              handlers::users::signin               GET POST
         "/user/signout"             handlers::users::signout              GET
         "/user/settings"            handlers::users::settings             GET POST
-        "/user/settings/password"   handlers::users::settings_password        POST
+        "/user/settings/password"   handlers::users::password                 POST
         "/admin"                    handlers::admin::admin                GET
         "/admin/setup"              handlers::admin::setup::setup         GET POST
         "/admin/uploads"            handlers::admin::uploads::uploads     GET
         "/admin/users"              handlers::admin::users::users         GET
-        "/admin/users/new"          handlers::admin::users::users_new     GET POST
+        "/admin/users/new"          handlers::admin::users::new           GET POST
         "/admin/users/:id"          handlers::admin::users::user          GET POST DELETE
         "/admin/users/:id/disable"  handlers::admin::users::disable_user      POST
         "/admin/users/:id/enable"   handlers::admin::users::enable_user       POST
