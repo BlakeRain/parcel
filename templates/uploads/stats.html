@@ -11,9 +11,10 @@
         {% set percent = (stats.size / (auth.limit | default(value = 0)) * 100) | round | int %}
         <div
           id="upload-stats-progress-inner"
-          class="smoothly bg-blue-600 text-xs font-medium text-blue-100 text-center p-0.5 leading-none rounded-full"
-          style="width: {{ percent }}%;">
-          {{ percent }}%
+          class="smoothly {% if percent > 100 %}bg-red-600{% else %}bg-blue-600{% endif %} text-xs
+          font-medium text-blue-100 text-center p-0.5 leading-none rounded-full whitespace-nowrap"
+          style="width: {% if percent > 100 %}100{% else %}{{ percent }}{% endif %}%;">
+          {% if percent < 1 %}{{ "< 1" }}{% else %}{{ percent }}{% endif %}%
         </div>
       {% else %}
         <div class="text-xs w-full text-center p-0.5">
