@@ -15,7 +15,10 @@ use crate::{
         templates::{authorized_context, render_404, render_template},
     },
     env::Env,
-    model::user::{hash_password, User},
+    model::{
+        upload::Upload,
+        user::{hash_password, User},
+    },
 };
 
 #[handler]
@@ -209,6 +212,21 @@ pub async fn delete_user(
         tracing::error!(err = ?err, user_id = user_id, "Failed to delete user");
         InternalServerError(err)
     })?;
+
+    let upload_slugs = Upload::delete_for_user(&env.pool, user_id)
+        .await
+        .map_err(|err| {
+            tracing::error!(err = ?err, user_id = user_id, "Failed to delete users uploads");
+            InternalServerError(err)
+        })?;
+
+    for slug in upload_slugs {
+        let path = env.cache_dir.join(&slug);
+        tracing::info!(path = ?path, owner = user_id, "Deleting cached upload");
+        if let Err(err) = tokio::fs::remove_file(&path).await {
+            tracing::error!(path = ?path, err = ?err, owner = user_id, "Failed to delete cached upload");
+        }
+    }
 
     tracing::info!(user_id = user_id, "Deleted user");
     Ok(Redirect::see_other("/admin/users"))

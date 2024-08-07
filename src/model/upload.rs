@@ -126,6 +126,13 @@ impl Upload {
 
         Ok(())
     }
+
+    pub async fn delete_for_user(pool: &SqlitePool, owner: i32) -> sqlx::Result<Vec<String>> {
+        sqlx::query_scalar("DELETE FROM uploads WHERE uploaded_by = $1 RETURNING slug")
+            .bind(owner)
+            .fetch_all(pool)
+            .await
+    }
 }
 
 #[derive(Debug, FromRow, Serialize)]
