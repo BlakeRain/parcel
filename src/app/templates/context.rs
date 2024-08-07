@@ -50,7 +50,7 @@ pub fn default_context<'e, E: Into<TemplateEnv<'e>>>(env: E) -> Value {
 
 pub fn authorized_context<'e, E: Into<TemplateEnv<'e>>>(env: E, user: &User) -> Value {
     context! {
-        user => user,
+        auth => user,
         ..default_context(env)
     }
 }

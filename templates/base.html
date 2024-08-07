@@ -31,16 +31,16 @@
           </li>
         </ul>
         <ul class="list-none flex flex-row">
-          {% if user %}
+          {% if auth %}
             <li class="relative dropdown">
               <div class="cursor-pointer select-none block px-4 py-4 text-neutral-800
                 dark:text-neutral-200 hover:bg-slate-700/10">
                 <span class="icon-circle-user-round"></span>
-                {{ user.username }}
+                {{ auth.username }}
               </div>
               <ul class="invisible absolute top-full right-0 left-auto bg-slate-100
                 dark:bg-slate-800 border border-gray-400 dark:border-gray-700 rounded w-max z-50">
-                {% if user.admin %}
+                {% if auth.admin %}
                   <li>
                     <a href="/admin" class="block px-4 py-4 text-neutral-800 dark:text-neutral-200
                       hover:bg-slate-700/10 hover:text-neutral-800 dark:hover:text-neutral-200">

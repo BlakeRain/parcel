@@ -45,11 +45,15 @@
           </tr>
         </thead>
         <tbody>
-          {% set self_id = user.id %}
           {% for user in users %}
             <tr>
               <td class="text-right">{{ user.id }}</td>
-              <td class="text-left">{{ user.username }}</td>
+              <td class="text-left">
+                {{ user.username }}
+                {% if user.id == auth.id %}
+                  <span class="text-sm text-success">(you)</span>
+                {% endif %}
+              </td>
               <td class="text-center {% if user.enabled %}text-success{% else %}text-danger{% endif %}">
                 {% if user.enabled %}Yes{% else %}No{% endif %}
               </td>
@@ -65,7 +69,7 @@
                 {% endif %}
               </td>
               <td class="text-right">
-                {% if user.id != self_id %}
+                {% if user.id != auth.id %}
                   <a
                     href="#"
                     title="{% if user.enabled %}Disable{% else %}Enable{% endif %} user"
@@ -89,7 +93,7 @@
                   hx-swap="beforeend">
                   <span class="icon-pencil"></span>
                 </a>
-                {% if user.id != self_id %}
+                {% if user.id != auth.id %}
                   <a
                     href="#"
                     class="text-danger"
