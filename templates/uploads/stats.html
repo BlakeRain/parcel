@@ -7,7 +7,7 @@
   class="flex flex-row justify-between gap-2 p-4 border border-slate-400 dark:border-gray-700 dark:bg-gray-800 rounded-md shadow-md">
   <div class="flex flex-row items-center gap-2">
     <div class="w-40 md:w-80 rounded-full dark:bg-gray-700">
-      {% if auth.limit is number %}
+      {% if auth.limit is number and auth.count > 0 %}
         {% set percent = (stats.size / (auth.limit | default(value = 0)) * 100) | round | int %}
         <div
           id="upload-stats-progress-inner"
