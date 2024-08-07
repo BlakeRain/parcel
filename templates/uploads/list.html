@@ -78,7 +78,7 @@
               <td class="text-right text-nowrap">{{ upload.downloads }}</td>
               <td class="text-right text-nowrap">
                 {% if upload.limit is number %}
-                {{ upload.limit - upload.downloads }}
+                {{ upload.limit - upload.downloads }} / {{ upload.limit }}
                 {% else %}
                 <i>Unlimited</i>
                 {% endif %}

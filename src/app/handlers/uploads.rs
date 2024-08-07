@@ -421,7 +421,7 @@ pub async fn post_edit(
         .map_err(InternalServerError)?;
 
     Ok(Redirect::see_other(
-        ult_dest.unwrap_or_else(|| "/uploads".to_string()),
+        ult_dest.unwrap_or_else(|| "/uploads/list".to_string()),
     ))
 }
 
