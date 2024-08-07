@@ -44,7 +44,7 @@ const DATETIME_FORMAT_FULL = new Intl.DateTimeFormat(undefined, {
   timeStyle: "long",
 });
 
-export default function register() {
+export function register() {
   customElements.define(
     "parcel-date",
     class extends TimeElement {

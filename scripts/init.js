@@ -1,4 +1,6 @@
-import register from "./components/date.js";
+import { register as register_checklist } from "./components/checklist.js";
+import { register as register_clipboard } from "./components/clipboard.js";
+import { register as register_date } from "./components/date.js";
 
 function add_dropdowns() {
   document.querySelectorAll(".dropdown").forEach((element) => {
@@ -28,7 +30,9 @@ function init() {
     console.warn("Web components are not supported");
   }
 
-  register();
+  register_checklist();
+  register_clipboard();
+  register_date();
   add_dropdowns();
 }
 

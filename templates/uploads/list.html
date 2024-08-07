@@ -41,10 +41,9 @@
         <thead>
           <tr>
             <th class="slim">
-              <input
-                id="mass_checkbox"
-                type="checkbox"
-                _="on click call handleMassCheckboxClick(me)" />
+              <parcel-checkbox-group id="uploads_group" name="uploads">
+              </parcel-checkbox-group>
+            </th>
             <th class="text-nowrap text-left">File</th>
             <th class="text-nowrap text-right">Size</th>
             <th class="text-nowrap text-right">Downloads</th>
@@ -66,20 +65,16 @@
           {% for upload in uploads %}
           <tr>
             <td class="slim text-center">
-              <input
-                id="{{ loop.index }}_checkbox"
-                type="checkbox"
+              <parcel-grouped-checkbox
                 name="selected"
-                value="{{ upload.id }}"
-                _="on click call handleCheckboxClick(me, event, {{ loop.index }})" />
+                group="uploads"
+                value="{{ upload.id }}">
+              </parcel-grouped-checkbox>
             </td>
             <td>
               <div class="flex flex-row gap-1">
                 <a class="text-nowrap" href="/uploads/{{ upload.slug }}">{{ upload.filename }}</a>
-                <div id="{{ upload.id }}_copy" class="cursor-pointer" _="on click call handleCopyClick(me)">
-                  <span class="block">{% include "icons/lucide/clipboard-copy.svg" %}</span>
-                  <span class="block invisible">{% include "icons/lucide/clipboard-check.svg" %}</span>
-                </div>
+                <parcel-clipboard url="true" value="/upload/{{ upload.slug }}"></parcel-clipboard>
               </div>
             </td>
             <td class="text-right text-nowrap">{{ upload.size | filesizeformat }}</td>
@@ -145,55 +140,47 @@
 </div>
 
 <script>
-  function handleMassCheckboxClick(element) {
-    const checkboxes = document.querySelectorAll("input[name=selected]");
-    checkboxes.forEach(checkbox => {
-      checkbox.checked = element.checked;
-    });
-
-    const massDelete = document.getElementById("delete_selected");
-    massDelete.disabled = !element.checked;
-  }
-
-  function updateMassCheckbox() {
-    const checkboxes = document.querySelectorAll("input[name=selected]");
-    const checked = Array.from(checkboxes).filter(checkbox => checkbox.checked);
-
-    const massCheckbox = document.getElementById("mass_checkbox");
-    massCheckbox.checked = checked.length === checkboxes.length;
-    massCheckbox.indeterminate = checked.length > 0 && checked.length < checkboxes.length;
-
-    const massDelete = document.getElementById("delete_selected");
-    massDelete.disabled = checked.length === 0;
-  }
-
-  var lastChecked = null, lastCheckedIndex = 0;
-  function handleCheckboxClick(element, event, index) {
-    if (event.shiftKey) {
-      if (lastChecked) {
-        const start = Math.min(index, lastCheckedIndex);
-        const end = Math.max(index, lastCheckedIndex);
-        for (let i = start; i <= end; i++) {
-          document.getElementById(`${i}_checkbox`).checked = lastChecked.checked;
-        }
-      }
-    }
-
-    lastChecked = element;
-    lastCheckedIndex = index;
-    updateMassCheckbox();
-  }
-
-  // function handleCopyClick(element) {
-  //   const text = element.previousElementSibling.href;
-  //   const blob = new Blob([text], { type: "text/plain" });
-  //   const data = [new ClipboardItem({ ["text/plain"]: blob })];
-  //   navigator.clipboard.write(data);
-  //
-  //   document.querySelectorAll(".clipboard-copy").forEach(other => {
-  //     other.classList.remove("copied");
+  // function handleMassCheckboxClick(element) {
+  //   const checkboxes = document.querySelectorAll("input[name=selected]");
+  //   checkboxes.forEach(checkbox => {
+  //     checkbox.checked = element.checked;
   //   });
   //
-  //   element.classList.add("copied");
+  //   const massDelete = document.getElementById("delete_selected");
+  //   massDelete.disabled = !element.checked;
   // }
+  //
+  // function updateMassCheckbox() {
+  //   const checkboxes = document.querySelectorAll("input[name=selected]");
+  //   const checked = Array.from(checkboxes).filter(checkbox => checkbox.checked);
+  //
+  //   const massCheckbox = document.getElementById("mass_checkbox");
+  //   massCheckbox.checked = checked.length === checkboxes.length;
+  //   massCheckbox.indeterminate = checked.length > 0 && checked.length < checkboxes.length;
+  //
+  //   const massDelete = document.getElementById("delete_selected");
+  //   massDelete.disabled = checked.length === 0;
+  // }
+  //
+  // var lastChecked = null, lastCheckedIndex = 0;
+  // function handleCheckboxClick(element, event, index) {
+  //   if (event.shiftKey) {
+  //     if (lastChecked) {
+  //       const start = Math.min(index, lastCheckedIndex);
+  //       const end = Math.max(index, lastCheckedIndex);
+  //       for (let i = start; i <= end; i++) {
+  //         document.getElementById(`${i}_checkbox`).checked = lastChecked.checked;
+  //       }
+  //     }
+  //   }
+  //
+  //   lastChecked = element;
+  //   lastCheckedIndex = index;
+  //   updateMassCheckbox();
+  // }
+  (function() {
+    document.getElementById("uploads_group").addEventListener("changed", (event) => {
+      document.getElementById("delete_selected").disabled = !event.detail.any;
+    });
+  })();
 </script>
