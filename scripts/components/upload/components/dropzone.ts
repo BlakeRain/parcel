@@ -1,7 +1,6 @@
 import { html } from "htm/preact";
 import { useEffect } from "preact/hooks";
 import { StateMode, useState } from "../state";
-import { FileInfo } from "../files";
 
 const STATE_COLORS = {
   idle: "bg-neutral-100 text-neutral-400 dark:text-neutral-600",
@@ -59,9 +58,7 @@ const DropZone = () => {
 
   const onDragDrop = (event: DragEvent) => {
     event.preventDefault();
-    FileInfo.fromEvent(event).then((files) => {
-      dispatch({ type: "drop", files });
-    });
+    dispatch({ type: "drop", event });
   };
 
   useEffect(() => {

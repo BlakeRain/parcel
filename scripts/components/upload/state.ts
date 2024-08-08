@@ -6,7 +6,7 @@ import { useReducer, useContext } from "preact/hooks";
 export type StateAction =
   | { type: "dragover"; event: DragEvent }
   | { type: "dragleave" }
-  | { type: "drop"; files: FileInfo[] }
+  | { type: "drop"; event: DragEvent }
   | { type: "add"; files: FileList }
   | { type: "remove"; index: number }
   | { type: "removeAll" }
@@ -91,7 +91,8 @@ function reduceStateAction(state: State, action: StateAction): State {
       };
 
     case "drop": {
-      const files = [...state.files, ...action.files];
+      const dropped = FileInfo.fromEvent(action.event);
+      const files = [...state.files, ...dropped];
 
       return {
         ...state,
