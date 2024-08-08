@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use esbuild_bundle::javascript;
 use minijinja::context;
 use poem::{
@@ -7,10 +9,12 @@ use poem::{
         header::{CONTENT_DISPOSITION, CONTENT_LENGTH},
         StatusCode,
     },
-    web::{CsrfToken, CsrfVerifier, Data, Form, Html, Multipart, Path, Query, RealIp, Redirect},
+    web::{
+        CsrfToken, CsrfVerifier, Data, Form, Html, Json, Multipart, Path, Query, RealIp, Redirect,
+    },
     Body, IntoResponse, Response,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use time::{Date, OffsetDateTime};
 
 use crate::{
@@ -122,17 +126,32 @@ pub async fn get_new(
     )
 }
 
+#[derive(Debug, Default, Serialize)]
+pub struct UploadResult {
+    uploads: HashMap<String, Option<Upload>>,
+}
+
 #[handler]
 pub async fn post_new(
     env: Data<&Env>,
     RealIp(ip): RealIp,
     user: User,
+    csrf_verifier: &CsrfVerifier,
     mut form: Multipart,
-) -> poem::Result<()> {
-    // TODO: Other fields and CSRF token
+) -> poem::Result<Json<UploadResult>> {
+    let mut seen_csrf = false;
+    let mut uploads = Vec::new();
+    let mut failures = Vec::new();
 
     while let Ok(Some(field)) = form.next_field().await {
-        if field.name() == Some("file") {
+        if field.name() == Some("csrf_token") {
+            if !csrf_verifier.is_valid(&field.text().await?) {
+                tracing::error!("CSRF token is invalid in upload form");
+                return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+            }
+
+            seen_csrf = true;
+        } else if field.name() == Some("file") {
             let slug = nanoid::nanoid!();
             let filename = field
                 .file_name()
@@ -149,13 +168,12 @@ pub async fn post_new(
                     InternalServerError(err)
                 })?;
 
-                tokio::io::copy(&mut field, &mut file)
-                    .await
-                    .map_err(|err| {
-                        tracing::error!(err = ?err, path = ?path,
-                                        "Unable to copy file");
-                        InternalServerError(err)
-                    })?;
+                if let Err(err) = tokio::io::copy(&mut field, &mut file).await {
+                    tracing::error!(err = ?err, path = ?path,
+                                        "Unable to copy from stream to file");
+                    failures.push(filename.clone());
+                    continue;
+                }
             }
 
             let meta = tokio::fs::metadata(&path).await.map_err(|err| {
@@ -181,18 +199,43 @@ pub async fn post_new(
                 remote_addr: ip.as_ref().map(ToString::to_string),
             };
 
-            upload.create(&env.pool).await.map_err(|err| {
-                tracing::error!(err = ?err, "Unable to create upload");
-                InternalServerError(err)
-            })?;
-
-            tracing::info!(upload = ?upload, "Created upload");
+            uploads.push(upload);
         } else {
             tracing::info!(field_name = field.name(), "Ignoring unrecognized field");
         }
     }
 
-    Ok(())
+    if !seen_csrf {
+        tracing::error!("CSRF token was not seen in upload form");
+
+        for upload in uploads {
+            let path = env.cache_dir.join(&upload.slug);
+            tracing::info!(path = ?path, slug = ?upload.slug, "Deleting cached upload");
+            if let Err(err) = tokio::fs::remove_file(&path).await {
+                tracing::error!(path = ?path, err = ?err, slug = ?upload.slug,
+                        "Failed to delete cached upload");
+            }
+        }
+
+        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+    }
+
+    let mut result = UploadResult::default();
+    for mut upload in uploads {
+        upload.create(&env.pool).await.map_err(|err| {
+            tracing::error!(err = ?err, "Unable to create upload");
+            InternalServerError(err)
+        })?;
+
+        tracing::info!(upload = ?upload, "Created upload");
+        result.uploads.insert(upload.filename.clone(), Some(upload));
+    }
+
+    for filename in failures {
+        result.uploads.insert(filename, None);
+    }
+
+    Ok(Json(result))
 }
 
 #[handler]

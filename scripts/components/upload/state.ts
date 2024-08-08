@@ -152,6 +152,7 @@ function reduceStateAction(state: State, action: StateAction): State {
     case "error": {
       return {
         ...state,
+        mode: StateMode.Error,
         upload: null,
         error: "There was an error uploading files",
       };
@@ -160,6 +161,7 @@ function reduceStateAction(state: State, action: StateAction): State {
     case "abort": {
       return {
         ...state,
+        mode: StateMode.Aborted,
         upload: null,
         error: "The file upload was aborted",
       };

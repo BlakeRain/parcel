@@ -1,20 +1,74 @@
 import { FunctionComponent, VNode } from "preact";
 import { html } from "htm/preact";
 import register from "preact-custom-element";
-import { useState, ProvideState, StateMode } from "./upload/state";
+import {
+  useState,
+  ProvideState,
+  StateMode,
+  State,
+  StateAction,
+} from "./upload/state";
 import DropZone from "./upload/components/dropzone";
 import FilesSummary from "./upload/components/summary";
 import FilesList from "./upload/components/list";
 import UploadProgress from "./upload/components/progress";
 import { ParcelModal } from "./modal";
+import { FileInfo } from "./upload/files";
+
+function startUpload(
+  modal: ParcelModal,
+  csrf_token: string,
+  files: FileInfo[],
+  dispatch: (action: StateAction) => void,
+) {
+  const form = new FormData();
+  form.append("csrf_token", csrf_token);
+
+  for (let file of files) {
+    form.append("file", file.file);
+  }
+
+  const upload = new XMLHttpRequest();
+
+  upload.addEventListener("load", () => {
+    modal.setUnderlayDismiss(true);
+    htmx.trigger("#upload-list-refresh", "refresh");
+    dispatch({ type: "complete" });
+  });
+
+  upload.addEventListener("error", (event) => {
+    console.error("Failed to upload file", event);
+    modal.setUnderlayDismiss(true);
+    dispatch({ type: "error", event });
+  });
+
+  upload.addEventListener("abort", (event) => {
+    console.warn("Upload was aborted", event);
+    modal.setUnderlayDismiss(true);
+    dispatch({ type: "abort", event });
+  });
+
+  upload.upload.addEventListener("progress", (event) => {
+    dispatch({ type: "progress", loaded: event.loaded });
+  });
+
+  modal.setUnderlayDismiss(false);
+  upload.open("POST", "/uploads/new");
+  upload.send(form);
+  dispatch({ type: "upload", upload });
+}
 
 const UploadButtons: FunctionComponent<{ csrf_token: string }> = (props) => {
   const { state, dispatch } = useState();
 
   const onCancelClick = (event: MouseEvent) => {
-    (event.target as HTMLElement)
-      .closest<ParcelModal>("parcel-modal")
-      .closeModal();
+    if (state.upload) {
+      state.upload.abort();
+    } else {
+      (event.target as HTMLElement)
+        .closest<ParcelModal>("parcel-modal")
+        .closeModal();
+    }
   };
 
   const onUploadClick = (event: MouseEvent) => {
@@ -25,47 +79,18 @@ const UploadButtons: FunctionComponent<{ csrf_token: string }> = (props) => {
       throw new Error("Could not find parent modal");
     }
 
-    const form = new FormData();
-    form.append("csrf_token", props.csrf_token);
-
-    for (let file of state.files) {
-      form.append("file", file.file);
-    }
-
-    const upload = new XMLHttpRequest();
-
-    upload.addEventListener("load", () => {
-      modal.setUnderlayDismiss(true);
-      htmx.trigger("#upload-list-refresh", "refresh");
-      dispatch({ type: "complete" });
-    });
-
-    upload.addEventListener("error", (event) => {
-      console.error("Failed to upload file", event);
-      modal.setUnderlayDismiss(true);
-      dispatch({ type: "error", event });
-    });
-
-    upload.addEventListener("abort", (event) => {
-      console.warn("Upload was aborted", event);
-      modal.setUnderlayDismiss(true);
-      dispatch({ type: "abort", event });
-    });
-
-    upload.upload.addEventListener("progress", (event) => {
-      dispatch({ type: "progress", loaded: event.loaded });
-    });
-
-    modal.setUnderlayDismiss(false);
-    upload.open("POST", "/uploads/new");
-    upload.send(form);
-    dispatch({ type: "upload", upload });
+    startUpload(modal, props.csrf_token, state.files, dispatch);
   };
 
   return html`
     <div class="buttons end">
-      <button type="button" class="button hollow" onclick=${onCancelClick}>
-        Cancel
+      <button
+        type="button"
+        class="button hollow ${state.upload && "danger"}"
+        onclick=${onCancelClick}
+      >
+        <span class="icon-x"></span>
+        Cancel${state.upload && " upload"}
       </button>
       <button
         type="button"
@@ -96,6 +121,7 @@ const CompleteButtons: FunctionComponent = () => {
   return html`
     <div class="buttons end">
       <button type="button" class="button hollow" onclick=${onMoreClick}>
+        <span class="icon-rotate-ccw"></span>
         Upload more
       </button>
       <button type="button" class="button success" onclick=${onCloseClick}>
@@ -106,17 +132,47 @@ const CompleteButtons: FunctionComponent = () => {
   `;
 };
 
-const ErrorButtons: FunctionComponent = () => {
+const ErrorButtons: FunctionComponent<{ csrf_token: string }> = (props) => {
+  const { state, dispatch } = useState();
+
   const onCancelClick = (event: MouseEvent) => {
     (event.target as HTMLElement)
       .closest<ParcelModal>("parcel-modal")
       .closeModal();
   };
 
+  const onResetClick = () => {
+    dispatch({ type: "reset" });
+  };
+
+  const onRetryClick = (event: MouseEvent) => {
+    const modal = (event.target as HTMLElement).closest<ParcelModal>(
+      "parcel-modal",
+    );
+    if (!modal) {
+      throw new Error("Could not find parent modal");
+    }
+
+    startUpload(modal, props.csrf_token, state.files, dispatch);
+  };
+
   return html`
     <div class="buttons end">
-      <button type="button" class="button hollow" onclick=${onCancelClick}>
+      <button
+        type="button"
+        class="button hollow danger"
+        onclick=${onCancelClick}
+      >
+        <span class="icon-x"></span>
         Cancel
+      </button>
+      <button type="button" class="button hollow" onclick=${onResetClick}>
+        <span class="icon-rotate-ccw"></span>
+        Reset
+      </button>
+      <button type="button" class="button" onclick=${onRetryClick}>
+        <span class="icon-upload"></span>
+        Try again
       </button>
     </div>
   `;
@@ -155,7 +211,7 @@ const UploadFormInner: FunctionComponent<{ csrf_token: string }> = (props) => {
 
     case StateMode.Error:
     case StateMode.Aborted:
-      buttons = html`<${ErrorButtons} />`;
+      buttons = html`<${ErrorButtons} ...${props} />`;
       break;
 
     case StateMode.Complete:
