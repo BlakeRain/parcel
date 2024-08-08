@@ -5,7 +5,7 @@ import { StateMode, useState } from "../state";
 const STATE_COLORS = {
   idle: "bg-neutral-100 text-neutral-400 dark:text-neutral-600",
   active: "bg-neutral-200 text-neutral-600 dark:text-neutral-400",
-  complete: "bg-green-200 text-green-400 dark:text-green-600",
+  complete: "bg-green-200 text-green-600 dark:text-green-600",
   error: "bg-red-200 text-red-400 dark:text-red-600",
 };
 
