@@ -72,13 +72,65 @@ class CheckboxGroup extends HTMLElement {
 class GroupedCheckbox extends HTMLElement {
   public index: number = -1;
   public checkbox: HTMLInputElement = null;
+  private internals: ElementInternals;
+
+  static formAssociated = true;
 
   static get observedAttributes() {
     return ["group", "name"];
   }
 
+  get checked() {
+    return this.checkbox.checked;
+  }
+
+  set checked(v) {
+    this.checkbox.checked = v;
+  }
+
+  get value() {
+    return this.checkbox.checked ? this.checkbox.value : null;
+  }
+
+  set value(v) {
+    this.checkbox.value = v;
+  }
+
+  get form() {
+    return this.internals.form;
+  }
+
+  get name() {
+    return this.getAttribute("name");
+  }
+
+  get type() {
+    return this.localName;
+  }
+
+  get validity() {
+    return this.internals.validity;
+  }
+
+  get validationMessage() {
+    return this.internals.validationMessage;
+  }
+
+  get willValidate() {
+    return this.internals.willValidate;
+  }
+
+  checkValidity() {
+    this.internals.checkValidity();
+  }
+
+  reportValidity() {
+    this.internals.reportValidity();
+  }
+
   constructor() {
     super();
+    this.internals = this.attachInternals();
   }
 
   connectedCallback() {
@@ -98,6 +150,7 @@ class GroupedCheckbox extends HTMLElement {
     this.checkbox.type = "checkbox";
     this.checkbox.name = this.getAttribute("name");
     this.checkbox.value = this.getAttribute("value");
+    this.checkbox.checked = !!this.getAttribute("checked");
 
     this.checkbox.addEventListener("click", (event) => {
       if (event.shiftKey) {
@@ -115,10 +168,8 @@ class GroupedCheckbox extends HTMLElement {
       group.updateCheckbox();
     });
 
-    this.appendChild(this.checkbox);
-
-    // const shadow = this.attachShadow({ mode: "open" });
-    // shadow.appendChild(this.checkbox);
+    const shadow = this.attachShadow({ mode: "open" });
+    shadow.appendChild(this.checkbox);
   }
 }
 
