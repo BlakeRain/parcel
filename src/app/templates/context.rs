@@ -41,7 +41,7 @@ pub fn default_context<'e, E: Into<TemplateEnv<'e>>>(env: E) -> Value {
     context! {
         build => create_build_info(),
         env => context! {
-            init_js => javascript!("scripts/init.js"),
+            init_js => javascript!("scripts/init.ts"),
             analytics_domain => env.analytics_domain,
             plausible_script => env.plausible_script,
         }

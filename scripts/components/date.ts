@@ -21,11 +21,11 @@ class TimeElement extends HTMLElement {
     shadow.appendChild(span);
   }
 
-  formatTitle(_value) {
+  formatTitle(_value: Date): string {
     throw new Error("Not implemented");
   }
 
-  formatContent(_span, _value) {
+  formatContent(_span: HTMLSpanElement, _value: Date) {
     throw new Error("Not implemented");
   }
 }
@@ -48,11 +48,11 @@ export function register() {
   customElements.define(
     "parcel-date",
     class extends TimeElement {
-      formatTitle(value) {
+      formatTitle(value: Date): string {
         return DATE_FORMAT_FULL.format(value);
       }
 
-      formatContent(span, value) {
+      formatContent(span: HTMLSpanElement, value: Date) {
         span.textContent = DATE_FORMAT.format(value);
       }
     },
@@ -61,11 +61,11 @@ export function register() {
   customElements.define(
     "parcel-datetime",
     class extends TimeElement {
-      formatTitle(value) {
+      formatTitle(value: Date): string {
         return DATETIME_FORMAT_FULL.format(value);
       }
 
-      formatContent(span, value) {
+      formatContent(span: HTMLSpanElement, value: Date) {
         span.textContent = DATETIME_FORMAT.format(value);
       }
     },

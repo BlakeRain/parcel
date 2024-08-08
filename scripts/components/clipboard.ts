@@ -5,7 +5,7 @@ class ClipboardElement extends HTMLElement {
 
   connectedCallback() {
     let valueAttribute = this.getAttribute("value");
-    if (!valueAttribute) {
+    if (typeof valueAttribute !== "string") {
       return;
     }
 

@@ -1,7 +1,9 @@
 import MIME_INFO from "./mime.js";
 
 export class DragFile {
-  constructor(type) {
+  public type: string;
+
+  constructor(type: string) {
     this.type = type;
   }
 
@@ -27,7 +29,7 @@ export class DragFile {
     return null;
   }
 
-  static fromEvent(event) {
+  static fromEvent(event: DragEvent) {
     if (event.dataTransfer.items) {
       return [...event.dataTransfer.items]
         .filter((item) => item.kind === "file")
@@ -39,7 +41,9 @@ export class DragFile {
 }
 
 export class FileInfo {
-  constructor(file) {
+  public file: File;
+
+  constructor(file: File) {
     this.file = file;
   }
 
@@ -68,7 +72,7 @@ export class FileInfo {
     return "icon-file";
   }
 
-  static fromEvent(event) {
+  static fromEvent(event: DragEvent) {
     if (event.dataTransfer.items) {
       return [...event.dataTransfer.items]
         .filter((item) => item.kind === "file")
@@ -76,5 +80,9 @@ export class FileInfo {
     }
 
     return [];
+  }
+
+  static fromList(files: FileList) {
+    return [...files].map((file) => new FileInfo(file));
   }
 }

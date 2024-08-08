@@ -1,15 +1,16 @@
 const CHECKBOX_GROUPS = {};
 
 class CheckboxGroup extends HTMLElement {
+  public checkbox: HTMLInputElement = null;
+  public checkboxes: GroupedCheckbox[] = [];
+  public lastChecked: GroupedCheckbox | null = null;
+
   static get observedAttributes() {
     return ["name"];
   }
 
   constructor() {
     super();
-    this.checkbox = null;
-    this.checkboxes = [];
-    this.last_checked = null;
   }
 
   connectedCallback() {
@@ -36,7 +37,7 @@ class CheckboxGroup extends HTMLElement {
     CHECKBOX_GROUPS[name] = this;
   }
 
-  registerCheckbox(checkbox) {
+  registerCheckbox(checkbox: GroupedCheckbox) {
     const index = this.checkboxes.length;
     this.checkboxes.push(checkbox);
     return index;
@@ -69,14 +70,15 @@ class CheckboxGroup extends HTMLElement {
 }
 
 class GroupedCheckbox extends HTMLElement {
+  public index: number = -1;
+  public checkbox: HTMLInputElement = null;
+
   static get observedAttributes() {
     return ["group", "name"];
   }
 
   constructor() {
     super();
-    this.index = -1;
-    this.checkbox = null;
   }
 
   connectedCallback() {

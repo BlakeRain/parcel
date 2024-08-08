@@ -97,12 +97,25 @@ fn main() {
         }
     }
 
+    let status = Command::new("npx")
+        .arg("tsc")
+        .arg("-noEmit")
+        .status()
+        .unwrap_or_else(|_| {
+            panic!("Failed to run tsc");
+        });
+
+    if !status.success() {
+        panic!("Failed to run tsc");
+    }
+
     println!("cargo:rerun-if-changed=scripts");
     println!("cargo:rerun-if-changed=style");
     println!("cargo:rerun-if-changed=templates");
     println!("cargo:rerun-if-changed=package.json");
     println!("cargo:rerun-if-changed=postcss.config.js");
     println!("cargo:rerun-if-changed=tailwind.config.js");
+    println!("cargo:rerun-if-changed=tsconfig.json");
 
     println!("cargo:rustc-env=CARGO_PROFILE={profile}");
     println!("cargo:rustc-env=CARGO_BUILD_DATE={build_date}");

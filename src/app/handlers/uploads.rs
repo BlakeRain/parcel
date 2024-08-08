@@ -116,7 +116,7 @@ pub async fn get_new(
         "uploads/new.html",
         context! {
             csrf_token => csrf_token.0,
-            upload_js => javascript!("scripts/components/upload.js"),
+            upload_js => javascript!("scripts/components/upload.ts"),
             ..authorized_context(&env, &user)
         },
     )

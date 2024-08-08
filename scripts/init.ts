@@ -13,7 +13,7 @@ function add_dropdowns() {
   });
 
   document.addEventListener("click", (event) => {
-    if (event.target.closest(".dropdown")) {
+    if ((event.target as HTMLElement).closest(".dropdown")) {
       return;
     }
 

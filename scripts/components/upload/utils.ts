@@ -1,4 +1,4 @@
-export function formatBytes(bytes, digits) {
+export function formatBytes(bytes: number, digits?: number): string {
   const units = ["B", "KB", "MB", "GB", "TB"];
   let unit = 0;
 

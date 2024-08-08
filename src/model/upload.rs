@@ -53,7 +53,7 @@ impl Upload {
         expiry: Option<Date>,
     ) -> sqlx::Result<()> {
         sqlx::query(
-            "UPDATE uploads SET 
+            "UPDATE uploads SET
                 filename = $1,
                 public = $2,
                 \"limit\" = $3,

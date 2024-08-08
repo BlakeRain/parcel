@@ -1,8 +1,9 @@
-import { html } from "../../../shared.js";
-import { useState } from "../state.js";
-import { formatBytes } from "../utils.js";
+import { FunctionComponent } from "preact";
+import { html } from "htm/preact";
+import { useState } from "../state";
+import { formatBytes } from "../utils";
 
-const UploadProgress = () => {
+const UploadProgress: FunctionComponent = () => {
   const { state } = useState();
 
   const uploaded = formatBytes(state.uploadedBytes, 0);

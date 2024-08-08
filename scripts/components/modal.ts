@@ -1,9 +1,6 @@
-class ModalElement extends HTMLElement {
-  constructor() {
-    super();
-    this.closing = false;
-    this.withHtmx = false;
-  }
+export class ParcelModal extends HTMLElement {
+  private closing: boolean = false;
+  private withHtmx: boolean = false;
 
   connectedCallback() {
     this.withHtmx = this.getAttribute("with-htmx") !== null;
@@ -51,5 +48,5 @@ class ModalElement extends HTMLElement {
 }
 
 export function register() {
-  customElements.define("parcel-modal", ModalElement);
+  customElements.define("parcel-modal", ParcelModal);
 }

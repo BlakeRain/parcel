@@ -1,10 +1,46 @@
-import { html } from "../../shared.js";
-import { DragFile, FileInfo } from "./files.js";
-import { createContext } from "preact";
+import { html } from "htm/preact";
+import { DragFile, FileInfo } from "./files";
+import { createContext, FunctionComponent } from "preact";
 import { useReducer, useContext } from "preact/hooks";
 
-function createInitialState() {
+export type StateAction =
+  | { type: "dragover"; event: DragEvent }
+  | { type: "dragleave" }
+  | { type: "drop"; event: DragEvent }
+  | { type: "add"; files: FileList }
+  | { type: "remove"; index: number }
+  | { type: "removeAll" }
+  | { type: "upload"; upload: XMLHttpRequest }
+  | { type: "progress"; loaded: number }
+  | { type: "error"; event: ProgressEvent<any> }
+  | { type: "abort"; event: ProgressEvent<any> }
+  | { type: "complete" }
+  | { type: "reset" };
+
+export enum StateMode {
+  Preparing,
+  Uploading,
+  Aborted,
+  Error,
+  Complete,
+}
+
+export interface State {
+  mode: StateMode;
+  dragFiles: DragFile[];
+  dragIcon: string;
+  dragHint: string | null;
+  files: FileInfo[];
+  totalSize: number;
+  upload: XMLHttpRequest | null;
+  uploadedBytes: number;
+  uploadProgress: number;
+  error: string | null;
+}
+
+function createInitialState(): State {
   return {
+    mode: StateMode.Preparing,
     dragFiles: [],
     dragIcon: "icon-file",
     dragHint: null,
@@ -13,11 +49,11 @@ function createInitialState() {
     upload: null,
     uploadedBytes: 0,
     uploadProgress: 0,
-    complete: false,
+    error: null,
   };
 }
 
-function reduceStateAction(state, action) {
+function reduceStateAction(state: State, action: StateAction): State {
   switch (action.type) {
     case "dragover": {
       const dragFiles = DragFile.fromEvent(action.event);
@@ -35,7 +71,7 @@ function reduceStateAction(state, action) {
           dragHint = "Upload file";
         }
       } else {
-        hitn = "No files";
+        dragHint = "No files";
       }
 
       return {
@@ -68,19 +104,32 @@ function reduceStateAction(state, action) {
       };
     }
 
+    case "add": {
+      const added = FileInfo.fromList(action.files);
+      const files = [...state.files, ...added];
+
+      return {
+        ...state,
+        files,
+        totalSize: files.map((file) => file.size).reduce((a, b) => a + b, 0),
+      };
+    }
+
     case "remove": {
       const files = state.files.filter((_, index) => index !== action.index);
 
       return {
         ...state,
         files,
+        totalSize: files.map((file) => file.size).reduce((a, b) => a + b, 0),
       };
     }
 
-    case "removeall": {
+    case "removeAll": {
       return {
         ...state,
         files: [],
+        totalSize: 0,
       };
     }
 
@@ -88,6 +137,7 @@ function reduceStateAction(state, action) {
       return {
         ...state,
         upload: action.upload,
+        mode: StateMode.Uploading,
       };
     }
 
@@ -119,8 +169,12 @@ function reduceStateAction(state, action) {
       return {
         ...state,
         upload: null,
-        complete: true,
+        mode: StateMode.Complete,
       };
+    }
+
+    case "reset": {
+      return createInitialState();
     }
 
     default:
@@ -131,12 +185,12 @@ function reduceStateAction(state, action) {
 
 export const State = createContext({
   state: createInitialState(),
-  dispatch: () => {
+  dispatch: (_action: StateAction) => {
     throw new Error("Dispatching to unpopulated state context");
   },
 });
 
-export const ProvideState = (props) => {
+export const ProvideState: FunctionComponent = (props) => {
   const [state, dispatch] = useReducer(reduceStateAction, createInitialState());
 
   return html`
