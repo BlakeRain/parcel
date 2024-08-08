@@ -20,7 +20,7 @@
 
 {% block scripts %}
   <script type="text/javascript">
-    document.body.addEventListener("parcelRefresh", () => {
+    document.body.addEventListener("parcelUploadDeleted", () => {
       htmx.trigger("#upload-stats-container", "refresh");
     })
   </script>

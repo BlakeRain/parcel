@@ -315,7 +315,7 @@ pub async fn delete_upload(
     } else {
         ""
     })
-    .with_header("HX-Trigger", "parcelRefresh"))
+    .with_header("HX-Trigger", "parcelUploadDeleted"))
 }
 
 #[derive(Debug, Deserialize)]
