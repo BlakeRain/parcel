@@ -29,6 +29,16 @@
           placeholder="Username"
           value="{{ auth.username }}"
           required />
+        <label for="name">Display name</label>
+        <input
+          type="text"
+          class="field"
+          name="name"
+          id="name"
+          placeholder="Display Name"
+          value="{{ auth.name }}"
+          required
+        />
         <div class="buttons">
           <button type="submit" class="button">Update settings</button>
         </div>

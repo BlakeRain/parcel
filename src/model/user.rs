@@ -14,6 +14,7 @@ use crate::app::errors::NotSignedInError;
 pub struct User {
     pub id: i32,
     pub username: String,
+    pub name: String,
     #[serde(skip)]
     pub password: String,
     pub enabled: bool,
@@ -41,11 +42,12 @@ pub fn hash_password(plain: &str) -> String {
 impl User {
     pub async fn create(&mut self, pool: &SqlitePool) -> sqlx::Result<()> {
         let result = sqlx::query_scalar::<_, i32>(
-            "INSERT INTO users (username, password, enabled, admin,
-            \"limit\", created_at, created_by) VALUES ($1, $2, $3, $4, $5, $6, $7)
+            "INSERT INTO users (username, name, password, enabled, admin,
+            \"limit\", created_at, created_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             RETURNING id",
         )
         .bind(&self.username)
+        .bind(&self.name)
         .bind(&self.password)
         .bind(self.enabled)
         .bind(self.admin)
@@ -67,6 +69,17 @@ impl User {
             .await?;
 
         self.username = username.to_string();
+        Ok(())
+    }
+
+    pub async fn set_name(&mut self, pool: &SqlitePool, name: &str) -> sqlx::Result<()> {
+        sqlx::query("UPDATE users SET name = $1 WHERE id = $2")
+            .bind(name)
+            .bind(self.id)
+            .execute(pool)
+            .await?;
+
+        self.name = name.to_string();
         Ok(())
     }
 
@@ -98,16 +111,18 @@ impl User {
         &mut self,
         pool: &SqlitePool,
         username: &str,
+        name: &str,
         admin: bool,
         enabled: bool,
         limit: Option<i64>,
     ) -> sqlx::Result<()> {
         sqlx::query(
             "UPDATE users SET
-                    username = $1, enabled = $2, admin = $3, \"limit\" = $4
-                    WHERE id = $5",
+                    username = $1, name = $2, enabled = $3, admin = $4, \"limit\" = $5
+                    WHERE id = $6",
         )
         .bind(username)
+        .bind(name)
         .bind(enabled)
         .bind(admin)
         .bind(limit)
@@ -116,6 +131,7 @@ impl User {
         .await?;
 
         self.username = username.to_string();
+        self.name = name.to_string();
         self.enabled = enabled;
         self.admin = admin;
 

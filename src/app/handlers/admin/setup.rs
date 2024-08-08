@@ -48,6 +48,7 @@ pub async fn get_setup(
 pub struct SetupForm {
     token: String,
     username: String,
+    name: String,
     password: String,
 }
 
@@ -59,6 +60,7 @@ pub async fn post_setup(
     Form(SetupForm {
         token,
         username,
+        name,
         password,
     }): Form<SetupForm>,
 ) -> poem::Result<(StatusCode, HeaderMap, Html<String>)> {
@@ -88,6 +90,7 @@ pub async fn post_setup(
     let mut admin = User {
         id: 0,
         username,
+        name,
         password: hash_password(&password),
         enabled: true,
         admin: true,

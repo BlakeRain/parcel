@@ -37,6 +37,7 @@
           <tr>
             <th class="text-right">ID</th>
             <th class="text-left">Username</th>
+            <th class="text-left">Display Name</th>
             <th class="text-center">Enabled</th>
             <th class="text-center">Admin</th>
             <th class="text-left">Created At</th>
@@ -54,6 +55,7 @@
                   <span class="text-sm text-success">(you)</span>
                 {% endif %}
               </td>
+              <td class="text-left">{{ user.name }}</td>
               <td class="text-center {% if user.enabled %}text-success{% else %}text-danger{% endif %}">
                 {% if user.enabled %}Yes{% else %}No{% endif %}
               </td>

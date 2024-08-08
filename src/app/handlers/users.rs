@@ -137,6 +137,7 @@ pub async fn get_settings(
 pub struct SettingsForm {
     token: String,
     username: String,
+    name: String,
 }
 
 #[handler]
@@ -145,52 +146,70 @@ pub async fn post_settings(
     mut user: User,
     verifier: &CsrfVerifier,
     session: &Session,
-    Form(SettingsForm { token, username }): Form<SettingsForm>,
+    Form(SettingsForm {
+        token,
+        username,
+        name,
+    }): Form<SettingsForm>,
 ) -> poem::Result<Redirect> {
     if !verifier.is_valid(&token) {
         tracing::error!("Invalid CSRF token in settings form");
         return Err(CsrfError.into());
     }
 
-    if user.username == username {
-        tracing::info!("Username was not changed; ignoring settings change");
-        return Ok(Redirect::see_other("/user/settings"));
-    }
-
-    if let Some(existing) = User::get_by_username(&env.pool, &username)
-        .await
-        .map_err(|err| {
-            tracing::error!(username = ?username, err = ?err,
+    if user.username != username {
+        if let Some(existing) =
+            User::get_by_username(&env.pool, &username)
+                .await
+                .map_err(|err| {
+                    tracing::error!(username = ?username, err = ?err,
                     "Failed to get user by username");
-            InternalServerError(err)
-        })?
-    {
-        tracing::error!(
+                    InternalServerError(err)
+                })?
+        {
+            tracing::error!(
+                user_id = user.id,
+                username = user.username,
+                name = user.name,
+                new_username = username,
+                existing_id = existing.id,
+                "Username is already taken"
+            );
+
+            session.set("settings_error", "Username is already taken");
+            return Ok(Redirect::see_other("/user/settings"));
+        }
+
+        tracing::info!(
             user_id = user.id,
             username = user.username,
             new_username = username,
-            existing_id = existing.id,
-            "Username is already taken"
+            "Changing username"
         );
 
-        session.set("settings_error", "Username is already taken");
-        return Ok(Redirect::see_other("/user/settings"));
+        user.set_username(&env.pool, &username)
+            .await
+            .map_err(|err| {
+                tracing::error!(user_id = user.id, username = ?username, err = ?err,
+                    "Failed to set username");
+                InternalServerError(err)
+            })?;
     }
 
-    tracing::info!(
-        user_id = user.id,
-        username = user.username,
-        new_username = username,
-        "Changing username"
-    );
+    if user.name != name {
+        tracing::info!(
+            user_id = user.id,
+            username = user.username,
+            name = name,
+            "Changing name"
+        );
 
-    user.set_username(&env.pool, &username)
-        .await
-        .map_err(|err| {
+        user.set_name(&env.pool, &name).await.map_err(|err| {
             tracing::error!(user_id = user.id, username = ?username, err = ?err,
-                    "Failed to set username");
+            "Failed to set name");
             InternalServerError(err)
         })?;
+    }
 
     session.set(
         "settings_success",

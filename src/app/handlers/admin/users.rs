@@ -56,6 +56,7 @@ pub fn get_new(
 pub struct NewUserForm {
     token: String,
     username: String,
+    name: String,
     password: String,
     admin: Option<String>,
     enabled: Option<String>,
@@ -70,6 +71,7 @@ pub async fn post_new(
     Form(NewUserForm {
         token,
         username,
+        name,
         password,
         admin,
         enabled,
@@ -87,6 +89,7 @@ pub async fn post_new(
     let mut user = User {
         id: 0,
         username,
+        name,
         password: hash_password(&password),
         enabled,
         admin,
@@ -135,6 +138,7 @@ pub async fn get_user(
 pub struct EditUserForm {
     token: String,
     username: String,
+    name: String,
     admin: Option<String>,
     enabled: Option<String>,
     limit: Option<i64>,
@@ -149,6 +153,7 @@ pub async fn post_user(
     Form(EditUserForm {
         token,
         username,
+        name,
         admin,
         enabled,
         limit,
@@ -190,7 +195,7 @@ pub async fn post_user(
     // Override the 'enabled' selection if the user being edited is the same as the admin
     let enabled = user.id == auth.id || enabled;
 
-    user.update(&env.pool, &username, admin, enabled, limit)
+    user.update(&env.pool, &username, &name, admin, enabled, limit)
         .await
         .map_err(|err| {
             tracing::error!(err = ?err, user_id = user_id, "Failed to update user");
