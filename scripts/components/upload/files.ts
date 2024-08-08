@@ -72,11 +72,19 @@ export class FileInfo {
     return "icon-file";
   }
 
-  static fromEvent(event: DragEvent) {
+  static async fromEvent(event: DragEvent) {
     if (event.dataTransfer.items) {
-      return [...event.dataTransfer.items]
-        .filter((item) => item.kind === "file")
-        .map((item) => new FileInfo(item.getAsFile()));
+      const items = [...event.dataTransfer.items].filter(
+        (item) => item.kind === "file",
+      );
+
+      let files = [];
+      for (let item of items) {
+        const entry = item.webkitGetAsEntry();
+        await scanFiles(entry, files);
+      }
+
+      return files;
     }
 
     return [];
@@ -84,5 +92,27 @@ export class FileInfo {
 
   static fromList(files: FileList) {
     return [...files].map((file) => new FileInfo(file));
+  }
+}
+
+async function scanFiles(entry: FileSystemEntry, files: FileInfo[]) {
+  if (entry.isDirectory) {
+    const promise = new Promise((resolve, reject) => {
+      (entry as FileSystemDirectoryEntry)
+        .createReader()
+        .readEntries((entries) => {
+          const f = entries.map((entry) => scanFiles(entry, files));
+          Promise.all(f).then(resolve, reject);
+        }, reject);
+    });
+
+    await promise;
+  } else if (entry.isFile) {
+    const promise: Promise<File> = new Promise((resolve, reject) => {
+      (entry as FileSystemFileEntry).file(resolve, reject);
+    });
+
+    const file = await promise;
+    files.push(new FileInfo(file));
   }
 }
