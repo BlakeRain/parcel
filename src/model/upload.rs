@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, SqlitePool};
+use sqlx::{FromRow, QueryBuilder, SqlitePool};
 use time::{Date, OffsetDateTime};
 
 #[derive(Debug, FromRow, Serialize)]
@@ -11,6 +11,7 @@ pub struct Upload {
     pub public: bool,
     pub downloads: i64,
     pub limit: Option<i64>,
+    pub remaining: Option<i64>,
     pub expiry_date: Option<Date>,
     pub uploaded_by: i32,
     pub uploaded_at: OffsetDateTime,
@@ -53,7 +54,7 @@ impl Upload {
     pub async fn create(&mut self, pool: &SqlitePool) -> sqlx::Result<()> {
         let result = sqlx::query_scalar::<_, i32>(
             "INSERT INTO uploads (slug, filename, size, public,
-            downloads, \"limit\", expiry_date,
+            downloads, \"limit\", remaining, expiry_date,
             uploaded_by, uploaded_at, remote_addr)
             VALUES ($1, $2, $3, $4,
                     0, $5, $6,
@@ -65,6 +66,7 @@ impl Upload {
         .bind(self.size)
         .bind(self.public)
         .bind(self.limit)
+        .bind(self.remaining)
         .bind(self.expiry_date)
         .bind(self.uploaded_by)
         .bind(self.uploaded_at)
@@ -82,27 +84,36 @@ impl Upload {
         filename: &str,
         public: bool,
         limit: Option<i64>,
+        remaining: Option<i64>,
         expiry: Option<Date>,
     ) -> sqlx::Result<()> {
-        sqlx::query(
+        let count = sqlx::query(
             "UPDATE uploads SET
                 filename = $1,
                 public = $2,
                 \"limit\" = $3,
-                expiry_date = $4
-            WHERE id = $5",
+                remaining = $4,
+                expiry_date = $5
+            WHERE id = $6",
         )
         .bind(filename)
         .bind(public)
         .bind(limit)
+        .bind(remaining)
         .bind(expiry)
         .bind(self.id)
         .execute(pool)
         .await?;
 
+        if count.rows_affected() == 0 {
+            return Err(sqlx::Error::RowNotFound);
+        }
+
         self.filename = filename.to_string();
         self.public = public;
         self.limit = limit;
+        self.remaining = remaining;
+
         Ok(())
     }
 
@@ -111,11 +122,15 @@ impl Upload {
             return Ok(());
         }
 
-        sqlx::query("UPDATE uploads SET public = $1 WHERE id = $2")
+        let count = sqlx::query("UPDATE uploads SET public = $1 WHERE id = $2")
             .bind(public)
             .bind(self.id)
             .execute(pool)
             .await?;
+
+        if count.rows_affected() == 0 {
+            return Err(sqlx::Error::RowNotFound);
+        }
 
         self.public = public;
         Ok(())
@@ -158,19 +173,49 @@ impl Upload {
             .await
     }
 
-    pub async fn record_download(&self, pool: &SqlitePool) -> sqlx::Result<()> {
-        sqlx::query("UPDATE uploads SET downloads = downloads + 1 WHERE id = $1")
+    pub async fn record_download(&mut self, pool: &SqlitePool, public: bool) -> sqlx::Result<()> {
+        let mut query = QueryBuilder::new("UPDATE uploads SET downloads = downloads + 1");
+
+        if public && self.remaining.is_some() {
+            query.push(", remaining = MAX(0, remaining - 1)");
+        }
+
+        query.push(" WHERE id = $1 RETURNING downloads, remaining");
+
+        let (downloads, remaining) = query
+            .build_query_as::<(i64, Option<i64>)>()
+            .bind(self.id)
+            .fetch_one(pool)
+            .await?;
+
+        self.downloads = downloads;
+        self.remaining = remaining;
+
+        Ok(())
+    }
+
+    pub async fn reset_remaining(&self, pool: &SqlitePool) -> sqlx::Result<()> {
+        let count = sqlx::query("UPDATE uploads SET remaining = \"limit\" WHERE id = $1")
             .bind(self.id)
             .execute(pool)
             .await?;
+
+        if count.rows_affected() == 0 {
+            return Err(sqlx::Error::RowNotFound);
+        }
+
         Ok(())
     }
 
     pub async fn delete(&self, pool: &SqlitePool) -> sqlx::Result<()> {
-        sqlx::query("DELETE FROM uploads WHERE id = $1")
+        let count = sqlx::query("DELETE FROM uploads WHERE id = $1")
             .bind(self.id)
             .execute(pool)
             .await?;
+
+        if count.rows_affected() == 0 {
+            return Err(sqlx::Error::RowNotFound);
+        }
 
         Ok(())
     }

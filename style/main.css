@@ -17,6 +17,7 @@ body.has-web-components .no-web-components {
   body {
     @apply bg-neutral-100 text-neutral-800;
     @apply dark:bg-gray-900 dark:text-neutral-300;
+    @apply flex flex-col min-h-screen;
   }
 
   a {

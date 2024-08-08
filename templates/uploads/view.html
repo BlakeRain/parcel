@@ -3,69 +3,54 @@
 {% block title %}{{ upload.filename }}{% endblock %}
 
 {% block content %}
-  <div id="upload-view-container" class="container mx-auto flex flex-col items-center">
-    <div class="panel thin">
-      <a
-      {% if expired or exhausted %}
-        href="#"
-        onclick="event.preventDefault()"
-      {% else %}
-        href="/uploads/{{ upload.slug | urlencode }}/download"
-      {% endif %}
-        class="no-color group">
-        <div class="flex flex-row items-center gap-2">
-          <div class="big-icon text-slate-400 hidden md:block group-hover:text-blue-600 dark:group-hover:text-blue-500">
-            <span class="icon-download"></span>
-          </div>
-          <div>
-            <h1 class="heading group-hover:text-blue-600 dark:group-hover:text-blue-500">
-              {{ upload.filename }}
-              <span class="text-gray-400 group-hover:text-blue-500 dark:group-hover:text-blue-400">
-                ({{ upload.size | filesizeformat }})
-              </span>
-            </h1>
-
-            <div>
-              Uploaded {{ upload.uploaded_at | datetime_offset }}
-              by {{ uploader.username }}
-              {% if auth and uploader.id == auth.id %}
-                (your upload)
-              {% endif %}
-            </div>
-
-            {% if auth and uploader.id == auth.id and upload.public %}
-              <div class="text-danger">
-                Publicly accessible
-              </div>
-            {% endif %}
-
-            <div>
-              Downloaded {{ upload.downloads }} time{% if upload.downloads != 1 %}s{% endif %}
-              {% if upload.limit %}
-              <span class="{% if upload.downloads >= upload.limit %}text-danger{% else %}text-success{% endif %}">
-                  ({{ upload.limit - upload.downloads }} remaining)
-                </span>
-              {% endif %}
-            </div>
-
-            {% if upload.expiry_date %}
-              <div class="{% if expired %}text-danger{% else %}text-success{% endif %}">
-                Upload expires {{ upload.expiry_date | date_offset }}
-              </div>
-            {% endif %}
-
-            {% if not expired and not exhausted %}
-              <div class="text-gray-500 mt-4">
-                Click to download
-              </div>
-            {% endif %}
-          </div>
+  <div id="upload-view-container" class="grow flex flex-col justify-center items-center">
+    <div class="flex flex-col border rounded-md shadow-md border-slate-400 dark:border-gray-700 dark:bg-gray-800 p-6 sm:p-8">
+      <div class="flex flex-row items-center gap-2">
+        <div class="text-8xl text-slate-400 hidden md:block">
+          <span class="icon-download group-hover:text-blue-600 dark:group-hover:text-blue-500"></span>
         </div>
-      </a>
-      {% if auth and uploader.id == auth.id %}
-        <div class="flex flex-col md:flex-row gap-4 mt-8">
-          <a
-            href="#"
+        <div>
+          <h1 class="heading group-hover:text-blue-600 dark:group-hover:text-blue-500">
+            {{ upload.filename }}
+            <span class="text-gray-400 group-hover:text-blue-500 dark:group-hover:text-blue-400">
+              ({{ upload.size | filesizeformat }})
+            </span>
+          </h1>
+
+          <div>
+            Uploaded {{ upload.uploaded_at | datetime_offset }}
+            by {{ uploader.username }}
+            {% if owner %}
+              (your upload)
+            {% endif %}
+          </div>
+
+          {% if owner and upload.public %}
+            <div class="text-danger">
+              Publicly accessible
+            </div>
+            <div>
+                Downloaded {{ upload.downloads }} time{% if upload.downloads != 1 %}s{% endif %}
+                {% if upload.limit is number %}
+                  <span class="{% if upload.remaining == 0 %}text-danger{% else %}text-success{% endif %}">
+                    ({{ upload.remaining }}/{{ upload.limit }} remaining)
+                  </span>
+                {% endif %}
+            </div>
+          {% endif %}
+
+          {% if upload.expiry_date %}
+            <div class="{% if expired %}text-danger{% else %}text-success{% endif %}">
+              Upload expires {{ upload.expiry_date | date_offset }}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="buttons mt-8">
+        {% if owner %}
+          <button
+            type="button"
+            class="button hollow"
             title="Edit upload settings"
             hx-get="/uploads/{{ upload.id }}/edit?hx_target=%23upload-view-container&ult_dest=/uploads/{{ upload.slug | urlencode }}"
             hx-trigger="click"
@@ -73,22 +58,24 @@
             hx-swap="beforeend">
             <span class="icon-pencil"></span>
             Edit settings
-          </a>
-          <a
-            href="#"
+          </button>
+          <button
+            type="button"
+            class="button hollow danger"
             title="Delete upload"
             hx-delete="/uploads/{{ upload.id }}"
             hx-trigger="click"
             hx-confirm="Are you sure you want to delete this upload?">
             <span class="icon-trash-2"></span>
             Delete upload
-          </a>
+          </button>
           {% set opposite = "public" %}
           {% if upload.public %}
             {% set opposite = "private" %}
           {% endif %}
-          <a
-            href="#"
+          <button
+            type="button"
+            class="button hollow"
             title="Make upload {{ opposite }}"
             hx-post="/uploads/{{ upload.id }}/public?public={{ not upload.public }}&ult_dest=/uploads/{{ upload.slug | urlencode }}"
             hx-trigger="click"
@@ -101,9 +88,20 @@
               <span class="icon-unlock"></span>
             {% endif %}
             Make {{ opposite }}
-          </a>
-        </div>
-      {% endif %}
+          </button>
+        {% endif %}
+        <button
+          type="button"
+          class="button"
+          {% if can_download %}
+            onclick="window.location.href='/uploads/{{ upload.slug }}/download'"
+          {% else %}
+            disabled
+            {% endif %}>
+          <span class="icon-download"></span>
+          Download
+        </button>
+      </div>
     </div>
   </div>
 {% endblock %}

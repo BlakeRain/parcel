@@ -103,9 +103,20 @@
               </td>
               <td class="text-right text-nowrap">{{ upload.size | filesizeformat }}</td>
               <td class="text-right text-nowrap">{{ upload.downloads }}</td>
-              <td class="text-right text-nowrap">
+              <td class="text-right text-nowrap {% if upload.remaining is number and upload.remaining == 0 %}text-danger{% endif %}">
                 {% if upload.limit is number %}
-                {{ upload.limit - upload.downloads }} / {{ upload.limit }}
+                  {% if upload.remaining is number and upload.remaining < upload.limit %}
+                    <a
+                      href="#"
+                      hx-post="/uploads/{{ upload.id }}/reset"
+                      hx-trigger="click"
+                      hx-target="closest td"
+                      hx-swap="outerHTML"
+                      hx-confirm="Are you sure you want to reset the download counter for this upload?">
+                      <span class="icon-rotate-ccw"></span>
+                    </a>
+                  {% endif %}
+                  {{ upload.remaining | default(value = upload.limit) }} / {{ upload.limit }}
                 {% else %}
                 <i>Unlimited</i>
                 {% endif %}
