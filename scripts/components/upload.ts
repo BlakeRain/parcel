@@ -17,7 +17,14 @@ const UploadButtons: FunctionComponent<{ csrf_token: string }> = (props) => {
       .closeModal();
   };
 
-  const onUploadClick = () => {
+  const onUploadClick = (event: MouseEvent) => {
+    const modal = (event.target as HTMLElement).closest<ParcelModal>(
+      "parcel-modal",
+    );
+    if (!modal) {
+      throw new Error("Could not find parent modal");
+    }
+
     const form = new FormData();
     form.append("csrf_token", props.csrf_token);
 
@@ -28,17 +35,20 @@ const UploadButtons: FunctionComponent<{ csrf_token: string }> = (props) => {
     const upload = new XMLHttpRequest();
 
     upload.addEventListener("load", () => {
+      modal.setUnderlayDismiss(true);
       htmx.trigger("#upload-list-refresh", "refresh");
       dispatch({ type: "complete" });
     });
 
     upload.addEventListener("error", (event) => {
       console.error("Failed to upload file", event);
+      modal.setUnderlayDismiss(true);
       dispatch({ type: "error", event });
     });
 
     upload.addEventListener("abort", (event) => {
       console.warn("Upload was aborted", event);
+      modal.setUnderlayDismiss(true);
       dispatch({ type: "abort", event });
     });
 
@@ -46,6 +56,7 @@ const UploadButtons: FunctionComponent<{ csrf_token: string }> = (props) => {
       dispatch({ type: "progress", loaded: event.loaded });
     });
 
+    modal.setUnderlayDismiss(false);
     upload.open("POST", "/uploads/new");
     upload.send(form);
     dispatch({ type: "upload", upload });

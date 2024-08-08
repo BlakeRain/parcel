@@ -1,6 +1,7 @@
 export class ParcelModal extends HTMLElement {
   private closing: boolean = false;
   private withHtmx: boolean = false;
+  private underlayDismiss: boolean = true;
 
   connectedCallback() {
     this.withHtmx = this.getAttribute("with-htmx") !== null;
@@ -15,7 +16,9 @@ export class ParcelModal extends HTMLElement {
     const underlay = document.createElement("div");
     underlay.className = "underlay";
     underlay.addEventListener("click", () => {
-      this.closeModal();
+      if (this.underlayDismiss) {
+        this.closeModal();
+      }
     });
 
     this.addEventListener("animationend", () => {
@@ -44,6 +47,10 @@ export class ParcelModal extends HTMLElement {
   closeModal() {
     this.closing = true;
     this.classList.add("closing");
+  }
+
+  setUnderlayDismiss(value: boolean) {
+    this.underlayDismiss = value;
   }
 }
 
