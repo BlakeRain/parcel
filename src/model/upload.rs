@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, SqlitePool};
 use time::{Date, OffsetDateTime};
 
@@ -15,6 +15,38 @@ pub struct Upload {
     pub uploaded_by: i32,
     pub uploaded_at: OffsetDateTime,
     pub remote_addr: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum UploadOrder {
+    #[serde(rename = "filename")]
+    Filename,
+    #[serde(rename = "size")]
+    Size,
+    #[serde(rename = "downloads")]
+    Downloads,
+    #[serde(rename = "expiry_date")]
+    ExpiryDate,
+    #[serde(rename = "uploaded_at")]
+    UploadedAt,
+}
+
+impl Default for UploadOrder {
+    fn default() -> Self {
+        Self::UploadedAt
+    }
+}
+
+impl UploadOrder {
+    fn get_order_field(&self) -> &'static str {
+        match self {
+            Self::Filename => "filename",
+            Self::Size => "size",
+            Self::Downloads => "downloads",
+            Self::ExpiryDate => "expiry_date",
+            Self::UploadedAt => "uploaded_at",
+        }
+    }
 }
 
 impl Upload {
@@ -96,11 +128,20 @@ impl Upload {
             .await
     }
 
-    pub async fn get_for_user(pool: &SqlitePool, owner: i32) -> sqlx::Result<Vec<Self>> {
-        sqlx::query_as("SELECT * FROM uploads WHERE uploaded_by = $1 ORDER BY uploaded_at DESC")
-            .bind(owner)
-            .fetch_all(pool)
-            .await
+    pub async fn get_for_user(
+        pool: &SqlitePool,
+        owner: i32,
+        order: UploadOrder,
+        asc: bool,
+    ) -> sqlx::Result<Vec<Self>> {
+        sqlx::query_as(&format!(
+            "SELECT * FROM uploads WHERE uploaded_by = $1 ORDER BY {} {}",
+            order.get_order_field(),
+            if asc { "ASC" } else { "DESC" }
+        ))
+        .bind(owner)
+        .fetch_all(pool)
+        .await
     }
 
     pub async fn count_for_user(pool: &SqlitePool, owner: i32) -> sqlx::Result<i32> {

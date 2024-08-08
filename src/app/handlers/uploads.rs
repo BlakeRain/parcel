@@ -21,14 +21,26 @@ use crate::{
     app::templates::{authorized_context, default_context, render_404, render_template},
     env::Env,
     model::{
-        upload::{Upload, UploadStats},
+        upload::{Upload, UploadOrder, UploadStats},
         user::User,
     },
 };
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ListSorting {
+    #[serde(default)]
+    pub order: UploadOrder,
+    #[serde(default)]
+    pub asc: bool,
+}
+
 #[handler]
-pub async fn get_list(env: Data<&Env>, user: User) -> poem::Result<Html<String>> {
-    let uploads = Upload::get_for_user(&env.pool, user.id)
+pub async fn get_list(
+    env: Data<&Env>,
+    user: User,
+    Query(sorting): Query<ListSorting>,
+) -> poem::Result<Html<String>> {
+    let uploads = Upload::get_for_user(&env.pool, user.id, sorting.order, sorting.asc)
         .await
         .map_err(|err| {
             tracing::error!(user = user.id, err = ?err, "Unable to get uploads for user");
@@ -39,6 +51,7 @@ pub async fn get_list(env: Data<&Env>, user: User) -> poem::Result<Html<String>>
         "uploads/list.html",
         context! {
             uploads,
+            sorting,
             ..authorized_context(&env, &user)
         },
     )

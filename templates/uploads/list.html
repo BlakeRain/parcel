@@ -24,7 +24,8 @@
           type="button"
           class="button"
           hx-trigger="click,refresh"
-          hx-get="/uploads/list"
+          hx-push="/?order={{ sorting.order }}&asc={{ sorting.asc }}"
+          hx-get="/uploads/list?order={{ sorting.order }}&asc={{ sorting.asc }}"
           hx-target="#upload-list-container"
           hx-select="#upload-list-container"
           hx-swap="outerHTML"
@@ -42,13 +43,38 @@
               <parcel-checkbox-group id="uploads_group" name="uploads">
               </parcel-checkbox-group>
             </th>
-            <th class="text-nowrap text-left">File</th>
-            <th class="text-nowrap text-right">Size</th>
-            <th class="text-nowrap text-right">Downloads</th>
+            {% macro sort_heading(sorting, name, align, title) %}
+              {% set query = "order=" + name %}
+              {% if sorting.order == name %}
+                {% set query = query + "&asc=" + ("false" if sorting.asc else "true") %}
+              {% endif %}
+              <th
+                class="text-nowrap text-{{ align }} cursor-pointer"
+                hx-get="/uploads/list?order={{ name }}&asc={% if sorting.order == name and sorting.asc %}false{% else %}true{% endif %}"
+                hx-push-url="/?order={{ name }}&asc={% if sorting.order == name and sorting.asc %}false{% else %}true{% endif %}"
+                hx-trigger="click"
+                hx-target="#upload-list-container"
+                hx-select="#upload-list-container"
+                hx-swap="outerHTML">
+                {{ title }}
+                {% if sorting.order == name %}
+                  {% if sorting.asc %}
+                    <span class="icon-chevron-up"></span>
+                  {% else %}
+                    <span class="icon-chevron-down"></span>
+                  {% endif %}
+                {% else %}
+                  <span class="icon-chevrons-up-down"></span>
+                {% endif %}
+              </th>
+            {% endmacro %}
+            {{ sort_heading(sorting, "filename", "left", "File") }}
+            {{ sort_heading(sorting, "size", "right", "Size") }}
+            {{ sort_heading(sorting, "downloads", "right", "Downloads") }}
             <th class="text-nowrap text-right">Remaining</th>
-            <th class="text-nowrap text-left">Expires</th>
+            {{ sort_heading(sorting, "expiry_date", "left", "Expires") }}
             <th>Public</th>
-            <th class="text-nowrap text-left">Uploaded</th>
+            {{ sort_heading(sorting, "uploaded_at", "left", "Uploaded") }}
             <th></th>
           </tr>
         </thead>
