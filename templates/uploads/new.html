@@ -1,6 +1,4 @@
 <parcel-modal class="hidden" with-htmx>
   <parcel-upload-form csrf_token="{{ csrf_token }}"></parcel-upload-form>
 </parcel-modal>
-<script type="module" src="/{{ upload_js }}"></script>
-
-
+<script type="module" src="/{{ upload_js | safe }}"></script>

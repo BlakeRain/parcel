@@ -92,7 +92,7 @@
       </div>
     </footer>
     <script type="text/javascript" src="/static/scripts/vendor/htmx.js"></script>
-    <script type="module" src="/{{ env.init_js }}"></script>
+    <script type="module" src="/{{ env.init_js | safe }}"></script>
     {% block scripts %}{% endblock %}
   </body>
 </html>
