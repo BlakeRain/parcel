@@ -4,7 +4,7 @@
     @apply rounded-xl flex flex-col overflow-auto;
 
     table {
-      @apply text-slate-400 dark:text-slate-200;
+      @apply text-slate-800 dark:text-slate-200;
       @apply border-collapse table-auto;
       @apply w-full my-8 text-sm;
 
@@ -12,7 +12,6 @@
         tr {
           th {
             @apply border-b dark:border-slate-600 font-medium p-4;
-            @apply pt-0;
 
             &.slim {
               @apply px-0;
