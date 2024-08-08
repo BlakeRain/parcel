@@ -60,17 +60,17 @@
           {% if not user.limit %}disabled{% endif %} />
       </div>
     </div>
-    <div class="buttons end mt-4">
-      <button
-        class="button hollow"
-        onclick="event.preventDefault(); event.target.closest('parcel-modal').closeModal();">
-        Cancel
-      </button>
+    <div class="buttons reverse end mt-4">
       <button
         type="submit"
         class="button"
         onclick="event.target.closest('parcel-modal').closeModal();">
         Save changes
+      </button>
+      <button
+        class="button hollow"
+        onclick="event.preventDefault(); event.target.closest('parcel-modal').closeModal();">
+        Cancel
       </button>
     </div>
     <script type="text/javascript">

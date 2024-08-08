@@ -84,8 +84,16 @@
   .buttons {
     @apply flex flex-col md:flex-row md:items-center gap-2;
 
+    &.reverse {
+      @apply flex-col-reverse md:flex-row-reverse;
+    }
+
     &.end {
       @apply justify-end;
+
+      &.reverse {
+        @apply justify-start;
+      }
     }
 
     > .button {
