@@ -9,5 +9,5 @@ use crate::{
 #[handler]
 pub fn get_index(env: Data<&Env>, user: User) -> poem::Result<impl IntoResponse> {
     let context = authorized_context(&env, &user);
-    render_template("index.html", &context)
+    render_template("index.html", context)
 }
