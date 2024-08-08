@@ -98,7 +98,7 @@
               <td>
                 <div class="flex flex-row gap-1">
                   <a class="text-nowrap" href="/uploads/{{ upload.slug }}">{{ upload.filename }}</a>
-                  <parcel-clipboard url="true" value="/upload/{{ upload.slug }}"></parcel-clipboard>
+                  <parcel-clipboard url="true" value="/uploads/{{ upload.slug }}"></parcel-clipboard>
                 </div>
               </td>
               <td class="text-right text-nowrap">{{ upload.size | filesizeformat }}</td>
