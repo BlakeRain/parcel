@@ -39,14 +39,21 @@ useful way to control Parcel when creating a Docker container.
 | `PLAUSIBLE_SCRIPT` |                      | URL for [Plausible Analytics] script      |
 
 For example, if you had created a volume `parcel_data` and mounted it under `/data` you could tell
-Parcel to store the DB and file cache in that location:
+Parcel to store the DB and file cache in that location by setting the `DB` environment variable to
+`sqlite:///data/parcel.db` and `CACHE_DIR` to `/data/cache`.
+
+If you do not set the `COOKIE_SECRET`, you will end up being logged out every time that the
+container starts. To mitigate this, pass a value for `COOKIE_SECRET` when starting the container.
 
 ```
 docker run -d \
-  -v parcel_data:/data \
+  --name my-parcel \
   -e DB=sqlite:///data/parcel.db \
   -e CACHE_DIR=/data/cache \
-  blakerain/parcel
+  -e COOKIE_SECRET=$(openssl rand -base64 32 | tr -d '\n' ; echo) \
+  -e ANALYTICS_DOMAIN=parcel.example.com \
+  -e PLAUSIBLE_SCRIPT=https://pa.example.com/js/script.js \
+  -v parcel_data:/data
 ```
 
 ## Development
