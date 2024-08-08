@@ -37,7 +37,7 @@ const DATE_FORMAT_FULL = new Intl.DateTimeFormat(undefined, {
 
 const DATETIME_FORMAT = new Intl.DateTimeFormat(undefined, {
   dateStyle: "short",
-  timeStyle: "short",
+  timeStyle: "medium",
 });
 const DATETIME_FORMAT_FULL = new Intl.DateTimeFormat(undefined, {
   dateStyle: "full",
