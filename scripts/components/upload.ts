@@ -28,7 +28,7 @@ const UploadButtons: FunctionComponent<{ csrf_token: string }> = (props) => {
     const upload = new XMLHttpRequest();
 
     upload.addEventListener("load", () => {
-      console.log("Upload complete");
+      htmx.trigger("#upload-list-refresh", "refresh");
       dispatch({ type: "complete" });
     });
 
