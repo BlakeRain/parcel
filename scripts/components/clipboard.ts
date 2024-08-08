@@ -23,16 +23,16 @@ class ClipboardElement extends HTMLElement {
     }
 
     this.icon = this.attachIcon();
-    this.icon.className = "icon-clipboard-copy";
+    this.icon.className = "cursor-pointer icon-clipboard-copy";
 
     this.icon.addEventListener("click", () => {
       const blob = new Blob([valueAttribute], { type: "text/plain" });
       const data = [new ClipboardItem({ ["text/plain"]: blob })];
       navigator.clipboard.write(data);
 
-      this.icon.className = "icon-clipboard-check";
+      this.icon.className = "cursor-pointer icon-clipboard-check";
       window.setTimeout(() => {
-        this.icon.className = "icon-clipboard-copy";
+        this.icon.className = "cursor-pointer icon-clipboard-copy";
       }, 1000);
     });
   }
@@ -61,7 +61,6 @@ class ClipboardElement extends HTMLElement {
 
   attachNewIcon() {
     const div = document.createElement("div");
-    div.className = "icon-clipboard-copy";
     this.appendChild(div);
     return div;
   }
