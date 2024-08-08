@@ -5,6 +5,21 @@ fn main() {
     let profile = std::env::var("PROFILE").expect("PROFILE");
     let is_debug = profile == "debug";
 
+    let npm_cmds = vec![
+        vec!["install"],
+        vec!["run", if is_debug { "build-dev" } else { "build" }],
+    ];
+
+    for cmd in &npm_cmds {
+        let status = Command::new("npm").args(cmd).status().unwrap_or_else(|_| {
+            panic!("Failed to run npm commands: {cmd:?}");
+        });
+
+        if !status.success() {
+            panic!("Failed to run npm commands: {cmd:?}");
+        }
+    }
+
     fn mkdir(dir: &str) {
         if std::fs::metadata(dir).is_ok() {
             return;
@@ -79,21 +94,6 @@ fn main() {
             if let Err(err) = std::fs::copy(src, dest) {
                 panic!("Failed to copy {src} to {dest}: {err:?}");
             }
-        }
-    }
-
-    let npm_cmds = vec![
-        vec!["install"],
-        vec!["run", if is_debug { "build-dev" } else { "build" }],
-    ];
-
-    for cmd in &npm_cmds {
-        let status = Command::new("npm").args(cmd).status().unwrap_or_else(|_| {
-            panic!("Failed to run npm commands: {cmd:?}");
-        });
-
-        if !status.success() {
-            panic!("Failed to run npm commands: {cmd:?}");
         }
     }
 
