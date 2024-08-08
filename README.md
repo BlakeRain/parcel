@@ -1,6 +1,12 @@
-# parcel
+# parcel – A simple file upload tool
 
-A simple file upload tool.
+<picture>
+ <source media="(prefers-color-scheme: dark)" srcset="media/masked-screenshot.png">
+ <source media="(prefers-color-scheme: light)" srcset="media/masked-screenshot.png">
+ <img alt="Screenshot of Parcel after a successful upload" src="media/masked-screenshot.png">
+</picture>
+
+---
 
 - Uploaded files can be made public to allow download from anywhere.
 - Number of downloads can be limited, and downloads can have an expiry date.
