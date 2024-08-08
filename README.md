@@ -8,8 +8,15 @@
 
 ---
 
-- Uploaded files can be made public to allow download from anywhere.
-- Number of downloads can be limited, and downloads can have an expiry date.
+Parcel is a simple light-weight file upload application with a nice UI and a small set of features.
+
+- Support multiple users and administrators
+- Uploaded files can be made public to allow download from anywhere
+- Number of downloads can be limited, and downloads can have an expiry date
+- Files are stored in separate cache directory
+- Data is stored in an [SQLite] database
+- Written in [Rust] using the [Poem] web framework
+- Styled using [Tailwind CSS]
 
 ## Running Parcel
 
@@ -63,3 +70,8 @@ cargo watch -L debug -x run
 [lucide]: https://lucide.dev/
 [cargo watch]: https://github.com/watchexec/cargo-watch
 [plausible analytics]: https://plausible.io/
+[rust]: https://rust-lang.org/
+[Poem]: https://github.com/poem-web/poem
+[Sqlite]: https://sqlite.org/
+[Tailwind CSS]: https://tailwindcss.com/
+
