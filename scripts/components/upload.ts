@@ -1,18 +1,17 @@
-import { FunctionComponent } from "preact";
+import { FunctionComponent, VNode } from "preact";
 import { html } from "htm/preact";
 import register from "preact-custom-element";
-import { useState, ProvideState } from "./upload/state";
+import { useState, ProvideState, StateMode } from "./upload/state";
 import DropZone from "./upload/components/dropzone";
 import FilesSummary from "./upload/components/summary";
 import FilesList from "./upload/components/list";
 import UploadProgress from "./upload/components/progress";
 import { ParcelModal } from "./modal";
 
-const UploadFormInner: FunctionComponent<{ csrf_token: string }> = (props) => {
+const UploadButtons: FunctionComponent<{ csrf_token: string }> = (props) => {
   const { state, dispatch } = useState();
 
   const onCancelClick = (event: MouseEvent) => {
-    event.preventDefault();
     (event.target as HTMLElement)
       .closest<ParcelModal>("parcel-modal")
       .closeModal();
@@ -53,21 +52,6 @@ const UploadFormInner: FunctionComponent<{ csrf_token: string }> = (props) => {
   };
 
   return html`
-    <${DropZone} />
-    ${state.files.length > 0
-      ? html`
-          <div
-            class="border border-gray-300 dark:border-slate-600 rounded-md flex flex-col gap-2 overflow-y-hidden"
-          >
-            ${state.upload
-              ? html` <${UploadProgress} /> `
-              : html` <${FilesSummary} /> `}
-            <div class="overflow-y-scroll px-4 mb-4">
-              <${FilesList} />
-            </div>
-          </div>
-        `
-      : html`<div></div>`}
     <div class="buttons end">
       <button type="button" class="button hollow" onclick=${onCancelClick}>
         Cancel
@@ -82,6 +66,96 @@ const UploadFormInner: FunctionComponent<{ csrf_token: string }> = (props) => {
         Upload file
       </button>
     </div>
+  `;
+};
+
+const CompleteButtons: FunctionComponent = () => {
+  const { dispatch } = useState();
+
+  const onMoreClick = () => {
+    dispatch({ type: "reset" });
+  };
+
+  const onCloseClick = (event: MouseEvent) => {
+    (event.target as HTMLElement)
+      .closest<ParcelModal>("parcel-modal")
+      .closeModal();
+  };
+
+  return html`
+    <div class="buttons end">
+      <button type="button" class="button hollow" onclick=${onMoreClick}>
+        Upload more
+      </button>
+      <button type="button" class="button success" onclick=${onCloseClick}>
+        <span class="icon-check"></span>
+        Finish
+      </button>
+    </div>
+  `;
+};
+
+const ErrorButtons: FunctionComponent = () => {
+  const onCancelClick = (event: MouseEvent) => {
+    (event.target as HTMLElement)
+      .closest<ParcelModal>("parcel-modal")
+      .closeModal();
+  };
+
+  return html`
+    <div class="buttons end">
+      <button type="button" class="button hollow" onclick=${onCancelClick}>
+        Cancel
+      </button>
+    </div>
+  `;
+};
+
+const UploadBody = () => {
+  const { state } = useState();
+
+  if (state.files.length === 0) {
+    return html`<div></div>`;
+  }
+
+  return html`
+    <div
+      class="border border-gray-300 dark:border-slate-600 rounded-md flex flex-col gap-2 overflow-y-hidden"
+    >
+      ${state.upload
+        ? html` <${UploadProgress} /> `
+        : html` <${FilesSummary} /> `}
+      <div class="overflow-y-scroll px-4 mb-4">
+        <${FilesList} />
+      </div>
+    </div>
+  `;
+};
+
+const UploadFormInner: FunctionComponent<{ csrf_token: string }> = (props) => {
+  const { state } = useState();
+
+  let buttons: VNode;
+  switch (state.mode) {
+    case StateMode.Preparing:
+    case StateMode.Uploading:
+      buttons = html`<${UploadButtons} ...${props} />`;
+      break;
+
+    case StateMode.Error:
+    case StateMode.Aborted:
+      buttons = html`<${ErrorButtons} />`;
+      break;
+
+    case StateMode.Complete:
+      buttons = html`<${CompleteButtons} />`;
+      break;
+  }
+
+  return html`
+    <${DropZone} />
+    <${UploadBody} />
+    ${buttons}
   `;
 };
 
