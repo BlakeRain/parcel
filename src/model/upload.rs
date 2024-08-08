@@ -57,8 +57,8 @@ impl Upload {
             downloads, \"limit\", remaining, expiry_date,
             uploaded_by, uploaded_at, remote_addr)
             VALUES ($1, $2, $3, $4,
-                    0, $5, $6,
-                    $7, $8, $9)
+                    0, $5, $6, $7,
+                    $8, $9, $10)
             RETURNING id",
         )
         .bind(&self.slug)
