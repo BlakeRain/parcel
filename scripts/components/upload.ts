@@ -1,13 +1,8 @@
 import { FunctionComponent, VNode } from "preact";
+import { useEffect, useRef } from "preact/hooks";
 import { html } from "htm/preact";
 import register from "preact-custom-element";
-import {
-  useState,
-  ProvideState,
-  StateMode,
-  State,
-  StateAction,
-} from "./upload/state";
+import { useState, ProvideState, StateMode, StateAction } from "./upload/state";
 import DropZone from "./upload/components/dropzone";
 import FilesSummary from "./upload/components/summary";
 import FilesList from "./upload/components/list";
@@ -200,7 +195,8 @@ const UploadBody = () => {
 };
 
 const UploadFormInner: FunctionComponent<{ csrf_token: string }> = (props) => {
-  const { state } = useState();
+  const eventRecv = useRef<HTMLElement>(null);
+  const { state, dispatch } = useState();
 
   let buttons: VNode;
   switch (state.mode) {
@@ -219,22 +215,43 @@ const UploadFormInner: FunctionComponent<{ csrf_token: string }> = (props) => {
       break;
   }
 
+  useEffect(() => {
+    if (!eventRecv.current) {
+      return;
+    }
+
+    const element = eventRecv.current;
+    const onParcelDrop = (event: CustomEvent<{ files: File[] }>) => {
+      dispatch({
+        type: "add",
+        files: event.detail.files,
+      });
+    };
+
+    element.addEventListener("parcelDrop", onParcelDrop);
+
+    return () => {
+      element.removeEventListener("parcelDrop", onParcelDrop);
+    };
+  });
+
   return html`
-    <${DropZone} />
-    <${UploadBody} />
-    ${buttons}
+    <div ref=${eventRecv} class="invisible event-receiver"></div>
+    <div
+      class="grid grid-rows-[max-content_1fr_max-content] max-h-[80vh] gap-4"
+    >
+      <${DropZone} />
+      <${UploadBody} />
+      ${buttons}
+    </div>
   `;
 };
 
 const UploadForm: FunctionComponent<{ csrf_token: string }> = (props) => {
   return html`
-    <div
-      class="grid grid-rows-[max-content_1fr_max-content] max-h-[80vh] gap-4"
-    >
       <${ProvideState}>
         <${UploadFormInner} ...${props} />
       </${ProvideState}>
-    </div>
   `;
 };
 

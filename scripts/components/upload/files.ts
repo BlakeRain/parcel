@@ -82,7 +82,7 @@ export class FileInfo {
     return [];
   }
 
-  static fromList(files: FileList) {
-    return [...files].map((file) => new FileInfo(file));
+  static fromFiles(files: File[]) {
+    return files.map((file) => new FileInfo(file));
   }
 }

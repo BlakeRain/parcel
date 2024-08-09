@@ -1,3 +1,4 @@
+use esbuild_bundle::javascript;
 use poem::{
     handler,
     web::{Data, Query},
@@ -22,6 +23,7 @@ pub fn get_index(
         "index.html",
         minijinja::context! {
             sorting,
+            index_js => javascript!("scripts/index.ts"),
             ..authorized_context(&env, &user)
         },
     )

@@ -20,12 +20,18 @@
       hx-trigger="load"
       hx-swap="outerHTML"></div>
   </div>
+  <div id="drop-indicator" class="drop-indicator invisible">
+    <div class="content">
+      <div class="flex flex-col gap-4">
+        <h1 class="text-2xl text-center">
+          <span class="icon-upload"></span>
+          Drop files here
+        </h1>
+      </div>
+    </div>
+  </div>
 {% endblock %}
 
 {% block scripts %}
-  <script type="text/javascript">
-    document.body.addEventListener("parcelUploadDeleted", () => {
-      htmx.trigger("#upload-stats-container", "refresh");
-    })
-  </script>
+  <script type="module" src="/{{ index_js | safe }}"></script>
 {% endblock %}

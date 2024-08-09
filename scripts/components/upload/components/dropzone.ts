@@ -3,10 +3,12 @@ import { useEffect } from "preact/hooks";
 import { StateMode, useState } from "../state";
 
 const STATE_COLORS = {
-  idle: "bg-neutral-100 text-neutral-400 dark:text-neutral-600",
-  active: "bg-neutral-200 text-neutral-600 dark:text-neutral-400",
-  complete: "bg-green-200 text-green-600 dark:text-green-600",
-  error: "bg-red-200 text-red-400 dark:text-red-600",
+  idle: "bg-neutral-100 dark:bg-slate-800/50 text-neutral-400 dark:text-neutral-600",
+  active:
+    "bg-neutral-200 dark:bg-slate-800/75 text-neutral-600 dark:text-neutral-400",
+  complete:
+    "bg-green-200 dark:bg-green-900/50 text-green-600 dark:text-green-500",
+  error: "bg-red-200 dark:bg-red-900/50 text-red-400 dark:text-red-600",
 };
 
 const DropZone = () => {
@@ -47,21 +49,20 @@ const DropZone = () => {
       break;
   }
 
-  const onDragOver = (event: DragEvent) => {
-    event.preventDefault();
-    dispatch({ type: "dragover", event });
-  };
-
-  const onDragLeave = () => {
-    dispatch({ type: "dragleave" });
-  };
-
-  const onDragDrop = (event: DragEvent) => {
-    event.preventDefault();
-    dispatch({ type: "drop", event });
-  };
-
   useEffect(() => {
+    const onDragOver = (event: DragEvent) => {
+      dispatch({ type: "dragover", event });
+    };
+
+    const onDragLeave = () => {
+      dispatch({ type: "dragleave" });
+    };
+
+    const onDragDrop = (event: DragEvent) => {
+      event.preventDefault();
+      dispatch({ type: "drop", event });
+    };
+
     document.body.addEventListener("dragover", onDragOver);
     document.body.addEventListener("dragleave", onDragLeave);
     document.body.addEventListener("drop", onDragDrop);
@@ -78,18 +79,22 @@ const DropZone = () => {
       const input = document.createElement("input");
       input.type = "file";
       input.multiple = true;
+
       input.addEventListener("change", (event) => {
+        const files = [...(event.target as HTMLInputElement).files];
+
         dispatch({
           type: "add",
-          files: (event.target as HTMLInputElement).files,
+          files,
         });
       });
+
       input.click();
     }
   };
 
   const classes =
-    "border dark:bg-slate-800/50 border-gray-300 dark:border-slate-600 rounded-md p-8 flex flex-col gap-4 " +
+    "transition-colors border border-gray-300 dark:border-slate-600 rounded-md p-8 flex flex-col gap-4 " +
     colors;
 
   return html`

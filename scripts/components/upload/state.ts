@@ -7,7 +7,7 @@ export type StateAction =
   | { type: "dragover"; event: DragEvent }
   | { type: "dragleave" }
   | { type: "drop"; event: DragEvent }
-  | { type: "add"; files: FileList }
+  | { type: "add"; files: File[] }
   | { type: "remove"; index: number }
   | { type: "removeAll" }
   | { type: "upload"; upload: XMLHttpRequest }
@@ -105,7 +105,7 @@ function reduceStateAction(state: State, action: StateAction): State {
     }
 
     case "add": {
-      const added = FileInfo.fromList(action.files);
+      const added = FileInfo.fromFiles(action.files);
       const files = [...state.files, ...added];
 
       return {

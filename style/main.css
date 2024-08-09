@@ -1,6 +1,7 @@
 @import "tailwind.css";
 
 @import "components/button.css";
+@import "components/drop.css";
 @import "components/form.css";
 @import "components/modal.css";
 @import "components/panel.css";

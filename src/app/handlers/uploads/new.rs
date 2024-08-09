@@ -6,9 +6,9 @@ use poem::{
     error::InternalServerError,
     handler,
     http::StatusCode,
-    web::{CsrfToken, CsrfVerifier, Data, Html, Json, Multipart, RealIp},
+    web::{CsrfToken, CsrfVerifier, Data, Html, Json, Multipart, Query, RealIp},
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
 use crate::{
@@ -17,11 +17,23 @@ use crate::{
     model::{upload::Upload, user::User},
 };
 
+#[derive(Debug, Deserialize)]
+pub struct NewQuery {
+    #[serde(default)]
+    immediate: bool,
+}
+
 #[handler]
-pub fn get_new(env: Data<&Env>, csrf_token: &CsrfToken, user: User) -> poem::Result<Html<String>> {
+pub fn get_new(
+    env: Data<&Env>,
+    csrf_token: &CsrfToken,
+    user: User,
+    Query(NewQuery { immediate }): Query<NewQuery>,
+) -> poem::Result<Html<String>> {
     render_template(
         "uploads/new.html",
         context! {
+            immediate,
             csrf_token => csrf_token.0,
             upload_js => javascript!("scripts/components/upload.ts"),
             ..authorized_context(&env, &user)

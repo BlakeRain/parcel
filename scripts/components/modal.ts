@@ -1,10 +1,12 @@
 export class ParcelModal extends HTMLElement {
   private closing: boolean = false;
   private withHtmx: boolean = false;
+  private withImmediate: boolean = false;
   private underlayDismiss: boolean = true;
 
   connectedCallback() {
     this.withHtmx = this.getAttribute("with-htmx") !== null;
+    this.withImmediate = this.getAttribute("with-immediate") !== null;
 
     const content = document.createElement("div");
     content.className = "content";
@@ -27,10 +29,21 @@ export class ParcelModal extends HTMLElement {
 
     this.appendChild(underlay);
     this.appendChild(content);
-    this.className = "modal";
+
+    if (this.withImmediate) {
+      this.className = "modal";
+    } else {
+      this.className = "modal opening";
+    }
   }
 
   onAnimationEnd() {
+    if (this.classList.contains("closing")) {
+      this.classList.remove("closing");
+    } else if (this.classList.contains("opening")) {
+      this.classList.remove("opening");
+    }
+
     if (this.closing && this.parentNode) {
       this.removeModal();
     }
