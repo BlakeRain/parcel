@@ -1,10 +1,14 @@
 @layer components {
   .form {
-    @apply flex flex-col gap-2;
+    @apply flex flex-col gap-4;
+
+    div.buttons {
+      @apply mt-4 lg:mt-2;
+    }
   }
 
   label {
-    @apply block mb-2;
+    @apply block mt-4 lg:mt-2;
     @apply text-sm font-medium;
     @apply text-gray-900 dark:text-white;
   }
