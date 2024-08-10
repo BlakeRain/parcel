@@ -17,6 +17,7 @@ Parcel is a simple light-weight file upload application with a nice UI and a sma
 - Data is stored in an [SQLite] database
 - Written in [Rust] using the [Poem] web framework
 - Styled using [Tailwind CSS]
+- Using [Preact] and Web Components
 
 ## Running Parcel
 
@@ -81,4 +82,4 @@ cargo watch -L debug -x run
 [Poem]: https://github.com/poem-web/poem
 [Sqlite]: https://sqlite.org/
 [Tailwind CSS]: https://tailwindcss.com/
-
+[Preact]: https://preactjs.com/
