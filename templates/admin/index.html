@@ -3,10 +3,14 @@
 {% block title %}Administration{% endblock %}
 
 {% block content %}
-  <div class="container mx-auto flex flex-col md:flex-row gap-4">
+<div class="grow container mx-auto">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 pt-0 lg:p-0">
     <div class="panel gap-4">
-      <h1 class="heading">Users</h1>
-      <dl class="grow grid sm:grid-cols-2 gap-8 mx-auto text-gray-900 dark:text-white">
+      <div class="flex flex-row justify-between gap-2">
+        <h1 class="heading">Users</h1>
+        <a href="/admin/users" class="button">Manage users</a>
+      </div>
+      <dl class="grow grid grid-cols-2 gap-4 lg:gap-8 mx-auto text-gray-900 dark:text-white">
         <div class="flex flex-col items-center justify-center">
           <dt class="mb-2 text-3xl md:text-4xl font-extrabold">{{ users.total }}</dt>
           <dd class="font-light text-gray-500 dark:text-gray-400">users</dd>
@@ -16,13 +20,13 @@
           <dd class="font-light text-gray-500 dark:text-gray-400">enabled</dd>
         </div>
       </dl>
-      <div class="buttons end">
-        <a href="/admin/users" class="button">Manage users</a>
-      </div>
     </div>
     <div class="panel gap-4">
-      <h1 class="heading">Uploads</h1>
-      <dl class="grid sm:grid-cols-2 gap-8 mx-auto text-gray-900 dark:text-white">
+      <div class="flex flex-row justify-between gap-2">
+        <h1 class="heading">Uploads</h1>
+        <a href="/admin/uploads" class="button">Manage uploads</a>
+      </div>
+      <dl class="grid grid-cols-2 gap-4 lg:gap-8 mx-auto text-gray-900 dark:text-white">
         <div class="flex flex-col items-center justify-center">
           <dt class="mb-2 text-3xl md:text-4xl font-extrabold">{{ uploads.total }}</dt>
           <dd class="font-light text-gray-500 dark:text-gray-400">uploads</dd>
@@ -40,9 +44,7 @@
           <dd class="font-light text-gray-500 dark:text-gray-400">downloads</dd>
         </div>
       </dl>
-      <div class="buttons end">
-        <a href="/admin/uploads" class="button">Manage uploads</a>
-      </div>
     </div>
   </div>
+</div>
 {% endblock %}
