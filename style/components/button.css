@@ -1,6 +1,6 @@
 @layer components {
   .button {
-    @apply w-full rounded-lg flex flex-row gap-1;
+    @apply rounded-lg flex flex-row gap-1;
     @apply px-5 py-2;
     @apply text-white bg-primary-600;
     @apply focus:ring-2 focus:outline-none focus:ring-primary-300;
@@ -94,10 +94,6 @@
       &.reverse {
         @apply justify-start;
       }
-    }
-
-    > .button {
-      @apply w-auto;
     }
   }
 
