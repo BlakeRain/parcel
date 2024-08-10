@@ -50,7 +50,10 @@ pub fn default_context<'e, E: Into<TemplateEnv<'e>>>(env: E) -> Value {
 
 pub fn authorized_context<'e, E: Into<TemplateEnv<'e>>>(env: E, user: &User) -> Value {
     context! {
-        auth => user,
+        auth => context! {
+            has_totp => user.totp.is_some(),
+            ..Value::from_serialize(user)
+        },
         ..default_context(env)
     }
 }

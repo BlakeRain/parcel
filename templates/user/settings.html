@@ -4,6 +4,29 @@
 
 {% block content %}
 <div class="grow container mx-auto">
+  {% if not auth.has_totp %}
+    <div class="border rounded-md shadow-md border-red-500 bg-red-200 dark:bg-red-900/25 flex flex-col gap-4 p-6 mt-4">
+      <h1 class="text-danger font-semibold">
+        Two-factor authentication is not enabled on your account.
+      </h1>
+      <p>
+        Two-factor authentication (2FA) is an extra layer of security for your account. When
+        enabled, you will need to provide a code from your authenticator app in addition to your
+        password when logging in.
+      </p>
+      <div class="buttons">
+        <button
+          type="button"
+          class="button"
+          title="Add MFA to your account"
+          hx-get="/user/settings/totp"
+          hx-target="body"
+          hx-swap="beforeend">
+          Setup two-factor authentication
+        </button>
+      </div>
+    </div>
+  {% endif %}
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-4 p-4 lg:p-0 lg:mt-4">
     <div class="panel">
       <h1 class="heading">
@@ -79,15 +102,27 @@
           required />
         <div class="buttons end" style="margin-top: auto">
           <button type="submit" class="button">Change password</button>
-          <button
-            type="button"
-            class="button hollow"
-            title="Add MFA to your account"
-            hx-get="/user/settings/totp"
-            hx-target="body"
-            hx-swap="afterend">
-            Setup MFA
-          </button>
+          {% if auth.has_totp %}
+            <button
+              type="button"
+              class="button hollow danger"
+              title="Remove MFA from your account"
+              hx-get="/user/settings/totp/remove"
+              hx-target="body"
+              hx-swap="beforeend">
+              Remove two-factor authentication
+            </button>
+          {% else %}
+            <button
+              type="button"
+              class="button hollow"
+              title="Add MFA to your account"
+              hx-get="/user/settings/totp"
+              hx-target="body"
+              hx-swap="beforeend">
+              Setup two-factor authentication
+            </button>
+          {% endif %}
         </div>
       </form>
     </div>

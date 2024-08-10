@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In{% endblock %}
+
+{% block content %}
+  <div class="grow container mx-auto flex justify-center items-center p-4 lg:p-0">
+    <div class="panel thin">
+      <h1 class="heading">
+        Provide two-factor authentication code
+      </h1>
+      {% if error %}
+        <div id="error" class="text-danger">
+          {{ error }}
+        </div>
+      {% endif %}
+      <form method="POST" action="/user/signin/totp" class="form" id="totp-form">
+        <input type="hidden" name="token" value="{{ token }}">
+        <label for="password">Two-factor authentication code</label>
+        <input class="field" type="password" name="code" id="code" placeholder="••••••" required>
+        <div class="buttons end">
+          <button type="submit" class="button">Sign in</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    document.querySelector("form#totp-form").addEventListener("submit", (event) => {
+      // Disable the submit button so we don't try multiple submissions.
+      document.querySelector("button[type=submit]").disabled = true;
+    });
+  </script>
+{% endblock %}
+

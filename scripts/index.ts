@@ -114,7 +114,7 @@ document.body.addEventListener("drop", (event: DragEvent) => {
   // There is no form, present, so we need to load one. We can do that with HTMX. We tell the upload
   // form not to bother animating in.
   htmx
-    .ajax("GET", "/uploads/new?immediate=true", {
+    .ajax("get", "/uploads/new?immediate=true", {
       target: "body",
       swap: "beforeend",
     })

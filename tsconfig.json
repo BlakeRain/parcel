@@ -4,6 +4,9 @@
     "isolatedModules": true,
     "esModuleInterop": true,
     "moduleResolution": "node",
+    "types": [
+      "htmx.org"
+    ]
   },
   "include": [
     "scripts/**/*.ts",

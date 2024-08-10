@@ -5,8 +5,10 @@ edition = "2021"
 publish = false
 
 [dependencies]
+base32 = { version = "0.5" }
 base64 = { version = "0.22" }
 clap = { version = "4.4", features = ["derive", "env"] }
+fast_qr = { version = "0.12", features = ["svg"] }
 futures-util = { version = "0.3" }
 humansize = { version = "2.1" }
 minijinja = { version = "2.0", features = ["unicode", "loader", "json", "urlencode", "speedups"] }
@@ -24,6 +26,7 @@ time = { version = "0.3", features = ["formatting", "macros", "serde"] }
 time-humanize = { version = "0.1" }
 tokio = { version = "1.32", features = ["full"] }
 toml = { version = "0.8" }
+totp-lite = { version = "2.0" }
 tracing = { version = "0.1", features = ["log"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 

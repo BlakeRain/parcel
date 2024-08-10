@@ -1,0 +1,26 @@
+<parcel-modal with-htmx>
+  <form hx-post="/user/settings/totp/remove">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <h1 class="text-xl font-semibold mb-4">Remove Two-factor authentication</h1>
+    <p class="mb-4">Are you sure you want to remove two-factor authentication?</p>
+    <p class="mb-4">
+      You will no longer need to enter a code from your authenticator app when logging
+      in. If you want to start using two-factor authentication again, you will need to
+      re-enable it from your account settings.
+    </p>
+    <p class="mb-4 text-danger">
+      <strong>Warning:</strong> Removing two-factor authentication will make your account less secure.
+    </p>
+    <div class="buttons end">
+      <button
+        class="button hollow success"
+        onclick="event.preventDefault(); event.target.closest('parcel-modal').closeModal();">
+        Keep two-factor enabled
+      </button>
+      <button
+        type="submit"
+        class="button danger">
+        Remove two-factor authentication
+      </button>
+  </form>
+</parcel-modal>

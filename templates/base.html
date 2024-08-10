@@ -37,6 +37,9 @@
                 dark:text-neutral-200 hover:bg-slate-700/10">
                 <span class="icon-circle-user-round"></span>
                 {{ auth.name }}
+                {% if not auth.has_totp %}
+                  <span class="icon-triangle-alert text-danger"></span>
+                {% endif %}
               </div>
               <ul class="invisible absolute top-full right-0 left-auto bg-slate-100
                 dark:bg-slate-800 border border-gray-400 dark:border-gray-700 rounded w-max z-50">
@@ -55,6 +58,9 @@
                     dark:hover:text-neutral-200">
                     <span class="icon-settings-2"></span>
                     Account Settings
+                    {% if not auth.has_totp %}
+                      <span class="icon-triangle-alert text-danger"></span>
+                    {% endif %}
                   </a>
                 </li>
                 <li>
@@ -92,6 +98,11 @@
       </div>
     </footer>
     <script type="text/javascript" src="/static/scripts/vendor/htmx.js"></script>
+    {% if build.profile == "debug" %}
+      <script type="text/javascript">
+        htmx.logAll();
+      </script>
+    {% endif %}
     <script type="module" src="/{{ env.init_js | safe }}"></script>
     {% block scripts %}{% endblock %}
   </body>

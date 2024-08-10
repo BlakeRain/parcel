@@ -96,6 +96,13 @@ pub async fn post_signin(
         return Ok(Redirect::see_other("/user/signin"));
     }
 
+    if user.totp.is_some() {
+        tracing::info!(user_id = user.id, username = ?username, "User requires TOTP");
+        session.set("_authenticating", user.id);
+        return Ok(Redirect::see_other("/user/signin/totp"));
+    }
+
+    session.remove("_authenticating");
     session.set("user_id", user.id);
 
     tracing::info!(user_id = user.id, username = ?username, "User signed in");
@@ -111,4 +118,152 @@ pub async fn post_signin(
 pub async fn get_signout(session: &Session) -> poem::Result<Redirect> {
     session.clear();
     Ok(Redirect::see_other("/"))
+}
+
+#[handler]
+pub fn get_signin_totp(
+    env: Data<&Env>,
+    token: &CsrfToken,
+    session: &Session,
+) -> poem::Result<Response> {
+    if session.get::<i32>("_authenticating").is_none() {
+        tracing::error!("User not authenticating");
+        session.set("error", "You need to sign in first");
+        return Ok(Redirect::see_other("/user/signin").into_response());
+    }
+
+    Ok(render_template(
+        "user/totp.html",
+        context! {
+            token => token.0,
+            error => session.take::<String>("error"),
+            ..default_context(&env)
+        },
+    )?
+    .into_response())
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TotpForm {
+    token: String,
+    code: String,
+}
+
+#[handler]
+pub async fn post_signin_totp(
+    env: Data<&Env>,
+    session: &Session,
+    verifier: &CsrfVerifier,
+    Form(TotpForm { token, code }): Form<TotpForm>,
+) -> poem::Result<Redirect> {
+    let Some(user_id) = session.get::<i32>("_authenticating") else {
+        tracing::error!("User not authenticating");
+        session.set("error", "You need to sign in first");
+        return Ok(Redirect::see_other("/user/signin"));
+    };
+
+    if !verifier.is_valid(&token) {
+        tracing::error!("Invalid CSRF token in sign in TOTP form");
+        return Err(CsrfError.into());
+    }
+
+    let Some(user) = User::get(&env.pool, user_id).await.map_err(|err| {
+        tracing::error!(user_id = user_id, err = ?err, "Failed to get user by ID");
+        InternalServerError(err)
+    })?
+    else {
+        tracing::error!(user_id = user_id, "User not found");
+        session.remove("_authenticating");
+        session.set("error", "You need to sign in first");
+        return Ok(Redirect::see_other("/user/signin"));
+    };
+
+    let Some(ref secret) = user.totp else {
+        tracing::error!(user_id = user_id, "User does not have TOTP secret");
+        session.remove("_authenticating");
+        session.set("error", "You need to sign in first");
+        return Ok(Redirect::see_other("/user/signin"));
+    };
+
+    let totp = code.trim();
+    if !totp.chars().all(|c| c.is_ascii_digit()) {
+        tracing::error!(
+            user = user.id,
+            "TOTP code provided was not a sequence of ASCII digits"
+        );
+
+        session.set(
+            "totp_error",
+            "🤨 Your TOTP code should be a sequence of six numbers. Try again.",
+        );
+
+        return Ok(Redirect::see_other("/user/signin/totp"));
+    }
+
+    if totp.len() != 6 {
+        tracing::error!(
+            user = user.id,
+            length = totp.len(),
+            "Incorrect number of digits provided for TOTP code (expected 6)"
+        );
+
+        session.set(
+            "error",
+            "🤨 Your TOTP code should be a sequence of six numbers. Try again.",
+        );
+
+        return Ok(Redirect::see_other("/user/signin/totp"));
+    }
+
+    let Some(decoded_secret) = base32::decode(base32::Alphabet::Rfc4648 { padding: true }, secret)
+    else {
+        tracing::error!(
+            user = user.id,
+            "TOTP secret from session was not valid base-32"
+        );
+
+        session.set(
+            "error",
+            "😒 There was a problem with the MFA setup process. Please try again.",
+        );
+
+        return Ok(Redirect::see_other("/user/signin/totp"));
+    };
+
+    let seconds = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+
+    let expected = totp_lite::totp_custom::<totp_lite::Sha1>(
+        totp_lite::DEFAULT_STEP,
+        6,
+        &decoded_secret[..],
+        seconds,
+    );
+
+    if totp != expected {
+        tracing::error!(
+            user = user.id,
+            "TOTP code provided did not match the expected value"
+        );
+
+        session.set(
+            "error",
+            "🤨 The TOTP code you provided was incorrect. Please try again.",
+        );
+
+        return Ok(Redirect::see_other("/user/signin/totp"));
+    }
+
+    session.remove("_authenticating");
+    session.set("user_id", user.id);
+
+    tracing::info!(user_id = user.id, "User signed in after TOTP");
+
+    if let Some(destination) = session.take::<String>("destination") {
+        Ok(Redirect::see_other(destination))
+    } else {
+        Ok(Redirect::see_other(if user.admin { "/admin" } else { "/" }))
+    }
 }

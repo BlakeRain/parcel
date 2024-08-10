@@ -176,6 +176,27 @@ impl User {
             )
             .is_ok()
     }
+
+    pub async fn set_totp_secret(&mut self, pool: &SqlitePool, secret: &str) -> sqlx::Result<()> {
+        sqlx::query("UPDATE users SET totp = $1 WHERE id = $2")
+            .bind(secret)
+            .bind(self.id)
+            .execute(pool)
+            .await?;
+
+        self.totp = Some(secret.to_string());
+        Ok(())
+    }
+
+    pub async fn remove_totp_secret(&mut self, pool: &SqlitePool) -> sqlx::Result<()> {
+        sqlx::query("UPDATE users SET totp = NULL WHERE id = $1")
+            .bind(self.id)
+            .execute(pool)
+            .await?;
+
+        self.totp = None;
+        Ok(())
+    }
 }
 
 impl<'r> FromRequest<'r> for User {
