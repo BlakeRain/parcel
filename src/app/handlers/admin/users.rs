@@ -91,6 +91,7 @@ pub async fn post_new(
         username,
         name,
         password: hash_password(&password),
+        totp: None,
         enabled,
         admin,
         limit: limit.map(|limit| limit * 1024 * 1024),

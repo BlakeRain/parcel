@@ -92,6 +92,7 @@ pub async fn post_setup(
         username,
         name,
         password: hash_password(&password),
+        totp: None,
         enabled: true,
         admin: true,
         limit: None,

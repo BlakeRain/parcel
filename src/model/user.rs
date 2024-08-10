@@ -17,6 +17,8 @@ pub struct User {
     pub name: String,
     #[serde(skip)]
     pub password: String,
+    #[serde(skip)]
+    pub totp: Option<String>,
     pub enabled: bool,
     pub admin: bool,
     pub limit: Option<i64>,
