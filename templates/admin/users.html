@@ -39,6 +39,7 @@
             <th class="text-left">Username</th>
             <th class="text-left">Display Name</th>
             <th class="text-center">Enabled</th>
+            <th class="text-center">MFA</th>
             <th class="text-center">Admin</th>
             <th class="text-left">Created At</th>
             <th class="text-right">Limit</th>
@@ -58,6 +59,9 @@
               <td class="text-left">{{ user.name }}</td>
               <td class="text-center {% if user.enabled %}text-success{% else %}text-danger{% endif %}">
                 {% if user.enabled %}Yes{% else %}No{% endif %}
+              </td>
+              <td class="text-center {% if user.totp is string %}text-success{% endif %}">
+                {% if user.totp is string %}Yes{% else %}No{% endif %}
               </td>
               <td class="text-center {% if user.admin %}text-success{% else %}text-danger{% endif %}">
                 {% if user.admin %}Yes{% else %}No{% endif %}
