@@ -4,11 +4,11 @@
       <h1 class="text-4xl font-bold">
         Your uploads
       </h1>
-      <div class="flex flex-row items-center gap-2">
+      <div class="buttons">
         <button
           id="delete_selected"
           type="button"
-          class="button"
+          class="button order-2 sm:order-1"
           hx-trigger="click"
           hx-delete="/uploads/list"
           hx-target="#upload-list-container"
@@ -22,7 +22,7 @@
         <button
           id="upload-list-refresh"
           type="button"
-          class="button"
+          class="button order-1 sm:order-2"
           hx-trigger="click,refresh"
           hx-push="/?order={{ sorting.order }}&asc={{ sorting.asc }}"
           hx-get="/uploads/list?order={{ sorting.order }}&asc={{ sorting.asc }}"

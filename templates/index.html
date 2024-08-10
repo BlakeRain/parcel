@@ -12,7 +12,7 @@
 {% endblock %}
 
 {% block content %}
-  <div class="grow container mx-auto flex flex-col gap-4">
+  <div class="grow container mx-auto flex flex-col gap-4 p-4 lg:p-0 lg:mt-4">
     <div hx-get="/uploads/stats" hx-target="this" hx-trigger="load" hx-swap="outerHTML"></div>
     <div
       hx-get="/uploads/list?order={{ sorting.order }}&asc={{ sorting.asc }}"

@@ -1,9 +1,9 @@
 @layer components {
   .form {
-    @apply flex flex-col gap-4;
+    @apply flex flex-col gap-2;
 
     div.buttons {
-      @apply mt-4 lg:mt-2;
+      @apply mt-4;
     }
   }
 
@@ -13,8 +13,20 @@
     @apply text-gray-900 dark:text-white;
   }
 
-  input + label {
-    @apply mt-2;
+  input + label,
+  .checkbox + label,
+  input + .checkbox,
+  .checkbox + input,
+  .checkbox + .checkbox {
+    @apply mt-4;
+  }
+
+  .checkbox {
+    @apply flex flex-row items-center gap-2;
+
+    > label {
+      @apply m-0;
+    }
   }
 
   .field {

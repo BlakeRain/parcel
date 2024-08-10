@@ -1,6 +1,6 @@
 <parcel-modal class="hidden" with-htmx>
   <form
-    class="flex flex-col gap-1"
+    class="form"
     hx-post="/admin/users/{{ user.id }}"
     hx-target="#user-list-container"
     hx-select="#user-list-container"
@@ -26,23 +26,22 @@
       value="{{ user.name }}"
       required
     />
-    <div class="grid grid-cols-3 gap-2">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-2 mt-4">
       <div>
-        <div class="flex flex-row gap-2">
+        <div class="checkbox">
           <input
-              type="checkbox"
-              name="admin"
-              id="admin"
-              {% if user.admin %}checked{% endif %} />
+          type="checkbox"
+          name="admin"
+          id="admin"
+          {% if user.admin %}checked{% endif %} />
           <label for="admin">User is an administrator</label>
         </div>
-      </div>
-      <div>
-        <div class="flex flex-row gap-2">
+        <div class="checkbox">
           <input
               type="checkbox"
               {% if user.id == auth.id %}
                 disabled
+                title="You cannn't disable your own account"
               {% else %}
                 name="enabled"
                 id="enabled"
@@ -50,12 +49,13 @@
               {% if user.enabled %}checked{% endif %} />
           <label for="enabled">User account is enabled</label>
         </div>
-      </div>
-      <div class="flex flex-col gap-2">
-        <div class="flex flex-row gap-2">
+        <div class="checkbox">
           <input type="checkbox" name="limit_check" id="limit_check" {% if user.limit %}checked{% endif %} />
-          <label for="limit_check">User has an upload limit (MB)</label>
+          <label for="limit_check">User has an upload limit</label>
         </div>
+      </div>
+      <div class="flex flex-col gap-2 justify-end">
+        <label>Upload limit in megabytes</label>
         <input
           type="number"
           class="field"

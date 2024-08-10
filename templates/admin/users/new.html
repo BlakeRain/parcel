@@ -1,5 +1,5 @@
 <parcel-modal class="hidden" with-htmx>
-  <form method="POST" action="/admin/users/new" class="flex flex-col gap-1">
+  <form method="POST" action="/admin/users/new" class="form">
     <input type="hidden" name="token" value="{{ token }}" />
     <label for="username">Username</label>
     <input
@@ -28,24 +28,23 @@
       placeholder="Password"
       required
     />
-    <div class="grid grid-cols-3 gap-2">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-2 mt-4">
       <div>
-        <div class="flex flex-row gap-2">
+        <div class="checkbox">
           <input type="checkbox" name="admin" id="admin" />
           <label for="admin">User is an administrator</label>
         </div>
-      </div>
-      <div>
-        <div class="flex flex-row gap-2">
+        <div class="checkbox">
           <input type="checkbox" name="enabled" id="enabled" checked />
           <label for="enabled">User account is enabled</label>
         </div>
-      </div>
-      <div class="flex flex-col gap-2">
-        <div class="flex flex-row gap-2">
+        <div class="checkbox">
           <input type="checkbox" name="limit_check" id="limit_check" checked />
-          <label for="limit_check">User has an upload limit (MB)</label>
+          <label for="limit_check">User has an upload limit</label>
         </div>
+      </div>
+      <div class="flex flex-col gap-2 justify-end">
+        <label>Upload limit in megabytes</label>
         <input
           type="number"
           class="field"

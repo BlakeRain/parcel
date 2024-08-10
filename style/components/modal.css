@@ -1,7 +1,7 @@
 @layer components {
   .modal {
     @apply fixed top-0 bottom-0 left-0 right-0;
-    @apply flex flex-col items-center justify-center;
+    @apply flex flex-col items-center md:justify-center p-4 md:p-0;
     @apply bg-black/50;
     @apply backdrop-filter backdrop-blur-sm;
 

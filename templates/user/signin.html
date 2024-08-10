@@ -3,7 +3,7 @@
 {% block title %}Sign In{% endblock %}
 
 {% block content %}
-  <div class="container mx-auto flex justify-center">
+  <div class="grow container mx-auto flex justify-center items-center p-4 lg:p-0">
     <div class="panel thin">
       <h1 class="heading">
         Sign in to your account
@@ -19,7 +19,9 @@
         <input class="field" type="text" name="username" id="username" placeholder="Username" required>
         <label for="password">Your password</label>
         <input class="field" type="password" name="password" id="password" placeholder="••••••••" required>
-        <button type="submit" class="button">Sign in</button>
+        <div class="buttons end">
+          <button type="submit" class="button">Sign in</button>
+        </div>
       </form>
     </div>
   </div>
