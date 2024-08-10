@@ -1,5 +1,6 @@
 <parcel-modal class="hidden" with-htmx>
   <form
+    class="form"
     hx-post="/uploads/{{ upload.id }}/edit"
     {% if hx_target %}
       hx-target="{{ hx_target }}"
@@ -21,7 +22,7 @@
       name="filename"
       value="{{ upload.filename }}"
       required />
-    <div class="flex flex-row gap-2">
+    <div class="checkbox">
       <input
         type="checkbox"
         name="public"
@@ -29,9 +30,9 @@
         {% if upload.public %}checked{% endif %} />
       <label for="public">Download is publicly accessible (no need to sign in to download)</label>
     </div>
-    <div class="grid grid-cols-2 gap-2">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
       <div>
-        <div class="flex flex-row gap-2">
+        <div class="checkbox">
           <input
             type="checkbox"
             name="limit_check"
@@ -45,11 +46,11 @@
           min="0"
           id="limit"
           name="limit"
-          value="{{ upload.limit | default(value = 0) }}"
+          value="{% if upload.limit is number %}{{ upload.limit }}{% else %}0{% endif %}"
           {% if upload.limit is not number %}disabled{% endif %} />
       </div>
       <div>
-        <div class="flex flex-row gap-2">
+        <div class="checkbox">
           <input
             type="checkbox"
             name="expiry_check"
@@ -64,6 +65,8 @@
           name="expiry_date"
           {% if upload.expiry_date %}
             value="{{ upload.expiry_date | datetime(format="[year]-[month]-[day]") }}"
+          {% else %}
+            value="{{ now | datetime(format="[year]-[month]-[day]") }}"
           {% endif %}
           {% if not upload.expiry_date %}disabled{% endif %} />
       </div>

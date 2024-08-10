@@ -54,6 +54,7 @@ pub async fn get_edit(
         "uploads/edit.html",
         context! {
             token => token.0,
+            now => time::OffsetDateTime::now_utc(),
             upload,
             hx_target,
             ult_dest,
