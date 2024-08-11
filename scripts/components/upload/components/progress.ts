@@ -6,8 +6,8 @@ import { formatBytes } from "../utils";
 const UploadProgress: FunctionComponent = () => {
   const { state } = useState();
 
-  const uploaded = formatBytes(state.uploadedBytes, 0);
-  const total = formatBytes(state.totalSize, 0);
+  const uploaded = formatBytes(state.uploadedBytes, 2);
+  const total = formatBytes(state.totalSize, 2);
   const info = `${uploaded} of ${total}`;
 
   return html`
