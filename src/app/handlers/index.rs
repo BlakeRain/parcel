@@ -11,18 +11,18 @@ use crate::{
     model::user::User,
 };
 
-use super::uploads::ListSorting;
+use super::uploads::ListQuery;
 
 #[handler]
 pub fn get_index(
     env: Data<&Env>,
     user: User,
-    Query(sorting): Query<ListSorting>,
+    Query(query): Query<ListQuery>,
 ) -> poem::Result<impl IntoResponse> {
     render_template(
         "index.html",
         minijinja::context! {
-            sorting,
+            query,
             index_js => javascript!("scripts/index.ts"),
             ..authorized_context(&env, &user)
         },

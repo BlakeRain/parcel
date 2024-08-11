@@ -18,20 +18,30 @@ use crate::{
 };
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ListSorting {
+pub struct ListQuery {
     #[serde(default)]
     pub order: UploadOrder,
     #[serde(default)]
     pub asc: bool,
+    #[serde(default)]
+    pub page: i32,
 }
 
 #[handler]
 pub async fn get_list(
     env: Data<&Env>,
     user: User,
-    Query(sorting): Query<ListSorting>,
+    Query(query): Query<ListQuery>,
 ) -> poem::Result<Html<String>> {
-    let uploads = Upload::get_for_user(&env.pool, user.id, sorting.order, sorting.asc)
+    let total = Upload::count_for_user(&env.pool, user.id)
+        .await
+        .map_err(|err| {
+            tracing::error!(user = user.id, err = ?err, "Unable to get upload count for user");
+            InternalServerError(err)
+        })?;
+
+    let offset = query.page * 100;
+    let uploads = Upload::get_for_user(&env.pool, user.id, query.order, query.asc, offset, 100)
         .await
         .map_err(|err| {
             tracing::error!(user = user.id, err = ?err, "Unable to get uploads for user");
@@ -41,8 +51,10 @@ pub async fn get_list(
     render_template(
         "uploads/list.html",
         context! {
+            total,
             uploads,
-            sorting,
+            query,
+            pages => (0..total / 100 + 1).collect::<Vec<_>>(),
             ..authorized_context(&env, &user)
         },
     )

@@ -2,7 +2,7 @@
   <div class="flex flex-col border border-slate-400 dark:border-gray-700 dark:bg-gray-800 rounded-md shadow-md">
     <div class="flex flex-row justify-between p-4">
       <h1 class="text-4xl font-bold">
-        Your uploads
+        Your uploads{% if total > 0 %} ({{ total }}){% endif %}
       </h1>
       <div class="buttons">
         <button
@@ -24,8 +24,8 @@
           type="button"
           class="button order-1 sm:order-2"
           hx-trigger="click,refresh"
-          hx-push="/?order={{ sorting.order }}&asc={{ sorting.asc }}"
-          hx-get="/uploads/list?order={{ sorting.order }}&asc={{ sorting.asc }}"
+          hx-push="/?order={{ query.order }}&asc={{ query.asc }}&page={{ query.page }}"
+          hx-get="/uploads/list?order={{ query.order }}&asc={{ query.asc }}&page={{ query.page }}"
           hx-target="#upload-list-container"
           hx-select="#upload-list-container"
           hx-swap="outerHTML"
@@ -43,22 +43,25 @@
               <parcel-checkbox-group id="uploads_group" name="uploads">
               </parcel-checkbox-group>
             </th>
-            {% macro sort_heading(sorting, name, align, title) %}
-              {% set query = "order=" + name %}
-              {% if sorting.order == name %}
-                {% set query = query + "&asc=" + ("false" if sorting.asc else "true") %}
+            {% macro sort_heading(query, name, align, title) %}
+              {% set qs = "order=" + name %}
+              {% if query.order == name %}
+                {% set qs = qs + "&asc=" + ("false" if query.asc else "true") %}
+              {% else %}
+                {% set qs = qs + "&asc=true" %}
               {% endif %}
+              {% set qs = qs + "&page=" + (query.page | safe) %}
               <th
                 class="text-nowrap text-{{ align }} cursor-pointer"
-                hx-get="/uploads/list?order={{ name }}&asc={% if sorting.order == name and sorting.asc %}false{% else %}true{% endif %}"
-                hx-push-url="/?order={{ name }}&asc={% if sorting.order == name and sorting.asc %}false{% else %}true{% endif %}"
+                hx-get="/uploads/list?{{ qs }}"
+                hx-push-url="/?{{ qs }}"
                 hx-trigger="click"
                 hx-target="#upload-list-container"
                 hx-select="#upload-list-container"
                 hx-swap="outerHTML">
                 {{ title }}
-                {% if sorting.order == name %}
-                  {% if sorting.asc %}
+                {% if query.order == name %}
+                  {% if query.asc %}
                     <span class="icon-chevron-up"></span>
                   {% else %}
                     <span class="icon-chevron-down"></span>
@@ -68,13 +71,13 @@
                 {% endif %}
               </th>
             {% endmacro %}
-            {{ sort_heading(sorting, "filename", "left", "File") }}
-            {{ sort_heading(sorting, "size", "right", "Size") }}
-            {{ sort_heading(sorting, "downloads", "right", "Downloads") }}
+            {{ sort_heading(query, "filename", "left", "File") }}
+            {{ sort_heading(query, "size", "right", "Size") }}
+            {{ sort_heading(query, "downloads", "right", "Downloads") }}
             <th class="text-nowrap text-right">Remaining</th>
-            {{ sort_heading(sorting, "expiry_date", "left", "Expires") }}
+            {{ sort_heading(query, "expiry_date", "left", "Expires") }}
             <th>Public</th>
-            {{ sort_heading(sorting, "uploaded_at", "left", "Uploaded") }}
+            {{ sort_heading(query, "uploaded_at", "left", "Uploaded") }}
             <th></th>
           </tr>
         </thead>
@@ -118,7 +121,7 @@
                   {% endif %}
                   {{ upload.remaining | default(value = upload.limit) }} / {{ upload.limit }}
                 {% else %}
-                <i>Unlimited</i>
+                  <i>Unlimited</i>
                 {% endif %}
               </td>
               <td class="text-nowrap">
@@ -128,13 +131,13 @@
                   </parcel-date>
                   ({{ upload.expiry_date | datetime_offset }})
                 {% else %}
-                <i>Never</i>
+                  <i>Never</i>
                 {% endif %}
               </td>
               {% if upload.public %}
-              <td class="text-center text-danger">Yes</td>
+                <td class="text-center text-danger">Yes</td>
               {% else %}
-              <td class="text-center text-success">No</td>
+                <td class="text-center text-success">No</td>
               {% endif %}
               <td class="text-left text-nowrap">
                 <parcel-datetime value="{{ upload.uploaded_at | datetime }}">
@@ -170,6 +173,61 @@
         </tbody>
       </table>
     </div>
+    {% if total > 100 %}
+      <div class="flex flex-row justify-center gap-2 mb-4">
+        <button
+          type="button"
+          class="button hollow"
+          {% if query.page == 0 %}
+            disabled
+          {% else %}
+            hx-push="/?order={{ query.order }}&asc={{ query.asc }}&page={{ query.page - 1 }}"
+            hx-get="/uploads/list?order={{ query.order }}&asc={{ query.asc }}&page={{ query.page - 1 }}"
+            hx-target="#upload-list-container"
+            hx-select="#upload-list-container"
+            hx-swap="outerHTML"
+            hx-on::before-request="htmx.trigger('#upload-stats-container', 'refresh')"
+          {% endif %}>
+          <span class="icon-chevron-left"></span>
+          Previous page
+        </button>
+
+        {% for page in pages %}
+          <button
+            type="button"
+            class="button hollow"
+            {% if page == query.page %}
+              disabled
+            {% else %}
+              hx-push="/?order={{ query.order }}&asc={{ query.asc }}&page={{ page }}"
+              hx-get="/uploads/list?order={{ query.order }}&asc={{ query.asc }}&page={{ page }}"
+              hx-target="#upload-list-container"
+              hx-select="#upload-list-container"
+              hx-swap="outerHTML"
+              hx-on::before-request="htmx.trigger('#upload-stats-container', 'refresh')"
+            {% endif %}>
+            {{ page + 1 }}
+          </button>
+        {% endfor %}
+
+        <button
+          type="button"
+          class="button hollow"
+          {% if query.page == (pages | length - 1) %}
+            disabled
+          {% else %}
+            hx-push="/?order={{ query.order }}&asc={{ query.asc }}&page={{ query.page + 1 }}"
+            hx-get="/uploads/list?order={{ query.order }}&asc={{ query.asc }}&page={{ query.page + 1 }}"
+            hx-target="#upload-list-container"
+            hx-select="#upload-list-container"
+            hx-swap="outerHTML"
+            hx-on::before-request="htmx.trigger('#upload-stats-container', 'refresh')"
+          {% endif %}>
+          <span class="icon-chevron-right"></span>
+          Next page
+        </button>
+      </div>
+    {% endif %}
   </div>
 </div>
 
