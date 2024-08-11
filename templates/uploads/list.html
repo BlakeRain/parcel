@@ -24,7 +24,6 @@
           type="button"
           class="button order-1 sm:order-2"
           hx-trigger="click,refresh"
-          hx-push="/?order={{ query.order }}&asc={{ query.asc }}&page={{ query.page }}"
           hx-get="/uploads/list?order={{ query.order }}&asc={{ query.asc }}&page={{ query.page }}"
           hx-target="#upload-list-container"
           hx-select="#upload-list-container"
@@ -181,7 +180,7 @@
           {% if query.page == 0 %}
             disabled
           {% else %}
-            hx-push="/?order={{ query.order }}&asc={{ query.asc }}&page={{ query.page - 1 }}"
+            hx-push-url="/?order={{ query.order }}&asc={{ query.asc }}&page={{ query.page - 1 }}"
             hx-get="/uploads/list?order={{ query.order }}&asc={{ query.asc }}&page={{ query.page - 1 }}"
             hx-target="#upload-list-container"
             hx-select="#upload-list-container"
@@ -199,7 +198,7 @@
             {% if page == query.page %}
               disabled
             {% else %}
-              hx-push="/?order={{ query.order }}&asc={{ query.asc }}&page={{ page }}"
+              hx-push-url="/?order={{ query.order }}&asc={{ query.asc }}&page={{ page }}"
               hx-get="/uploads/list?order={{ query.order }}&asc={{ query.asc }}&page={{ page }}"
               hx-target="#upload-list-container"
               hx-select="#upload-list-container"
@@ -216,7 +215,7 @@
           {% if query.page == (pages | length - 1) %}
             disabled
           {% else %}
-            hx-push="/?order={{ query.order }}&asc={{ query.asc }}&page={{ query.page + 1 }}"
+            hx-push-url="/?order={{ query.order }}&asc={{ query.asc }}&page={{ query.page + 1 }}"
             hx-get="/uploads/list?order={{ query.order }}&asc={{ query.asc }}&page={{ query.page + 1 }}"
             hx-target="#upload-list-container"
             hx-select="#upload-list-container"
