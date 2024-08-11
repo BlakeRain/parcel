@@ -1,0 +1,111 @@
+<parcel-modal class="hidden" with-htmx>
+  <h1 class="text-2xl font-bold mb-4">File Cache GC</h1>
+  <div id="cache-modal" class="flex flex-col gap-4">
+    {% if result %}
+      <p class="text-success">
+        Successfully deleted {{ result.removedCount }} orphan
+        file{% if result.removedCount != 1 %}s{% endif %},
+        reclaiming {{ result.removedTotal | filesizeformat }} of storage.
+      </p>
+      <div class="buttons end">
+        <button
+          class="button hollow"
+          onclick="event.preventDefault(); event.target.closest('parcel-modal').closeModal();">
+          Close
+        </button>
+      </div>
+    {% elif summary %}
+      <div class="table">
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th class="text-right">No. Files</th>
+              <th class="text-right">Total Size</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Valid cache files</td>
+              <td class="text-right">
+                {{ summary.validCount }}
+              </td>
+              <td class="text-right">
+                {{ summary.validTotal | filesizeformat }}
+              </td>
+            </tr>
+            <tr>
+              <td>Orphan cache files</td>
+              <td class="text-right">
+                {{ summary.invalidCount }}
+              </td>
+              <td class="text-right">
+                {{ summary.invalidTotal | filesizeformat }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      {% if summary.invalidCount > 0 %}
+        <p>
+          If you wish, you can delete these orphan cache files by selecting
+          <i class="italic">Delete orphan files</i> below.
+        </p>
+        <div class="buttons end">
+          <button
+            class="button hollow"
+            onclick="event.preventDefault(); event.target.closest('parcel-modal').closeModal();">
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="button danger"
+            hx-trigger="click"
+            hx-delete="/admin/uploads/cache"
+            hx-target="#cache-modal"
+            hx-select="#cache-modal"
+            hx-swap="innerHTML">
+            <span class="icon-trash-2"></span>
+            Delete orphan files
+          </button>
+        </div>
+      {% else %}
+        <div class="buttons end">
+          <button
+            class="button hollow"
+            onclick="event.preventDefault(); event.target.closest('parcel-modal').closeModal();">
+            Close
+          </button>
+        </div>
+      {% endif %}
+    {% else %}
+      <p>
+        This will look for any files in the cache directory that do not have a corresponding
+        entry in the uploads database. This can happen when mass uploads are incomplete.
+      </p>
+      <p>
+        <b class="font-semibold">Note:</b>
+        This process can take a while to complete, depending on the number of files in the cache
+        directory.
+      </p>
+      <div class="buttons end">
+        <button
+          class="button hollow"
+          onclick="event.preventDefault(); event.target.closest('parcel-modal').closeModal();">
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="button"
+          hx-trigger="click"
+          hx-post="/admin/uploads/cache"
+          hx-target="#cache-modal"
+          hx-select="#cache-modal"
+          hx-swap="innerHTML">
+          <span class="icon-file-scan"></span>
+          Scan cache
+        </button>
+      </div>
+    {% endif %}
+  </div>
+</parcel-modal>

@@ -6,7 +6,7 @@
     table {
       @apply text-slate-800 dark:text-slate-200;
       @apply border-collapse table-auto;
-      @apply w-full my-8 text-sm;
+      @apply w-full mb-8 text-sm;
 
       thead {
         tr {

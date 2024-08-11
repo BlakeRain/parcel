@@ -14,6 +14,7 @@ use crate::{
         templates::{authorized_context, render_template},
     },
     env::Env,
+    model::upload::Upload,
 };
 
 #[derive(FromRow, Serialize)]
@@ -55,6 +56,151 @@ pub async fn get_uploads(env: Data<&Env>, Admin(admin): Admin) -> poem::Result<H
         "admin/uploads.html",
         context! {
             uploads,
+            ..authorized_context(&env, &admin)
+        },
+    )
+}
+
+#[handler]
+pub fn get_cache(env: Data<&Env>, Admin(admin): Admin) -> poem::Result<Html<String>> {
+    render_template("admin/uploads/cache.html", authorized_context(&env, &admin))
+}
+
+trait WithCacheFiles: Default {
+    fn valid_cache_file(&mut self, entry: std::fs::DirEntry, upload: Upload) -> poem::Result<()>;
+    fn invalid_cache_file(&mut self, entry: std::fs::DirEntry) -> poem::Result<()>;
+}
+
+#[derive(Debug, Default, Serialize)]
+struct CacheFilesSummary {
+    #[serde(rename = "validTotal")]
+    valid_total: u64,
+    #[serde(rename = "validCount")]
+    valid_count: u64,
+    #[serde(rename = "invalidTotal")]
+    invalid_total: u64,
+    #[serde(rename = "invalidCount")]
+    invalid_count: u64,
+}
+
+impl WithCacheFiles for CacheFilesSummary {
+    fn valid_cache_file(&mut self, entry: std::fs::DirEntry, _upload: Upload) -> poem::Result<()> {
+        self.valid_total += entry
+            .metadata()
+            .map_err(|err| {
+                tracing::error!(err = ?err, "Failed to read cache directory entry metadata");
+                InternalServerError(err)
+            })?
+            .len();
+
+        self.valid_count += 1;
+        Ok(())
+    }
+
+    fn invalid_cache_file(&mut self, entry: std::fs::DirEntry) -> poem::Result<()> {
+        self.invalid_total += entry
+            .metadata()
+            .map_err(|err| {
+                tracing::error!(err = ?err, "Failed to read cache directory entry metadata");
+                InternalServerError(err)
+            })?
+            .len();
+
+        self.invalid_count += 1;
+        Ok(())
+    }
+}
+
+#[derive(Debug, Default, Serialize)]
+struct CacheFilesCleanup {
+    #[serde(rename = "removedTotal")]
+    removed_total: u64,
+    #[serde(rename = "removedCount")]
+    removed_count: u64,
+}
+
+impl WithCacheFiles for CacheFilesCleanup {
+    fn valid_cache_file(&mut self, _entry: std::fs::DirEntry, _upload: Upload) -> poem::Result<()> {
+        Ok(())
+    }
+
+    fn invalid_cache_file(&mut self, entry: std::fs::DirEntry) -> poem::Result<()> {
+        self.removed_total += entry
+            .metadata()
+            .map_err(|err| {
+                tracing::error!(err = ?err, "Failed to read cache directory entry metadata");
+                InternalServerError(err)
+            })?
+            .len();
+
+        std::fs::remove_file(entry.path()).map_err(|err| {
+            tracing::error!(err = ?err, "Failed to remove cache file");
+            InternalServerError(err)
+        })?;
+
+        self.removed_count += 1;
+        Ok(())
+    }
+}
+
+async fn find_cache_files<T>(env: &Env) -> poem::Result<T>
+where
+    T: WithCacheFiles,
+{
+    let mut result = T::default();
+
+    let dir = std::fs::read_dir(&env.cache_dir).map_err(|err| {
+        tracing::error!(err = ?err, dir = ?env.cache_dir, "Failed to read cache directory");
+        InternalServerError(err)
+    })?;
+
+    for entry in dir {
+        let entry = entry.map_err(|err| {
+            tracing::error!(err = ?err, "Failed to read cache directory entry");
+            InternalServerError(err)
+        })?;
+
+        let filename = entry.file_name().into_string().map_err(|filename| {
+            tracing::error!(filename = ?filename, "Failed to convert filename to string");
+            poem::Error::from_status(poem::http::StatusCode::INTERNAL_SERVER_ERROR)
+        })?;
+
+        let upload = Upload::get_by_slug(&env.pool, &filename)
+            .await
+            .map_err(|err| {
+                tracing::error!(err = ?err, slug = ?filename, "Failed to fetch upload by slug");
+                InternalServerError(err)
+            })?;
+
+        if let Some(upload) = upload {
+            result.valid_cache_file(entry, upload)?;
+        } else {
+            result.invalid_cache_file(entry)?;
+        }
+    }
+
+    Ok(result)
+}
+
+#[handler]
+pub async fn post_cache(env: Data<&Env>, Admin(admin): Admin) -> poem::Result<Html<String>> {
+    let summary = find_cache_files::<CacheFilesSummary>(*env).await?;
+    render_template(
+        "admin/uploads/cache.html",
+        context! {
+            summary,
+            ..authorized_context(&env, &admin)
+        },
+    )
+}
+
+#[handler]
+pub async fn delete_cache(env: Data<&Env>, Admin(admin): Admin) -> poem::Result<Html<String>> {
+    let result = find_cache_files::<CacheFilesCleanup>(*env).await?;
+    render_template(
+        "admin/uploads/cache.html",
+        context! {
+            result,
             ..authorized_context(&env, &admin)
         },
     )
