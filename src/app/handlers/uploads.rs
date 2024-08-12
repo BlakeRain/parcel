@@ -25,7 +25,7 @@ mod upload;
 
 pub use download::get_download;
 pub use edit::{get_edit, post_edit};
-pub use list::{delete_list, get_list, get_page, ListQuery};
+pub use list::{get_list, get_page, post_delete, ListQuery};
 pub use new::{get_new, post_new};
 pub use upload::{delete_upload, get_upload};
 

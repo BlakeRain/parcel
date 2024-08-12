@@ -25,7 +25,7 @@ class CheckboxGroup extends HTMLElement {
 
     this.checkbox.addEventListener("click", () => {
       this.checkboxes.forEach((checkbox) => {
-        checkbox.checkbox.checked = this.checkbox.checked;
+        checkbox.checked = this.checkbox.checked;
       });
 
       this.dispatchChangedEvent();
@@ -44,9 +44,7 @@ class CheckboxGroup extends HTMLElement {
   }
 
   updateCheckbox() {
-    const checked = this.checkboxes.filter(
-      (checkbox) => checkbox.checkbox.checked,
-    );
+    const checked = this.checkboxes.filter((checkbox) => checkbox.checked);
     this.checkbox.checked = checked.length === this.checkboxes.length;
     this.checkbox.indeterminate =
       checked.length > 0 && checked.length < this.checkboxes.length;
@@ -54,9 +52,7 @@ class CheckboxGroup extends HTMLElement {
   }
 
   dispatchChangedEvent() {
-    const checked = this.checkboxes.filter(
-      (checkbox) => checkbox.checkbox.checked,
-    );
+    const checked = this.checkboxes.filter((checkbox) => checkbox.checked);
 
     const event = new CustomEvent("changed", {
       detail: {
@@ -70,83 +66,32 @@ class CheckboxGroup extends HTMLElement {
 }
 
 class GroupedCheckbox extends HTMLElement {
-  public index: number = -1;
-  public checkbox: HTMLInputElement = null;
-  private internals: ElementInternals;
-
-  static formAssociated = true;
-
-  static get observedAttributes() {
-    return ["group", "name"];
-  }
+  private index = -1;
+  private checkbox: HTMLInputElement = null;
 
   get checked() {
-    return this.checkbox.checked;
+    return this.checkbox && this.checkbox.checked;
   }
 
-  set checked(v) {
-    this.checkbox.checked = v;
-  }
-
-  get value() {
-    return this.checkbox.checked ? this.checkbox.value : null;
-  }
-
-  set value(v) {
-    this.checkbox.value = v;
-  }
-
-  get form() {
-    return this.internals.form;
-  }
-
-  get name() {
-    return this.getAttribute("name");
-  }
-
-  get type() {
-    return this.localName;
-  }
-
-  get validity() {
-    return this.internals.validity;
-  }
-
-  get validationMessage() {
-    return this.internals.validationMessage;
-  }
-
-  get willValidate() {
-    return this.internals.willValidate;
-  }
-
-  checkValidity() {
-    this.internals.checkValidity();
-  }
-
-  reportValidity() {
-    this.internals.reportValidity();
-  }
-
-  constructor() {
-    super();
-    this.internals = this.attachInternals();
+  set checked(value) {
+    if (this.checkbox) {
+      this.checkbox.checked = value;
+    }
   }
 
   connectedCallback() {
     const group_name = this.getAttribute("group");
     if (!group_name) {
-      throw Error("GroupedCheckbox requires a group attribute");
+      throw new Error("GroupedCheckbox requires a 'group' attribute");
     }
 
     const group = CHECKBOX_GROUPS[group_name];
     if (!group) {
-      throw Error(`GroupedCheckbox group '${group_name}' not found`);
+      throw new Error(`GroupedCheckbox group '${group_name}' not found`);
     }
 
     this.index = group.registerCheckbox(this);
-
-    this.checkbox = document.createElement("input");
+    this.checkbox = this.attachCheckbox();
     this.checkbox.type = "checkbox";
     this.checkbox.name = this.getAttribute("name");
     this.checkbox.value = this.getAttribute("value");
@@ -154,22 +99,49 @@ class GroupedCheckbox extends HTMLElement {
 
     this.checkbox.addEventListener("click", (event) => {
       if (event.shiftKey) {
-        if (group.last_checked) {
-          const checked = group.last_checked.checkbox.checked;
-          const start = Math.min(this.index, group.last_checked.index);
-          const end = Math.max(this.index, group.last_checked.index);
+        if (group.lastChecked) {
+          const checked = group.lastChecked.checked;
+          const start = Math.min(this.index, group.lastChecked.index);
+          const end = Math.max(this.index, group.lastChecked.index);
           for (let i = start; i <= end; ++i) {
-            group.checkboxes[i].checkbox.checked = checked;
+            group.checkboxes[i].checked = checked;
           }
         }
       }
 
-      group.last_checked = this;
+      group.lastChecked = this;
       group.updateCheckbox();
     });
+  }
 
-    const shadow = this.attachShadow({ mode: "open" });
-    shadow.appendChild(this.checkbox);
+  disconnectedCallback() {
+    if (this.checkbox) {
+      this.removeChild(this.checkbox);
+      this.checkbox = null;
+    }
+  }
+
+  attachCheckbox() {
+    let checkbox = null;
+
+    if (this.children.length > 0) {
+      checkbox = this.children[0];
+      if (checkbox.tagName !== "INPUT") {
+        checkbox = null;
+      }
+    }
+
+    if (!checkbox) {
+      checkbox = this.attachNewCheckbox();
+    }
+
+    return checkbox;
+  }
+
+  attachNewCheckbox() {
+    const checkbox = document.createElement("input");
+    this.appendChild(checkbox);
+    return checkbox;
   }
 }
 

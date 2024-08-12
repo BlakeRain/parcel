@@ -163,7 +163,7 @@ impl Upload {
         .await
     }
 
-    pub async fn count_for_user(pool: &SqlitePool, owner: i32) -> sqlx::Result<i32> {
+    pub async fn count_for_user(pool: &SqlitePool, owner: i32) -> sqlx::Result<u32> {
         sqlx::query_scalar("SELECT COUNT(*) FROM uploads WHERE uploaded_by = $1")
             .bind(owner)
             .fetch_one(pool)

@@ -1,7 +1,7 @@
 {% for upload in uploads %}
   <tr
     id="upload-row-{{ upload.id }}"
-    {% if loop.index == (uploads | length) %}
+    {% if loop.index == (uploads | length) and page < last_page %}
       hx-trigger="revealed"
       hx-get="/uploads/list/{{ page + 1 }}?order={{ query.order }}&asc={{ query.asc }}"
       hx-target="#upload-list tbody"

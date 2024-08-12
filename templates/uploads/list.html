@@ -1,4 +1,4 @@
-<form id="upload-list-container">
+<form id="upload-list-container" method="POST">
   <div class="flex flex-col border border-slate-400 dark:border-gray-700 dark:bg-gray-800 rounded-md shadow-md">
     <div class="flex flex-row justify-between p-4">
       <h1 class="text-4xl font-bold">
@@ -10,7 +10,7 @@
           type="button"
           class="button order-2 sm:order-1"
           hx-trigger="click"
-          hx-delete="/uploads/list"
+          hx-post="/uploads/delete"
           hx-target="#upload-list-container"
           hx-select="#upload-list-container"
           hx-confirm="Are you sure you want to delete the selected files?"

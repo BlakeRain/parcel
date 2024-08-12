@@ -57,7 +57,7 @@ pub async fn get_list(
 }
 
 #[handler]
-pub async fn delete_list(
+pub async fn post_delete(
     env: Data<&Env>,
     user: User,
     Form(form): Form<Vec<(String, i32)>>,
@@ -110,6 +110,15 @@ pub async fn get_page(
     Path(page): Path<u32>,
     Query(query): Query<ListQuery>,
 ) -> poem::Result<Html<String>> {
+    let total = Upload::count_for_user(&env.pool, user.id)
+        .await
+        .map_err(|err| {
+            tracing::error!(user = user.id, err = ?err, "Unable to get upload count for user");
+            InternalServerError(err)
+        })?;
+
+    let last_page = total / 50;
+    let page = page.min(last_page);
     let offset = page * 50;
     let uploads = Upload::get_for_user(&env.pool, user.id, query.order, query.asc, offset, 50)
         .await
@@ -122,6 +131,7 @@ pub async fn get_page(
         "uploads/page.html",
         context! {
             page,
+            last_page,
             uploads,
             query,
             ..authorized_context(&env, &user)

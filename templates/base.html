@@ -110,7 +110,7 @@
     <script type="text/javascript" src="/static/scripts/vendor/htmx.js"></script>
     {% if build.profile == "debug" %}
       <script type="text/javascript">
-        htmx.logAll();
+        // htmx.logAll();
       </script>
     {% endif %}
     <script type="module" src="/{{ env.init_js | safe }}"></script>

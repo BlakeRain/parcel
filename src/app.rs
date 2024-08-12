@@ -35,7 +35,8 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> impl IntoEndpoint {
         *"/static" { StaticFilesEndpoint::new("./static") }
 
         "/"                             handlers::index::index                GET
-        "/uploads/list"                 handlers::uploads::list               GET      DELETE
+        "/uploads/delete"               handlers::uploads::delete                 POST
+        "/uploads/list"                 handlers::uploads::list               GET
         "/uploads/list/:page"           handlers::uploads::page               GET
         "/uploads/new"                  handlers::uploads::new                GET POST
         "/uploads/stats"                handlers::uploads::stats              GET
