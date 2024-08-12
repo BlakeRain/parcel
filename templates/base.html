@@ -96,6 +96,16 @@
         v{{ build.version }}
         </a>
       </div>
+      {% if build.profile == "debug" %}
+        <div class="flex flex-row gap-2">
+          <span>Responsive Breakpoints:</span>
+          <span class="opacity-50 sm:opacity-100">sm</span>
+          <span class="opacity-50 md:opacity-100">md</span>
+          <span class="opacity-50 lg:opacity-100">lg</span>
+          <span class="opacity-50 xl:opacity-100">xl</span>
+          <span class="opacity-50 2xl:opacity-100">2xl</span>
+        </div>
+      {% endif %}
     </footer>
     <script type="text/javascript" src="/static/scripts/vendor/htmx.js"></script>
     {% if build.profile == "debug" %}

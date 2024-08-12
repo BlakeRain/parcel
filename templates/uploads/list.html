@@ -2,7 +2,7 @@
   <div class="flex flex-col border border-slate-400 dark:border-gray-700 dark:bg-gray-800 rounded-md shadow-md">
     <div class="flex flex-row justify-between p-4">
       <h1 class="text-4xl font-bold">
-        Your uploads{% if total > 0 %} ({{ total }}){% endif %}
+        Your uploads{% if total > 0 %}<span class="hidden md:inline"> ({{ total }})</span>{% endif %}
       </h1>
       <div class="buttons">
         <button
@@ -24,7 +24,7 @@
           type="button"
           class="button order-1 sm:order-2"
           hx-trigger="click,refresh"
-          hx-get="/uploads/list?order={{ query.order }}&asc={{ query.asc }}&page={{ query.page }}"
+          hx-get="/uploads/list?order={{ query.order }}&asc={{ query.asc }}"
           hx-target="#upload-list-container"
           hx-select="#upload-list-container"
           hx-swap="outerHTML"
@@ -35,23 +35,22 @@
       </div>
     </div>
     <div class="table">
-      <table>
+      <table id="upload-list" class="table-fixed">
         <thead>
           <tr>
-            <th class="slim">
+            <th class="slim w-12">
               <parcel-checkbox-group id="uploads_group" name="uploads">
               </parcel-checkbox-group>
             </th>
-            {% macro sort_heading(query, name, align, title) %}
+            {% macro sort_heading(query, name, align, title, size="") %}
               {% set qs = "order=" + name %}
               {% if query.order == name %}
                 {% set qs = qs + "&asc=" + ("false" if query.asc else "true") %}
               {% else %}
                 {% set qs = qs + "&asc=true" %}
               {% endif %}
-              {% set qs = qs + "&page=" + (query.page | safe) %}
               <th
-                class="text-nowrap text-{{ align }} cursor-pointer"
+                class="text-nowrap text-{{ align }} cursor-pointer {{ size }}"
                 hx-get="/uploads/list?{{ qs }}"
                 hx-push-url="/?{{ qs }}"
                 hx-trigger="click"
@@ -71,162 +70,23 @@
               </th>
             {% endmacro %}
             {{ sort_heading(query, "filename", "left", "File") }}
-            {{ sort_heading(query, "size", "right", "Size") }}
-            {{ sort_heading(query, "downloads", "right", "Downloads") }}
-            <th class="text-nowrap text-right">Remaining</th>
-            {{ sort_heading(query, "expiry_date", "left", "Expires") }}
-            <th>Public</th>
-            {{ sort_heading(query, "uploaded_at", "left", "Uploaded") }}
-            <th></th>
+            {{ sort_heading(query, "size", "right", "Size", "hidden md:table-cell w-40") }}
+            {{ sort_heading(query, "downloads", "right", "Downloads", "hidden xl:table-cell w-32") }}
+            <th class="text-nowrap text-right hidden lg:table-cell w-28">Remaining</th>
+            {{ sort_heading(query, "expiry_date", "left", "Expires", "hidden lg:table-cell w-24 xl:w-56") }}
+            <th class="w-16">Public</th>
+            {{ sort_heading(query, "uploaded_at", "left", "Uploaded", "hidden xl:table-cell w-44") }}
+            <th class="w-20"></th>
           </tr>
         </thead>
-        <tbody>
-          {% if uploads | length == 0 %}
-          <tr>
-            <td colspan="9" class="text-center italic">
-              Nothing to show
-            </td>
-          </tr>
-          {% endif %}
-          {% for upload in uploads %}
-            <tr>
-              <td class="slim text-center">
-                <parcel-grouped-checkbox
-                  name="selected"
-                  group="uploads"
-                  value="{{ upload.id }}">
-                </parcel-grouped-checkbox>
-              </td>
-              <td>
-                <div class="flex flex-row gap-1">
-                  <a class="text-nowrap" href="/uploads/{{ upload.slug }}">{{ upload.filename }}</a>
-                  <parcel-clipboard url="true" value="/uploads/{{ upload.slug }}"></parcel-clipboard>
-                </div>
-              </td>
-              <td class="text-right text-nowrap">{{ upload.size | filesizeformat }}</td>
-              <td class="text-right text-nowrap">{{ upload.downloads }}</td>
-              <td class="text-right text-nowrap {% if upload.remaining is number and upload.remaining == 0 %}text-danger{% endif %}">
-                {% if upload.limit is number %}
-                  {% if upload.remaining is number and upload.remaining < upload.limit %}
-                    <a
-                      href="#"
-                      hx-post="/uploads/{{ upload.id }}/reset"
-                      hx-trigger="click"
-                      hx-target="closest td"
-                      hx-swap="outerHTML"
-                      hx-confirm="Are you sure you want to reset the download counter for this upload?">
-                      <span class="icon-rotate-ccw"></span>
-                    </a>
-                  {% endif %}
-                  {{ upload.remaining | default(value = upload.limit) }} / {{ upload.limit }}
-                {% else %}
-                  <i>Unlimited</i>
-                {% endif %}
-              </td>
-              <td class="text-nowrap">
-                {% if upload.expiry_date %}
-                  <parcel-date value="{{ upload.expiry_date | datetime }}">
-                    {{ upload.expiry_date | datetime }}
-                  </parcel-date>
-                  ({{ upload.expiry_date | datetime_offset }})
-                {% else %}
-                  <i>Never</i>
-                {% endif %}
-              </td>
-              {% if upload.public %}
-                <td class="text-center text-danger">Yes</td>
-              {% else %}
-                <td class="text-center text-success">No</td>
-              {% endif %}
-              <td class="text-left text-nowrap">
-                <parcel-datetime value="{{ upload.uploaded_at | datetime }}">
-                  {{ upload.uploaded_at | datetime }}
-                </parcel-datetime>
-              </td>
-              <td class="text-right whitespace-nowrap">
-                <a href="/uploads/{{ upload.slug }}/download" title="Download {{ upload.filename }}">
-                  <span class="icon-download"></span>
-                </a>
-                <a
-                  href="#"
-                  title="Edit upload settings"
-                  hx-get="/uploads/{{ upload.id }}/edit"
-                  hx-trigger="click"
-                  hx-target="body"
-                  hx-swap="beforeend">
-                  <span class="icon-pencil"></span>
-                </a>
-                <a
-                  href="#"
-                  title="Delete upload"
-                  hx-delete="/uploads/{{ upload.id }}"
-                  hx-trigger="click"
-                  hx-target="closest tr"
-                  hx-swap="outerHTML swap:0.5s"
-                  hx-confirm="Are you sure you want to delete this upload?">
-                  <span class="icon-trash-2"></span>
-                </a>
-              </td>
-            </tr>
-          {% endfor %}
+        <tbody
+          hx-get="/uploads/list/0?order={{ query.order }}&asc={{ query.asc }}"
+          hx-trigger="load"
+          hx-target="this"
+          hx-swap="beforeend">
         </tbody>
       </table>
     </div>
-    {% if total > 100 %}
-      <div class="flex flex-row justify-center gap-2 mb-4">
-        <button
-          type="button"
-          class="button hollow"
-          {% if query.page == 0 %}
-            disabled
-          {% else %}
-            hx-push-url="/?order={{ query.order }}&asc={{ query.asc }}&page={{ query.page - 1 }}"
-            hx-get="/uploads/list?order={{ query.order }}&asc={{ query.asc }}&page={{ query.page - 1 }}"
-            hx-target="#upload-list-container"
-            hx-select="#upload-list-container"
-            hx-swap="outerHTML"
-            hx-on::before-request="htmx.trigger('#upload-stats-container', 'refresh')"
-          {% endif %}>
-          <span class="icon-chevron-left"></span>
-          Previous page
-        </button>
-
-        {% for page in pages %}
-          <button
-            type="button"
-            class="button hollow"
-            {% if page == query.page %}
-              disabled
-            {% else %}
-              hx-push-url="/?order={{ query.order }}&asc={{ query.asc }}&page={{ page }}"
-              hx-get="/uploads/list?order={{ query.order }}&asc={{ query.asc }}&page={{ page }}"
-              hx-target="#upload-list-container"
-              hx-select="#upload-list-container"
-              hx-swap="outerHTML"
-              hx-on::before-request="htmx.trigger('#upload-stats-container', 'refresh')"
-            {% endif %}>
-            {{ page + 1 }}
-          </button>
-        {% endfor %}
-
-        <button
-          type="button"
-          class="button hollow"
-          {% if query.page == (pages | length - 1) %}
-            disabled
-          {% else %}
-            hx-push-url="/?order={{ query.order }}&asc={{ query.asc }}&page={{ query.page + 1 }}"
-            hx-get="/uploads/list?order={{ query.order }}&asc={{ query.asc }}&page={{ query.page + 1 }}"
-            hx-target="#upload-list-container"
-            hx-select="#upload-list-container"
-            hx-swap="outerHTML"
-            hx-on::before-request="htmx.trigger('#upload-stats-container', 'refresh')"
-          {% endif %}>
-          Next page
-          <span class="icon-chevron-right"></span>
-        </button>
-      </div>
-    {% endif %}
   </div>
 </div>
 

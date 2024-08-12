@@ -36,6 +36,7 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> impl IntoEndpoint {
 
         "/"                             handlers::index::index                GET
         "/uploads/list"                 handlers::uploads::list               GET      DELETE
+        "/uploads/list/:page"           handlers::uploads::page               GET
         "/uploads/new"                  handlers::uploads::new                GET POST
         "/uploads/stats"                handlers::uploads::stats              GET
         "/uploads/:id"                  handlers::uploads::upload             GET      DELETE

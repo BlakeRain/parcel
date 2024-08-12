@@ -153,9 +153,21 @@ fn filter_filesizeformat(value: usize, kwargs: Kwargs) -> Result<String, Error> 
     Ok(humansize::format_size(value, format))
 }
 
+fn test_past(value: Value) -> Result<bool, Error> {
+    let datetime = parse_datetime(value)?;
+    Ok(datetime < OffsetDateTime::now_utc())
+}
+
+fn test_future(value: Value) -> Result<bool, Error> {
+    let datetime = parse_datetime(value)?;
+    Ok(datetime > OffsetDateTime::now_utc())
+}
+
 pub(super) fn add_to_environment(environment: &mut Environment) {
     environment.add_filter("datetime", filter_datetime);
     environment.add_filter("datetime_offset", filter_datetime_offset);
     environment.add_filter("substr", filter_substr);
     environment.add_filter("filesizeformat", filter_filesizeformat);
+    environment.add_test("past", test_past);
+    environment.add_test("future", test_future);
 }

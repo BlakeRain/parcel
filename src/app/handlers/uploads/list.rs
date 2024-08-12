@@ -3,7 +3,7 @@ use poem::{
     error::InternalServerError,
     handler,
     http::StatusCode,
-    web::{Data, Form, Html, Query},
+    web::{Data, Form, Html, Path, Query},
     IntoResponse,
 };
 use serde::{Deserialize, Serialize};
@@ -23,8 +23,6 @@ pub struct ListQuery {
     pub order: UploadOrder,
     #[serde(default)]
     pub asc: bool,
-    #[serde(default)]
-    pub page: i32,
 }
 
 #[handler]
@@ -40,8 +38,7 @@ pub async fn get_list(
             InternalServerError(err)
         })?;
 
-    let offset = query.page * 100;
-    let uploads = Upload::get_for_user(&env.pool, user.id, query.order, query.asc, offset, 100)
+    let uploads = Upload::get_for_user(&env.pool, user.id, query.order, query.asc, 0, 50)
         .await
         .map_err(|err| {
             tracing::error!(user = user.id, err = ?err, "Unable to get uploads for user");
@@ -54,7 +51,6 @@ pub async fn get_list(
             total,
             uploads,
             query,
-            pages => (0..total / 100 + 1).collect::<Vec<_>>(),
             ..authorized_context(&env, &user)
         },
     )
@@ -105,4 +101,30 @@ pub async fn delete_list(
     }
 
     Ok(Html("").with_header("HX-Refresh", "true"))
+}
+
+#[handler]
+pub async fn get_page(
+    env: Data<&Env>,
+    user: User,
+    Path(page): Path<u32>,
+    Query(query): Query<ListQuery>,
+) -> poem::Result<Html<String>> {
+    let offset = page * 50;
+    let uploads = Upload::get_for_user(&env.pool, user.id, query.order, query.asc, offset, 50)
+        .await
+        .map_err(|err| {
+            tracing::error!(user = user.id, err = ?err, "Unable to get uploads for user");
+            InternalServerError(err)
+        })?;
+
+    render_template(
+        "uploads/page.html",
+        context! {
+            page,
+            uploads,
+            query,
+            ..authorized_context(&env, &user)
+        },
+    )
 }

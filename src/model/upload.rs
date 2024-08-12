@@ -148,8 +148,8 @@ impl Upload {
         owner: i32,
         order: UploadOrder,
         asc: bool,
-        offset: i32,
-        limit: i32,
+        offset: u32,
+        limit: u32,
     ) -> sqlx::Result<Vec<Self>> {
         sqlx::query_as(&format!(
             "SELECT * FROM uploads WHERE uploaded_by = $1 ORDER BY {} {} LIMIT {} OFFSET {}",

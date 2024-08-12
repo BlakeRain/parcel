@@ -15,7 +15,7 @@
   <div class="grow container mx-auto flex flex-col gap-4 p-4 lg:p-0 lg:mt-4">
     <div hx-get="/uploads/stats" hx-target="this" hx-trigger="load" hx-swap="outerHTML"></div>
     <div
-      hx-get="/uploads/list?order={{ query.order }}&asc={{ query.asc }}&page={{ query.page }}"
+      hx-get="/uploads/list?order={{ query.order }}&asc={{ query.asc }}"
       hx-target="this"
       hx-trigger="load"
       hx-swap="outerHTML"></div>
