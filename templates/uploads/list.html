@@ -34,65 +34,73 @@
         </button>
       </div>
     </div>
-    <div class="table">
-      <table id="upload-list" class="table-fixed">
-        <thead>
-          <tr>
-            <th class="slim w-12">
-              <parcel-checkbox-group id="uploads_group" name="uploads">
-              </parcel-checkbox-group>
-            </th>
-            {% macro sort_heading(query, name, align, title, size="") %}
-              {% set qs = "order=" + name %}
-              {% if query.order == name %}
-                {% set qs = qs + "&asc=" + ("false" if query.asc else "true") %}
-              {% else %}
-                {% set qs = qs + "&asc=true" %}
-              {% endif %}
-              <th
-                class="text-nowrap text-{{ align }} cursor-pointer {{ size }}"
-                hx-get="/uploads/list?{{ qs }}"
-                hx-trigger="click"
-                hx-target="#upload-list-container"
-                hx-select="#upload-list-container"
-                hx-swap="outerHTML">
-                {{ title }}
-                {% if query.order == name %}
-                  {% if query.asc %}
-                    <span class="icon-chevron-up"></span>
-                  {% else %}
-                    <span class="icon-chevron-down"></span>
-                  {% endif %}
-                {% else %}
-                  <span class="icon-chevrons-up-down"></span>
-                {% endif %}
+    {% if total == 0 %}
+      <div class="text italic text-center p-8">
+        You have not uploaded any files yet.
+      </div>
+    {% else %}
+      <div class="table">
+        <table id="upload-list" class="table-fixed">
+          <thead>
+            <tr>
+              <th class="slim w-12">
+                <parcel-checkbox-group id="uploads_group" name="uploads">
+                </parcel-checkbox-group>
               </th>
-            {% endmacro %}
-            {{ sort_heading(query, "filename", "left", "File") }}
-            {{ sort_heading(query, "size", "right", "Size", "hidden md:table-cell w-40") }}
-            {{ sort_heading(query, "downloads", "right", "Downloads", "hidden xl:table-cell w-32") }}
-            <th class="text-nowrap text-right hidden lg:table-cell w-28">Remaining</th>
-            {{ sort_heading(query, "expiry_date", "left", "Expires", "hidden lg:table-cell w-24 xl:w-56") }}
-            <th class="w-16">Public</th>
-            {{ sort_heading(query, "uploaded_at", "left", "Uploaded", "hidden xl:table-cell w-44") }}
-            <th class="w-20"></th>
-          </tr>
-        </thead>
-        <tbody
-          hx-get="/uploads/list/0?order={{ query.order }}&asc={{ query.asc }}"
-          hx-trigger="load"
-          hx-target="this"
-          hx-swap="beforeend">
-        </tbody>
-      </table>
-    </div>
+              {% macro sort_heading(query, name, align, title, size="") %}
+                {% set qs = "order=" + name %}
+                {% if query.order == name %}
+                  {% set qs = qs + "&asc=" + ("false" if query.asc else "true") %}
+                {% else %}
+                  {% set qs = qs + "&asc=true" %}
+                {% endif %}
+                <th
+                  class="text-nowrap text-{{ align }} cursor-pointer {{ size }}"
+                  hx-get="/uploads/list?{{ qs }}"
+                  hx-trigger="click"
+                  hx-target="#upload-list-container"
+                  hx-select="#upload-list-container"
+                  hx-swap="outerHTML">
+                  {{ title }}
+                  {% if query.order == name %}
+                    {% if query.asc %}
+                      <span class="icon-chevron-up"></span>
+                    {% else %}
+                      <span class="icon-chevron-down"></span>
+                    {% endif %}
+                  {% else %}
+                    <span class="icon-chevrons-up-down"></span>
+                  {% endif %}
+                </th>
+              {% endmacro %}
+              {{ sort_heading(query, "filename", "left", "File") }}
+              {{ sort_heading(query, "size", "right", "Size", "hidden md:table-cell w-40") }}
+              {{ sort_heading(query, "downloads", "right", "Downloads", "hidden xl:table-cell w-32") }}
+              <th class="text-nowrap text-right hidden lg:table-cell w-28">Remaining</th>
+              {{ sort_heading(query, "expiry_date", "left", "Expires", "hidden lg:table-cell w-24 xl:w-56") }}
+              <th class="w-16">Public</th>
+              {{ sort_heading(query, "uploaded_at", "left", "Uploaded", "hidden xl:table-cell w-44") }}
+              <th class="w-20"></th>
+            </tr>
+          </thead>
+          <tbody
+            hx-get="/uploads/list/0?order={{ query.order }}&asc={{ query.asc }}"
+            hx-trigger="load"
+            hx-target="this"
+            hx-swap="beforeend">
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
   </div>
-</div>
+</form>
 
-<script>
-  (function() {
-    document.getElementById("uploads_group").addEventListener("changed", (event) => {
-      document.getElementById("delete_selected").disabled = !event.detail.any;
-    });
-  })();
-</script>
+{% if total > 0 %}
+  <script>
+    (function() {
+      document.getElementById("uploads_group").addEventListener("changed", (event) => {
+        document.getElementById("delete_selected").disabled = !event.detail.any;
+      });
+    })();
+  </script>
+{% endif %}
