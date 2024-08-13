@@ -55,7 +55,7 @@
 
           {% if upload.expiry_date %}
             <div class="{% if expired %}text-danger{% else %}text-success{% endif %}">
-              Upload expires {{ upload.expiry_date | date_offset }}
+              Upload expires {{ upload.expiry_date | datetime_offset }}
             </div>
           {% endif %}
         </div>
