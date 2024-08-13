@@ -41,6 +41,15 @@ pub fn hash_password(plain: &str) -> String {
         .to_string()
 }
 
+pub fn verify_password(hash: &str, plain: &str) -> bool {
+    Pbkdf2
+        .verify_password(
+            plain.as_bytes(),
+            &PasswordHash::new(hash).expect("valid password hash"),
+        )
+        .is_ok()
+}
+
 impl User {
     pub async fn create(&mut self, pool: &SqlitePool) -> sqlx::Result<()> {
         let result = sqlx::query_scalar::<_, i32>(
@@ -169,12 +178,7 @@ impl User {
     }
 
     pub fn verify_password(&self, plain: &str) -> bool {
-        Pbkdf2
-            .verify_password(
-                plain.as_bytes(),
-                &PasswordHash::new(&self.password).expect("valid password hash"),
-            )
-            .is_ok()
+        verify_password(&self.password, plain)
     }
 
     pub async fn set_totp_secret(&mut self, pool: &SqlitePool, secret: &str) -> sqlx::Result<()> {

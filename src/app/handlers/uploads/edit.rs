@@ -11,7 +11,10 @@ use time::Date;
 use crate::{
     app::templates::{authorized_context, render_404, render_template},
     env::Env,
-    model::{upload::Upload, user::User},
+    model::{
+        upload::Upload,
+        user::{hash_password, User},
+    },
 };
 
 #[derive(Debug, Deserialize)]
@@ -55,6 +58,7 @@ pub async fn get_edit(
         context! {
             token => token.0,
             now => time::OffsetDateTime::now_utc(),
+            has_password => upload.password.is_some(),
             upload,
             hx_target,
             ult_dest,
@@ -74,6 +78,8 @@ pub struct UploadEditForm {
     limit: Option<i64>,
     #[serde(default, with = "iso8601_date::option")]
     expiry_date: Option<Date>,
+    has_password: Option<String>,
+    password: Option<String>,
 }
 
 #[handler]
@@ -89,6 +95,8 @@ pub async fn post_edit(
         public,
         limit,
         expiry_date,
+        has_password,
+        password,
     }): Form<UploadEditForm>,
 ) -> poem::Result<Redirect> {
     if !verifier.is_valid(&token) {
@@ -123,18 +131,35 @@ pub async fn post_edit(
         limit
     };
 
+    let has_password = has_password.as_deref() == Some("on");
+    if has_password {
+        if let Some(ref password) = password {
+            upload.password = Some(hash_password(password));
+        } else if upload.password.is_none() {
+            tracing::error!("Password is required but not provided");
+            return Err(poem::Error::from_status(StatusCode::BAD_REQUEST));
+        }
+    } else {
+        upload.password = None;
+    }
+
     tracing::info!(
         upload = id,
         filename = ?filename,
         limit = ?limit,
         remaining = ?remaining,
         expiry = ?expiry_date,
+        has_password = ?has_password,
+        new_password = password.is_some(),
         "Updating upload");
 
-    upload
-        .edit(&env.pool, &filename, public, limit, remaining, expiry_date)
-        .await
-        .map_err(InternalServerError)?;
+    upload.filename = filename;
+    upload.public = public;
+    upload.limit = limit;
+    upload.remaining = remaining;
+    upload.expiry_date = expiry_date;
+
+    upload.save(&env.pool).await.map_err(InternalServerError)?;
 
     Ok(Redirect::see_other(
         ult_dest.unwrap_or_else(|| "/uploads/list".to_string()),

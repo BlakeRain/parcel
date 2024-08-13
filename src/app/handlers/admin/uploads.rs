@@ -26,6 +26,7 @@ pub struct UploadListItem {
     pub public: bool,
     pub downloads: i32,
     pub limit: Option<i32>,
+    pub remaining: Option<i32>,
     pub expiry_date: Option<Date>,
     pub uploaded_by_id: i32,
     pub uploaded_by_name: String,
@@ -37,7 +38,7 @@ pub struct UploadListItem {
 pub async fn get_uploads(env: Data<&Env>, Admin(admin): Admin) -> poem::Result<Html<String>> {
     let uploads = sqlx::query_as::<_, UploadListItem>(
         "SELECT uploads.id, uploads.slug, uploads.filename, uploads.size, uploads.public,
-                uploads.downloads, uploads.\"limit\", uploads.expiry_date,
+                uploads.downloads, uploads.\"limit\", uploads.remaining, uploads.expiry_date,
                 uploads.uploaded_by as uploaded_by_id,
                 users.username as uploaded_by_name,
                 uploads.uploaded_at, uploads.remote_addr

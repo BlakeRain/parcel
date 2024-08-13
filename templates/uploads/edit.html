@@ -9,6 +9,7 @@
       hx-target="#upload-list-container"
       hx-select="#upload-list-container"
     {% endif %}
+    hx-on::before-request="event.target.closest('parcel-modal').closeModal();"
     hx-swap="outerHTML">
     <input type="hidden" name="token" value="{{ token }}" />
     {% if ult_dest %}
@@ -70,12 +71,36 @@
           {% endif %}
           {% if not upload.expiry_date %}disabled{% endif %} />
       </div>
+      <div>
+        <div class="checkbox">
+          <input
+            type="checkbox"
+            name="has_password"
+            id="has_password"
+            {% if has_password %}checked{% endif %} />
+          <label for="has_password">Password protect download</label>
+        </div>
+        {% if has_password %}
+          <div class="checkbox">
+            <input
+              type="checkbox"
+              id="change_password" />
+            <label for="change_password">Change password</label>
+          </div>
+        {% endif %}
+        <input
+          class="grow field"
+          type="password"
+          id="password"
+          name="password"
+          placeholder="••••••"
+          disabled />
+      </div>
     </div>
     <div class="buttons reverse end mt-2">
       <button
         type="submit"
-        class="button"
-        onclick="event.target.closest('parcel-modal').closeModal();">
+        class="button">
         Save changes
       </button>
       <button
@@ -85,13 +110,46 @@
       </button>
     </div>
     <script type="text/javascript">
-      document.querySelector("input[name='limit_check']").addEventListener("change", (event) => {
-        event.target.form.querySelector("input[name='limit']").disabled = !event.target.checked;
-      });
+      (function() {
+        const has_password = {{ has_password | tojson | safe }};
 
-      document.querySelector("input[name='expiry_check']").addEventListener("change", (event) => {
-        event.target.form.querySelector("input[name='expiry_date']").disabled = !event.target.checked;
-      });
+        function limitCheckChange(event) {
+          document.getElementById("limit").disabled = !event.target.checked;
+        }
+
+        function expiryCheckChange(event) {
+          document.getElementById("expiry_date").disabled = !event.target.checked;
+        }
+
+        function hasPasswordChange(event) {
+          const password = document.getElementById("password");
+
+          if (!has_password) {
+            if (event.target.checked) {
+              password.disabled = false;
+              password.required = true;
+            } else {
+              password.disabled = true;
+              password.required = false;
+            }
+          } else {
+            const change_password = document.getElementById("change_password");
+            change_password.disabled = !event.target.checked;
+          }
+        }
+
+        function changePasswordChange(event) {
+          console.log("change_password", event.target.checked);
+          document.getElementById("password").disabled = !event.target.checked;
+        }
+
+        document.getElementById("limit_check").addEventListener("change", limitCheckChange);
+        document.getElementById("expiry_check").addEventListener("change", expiryCheckChange);
+        document.getElementById("has_password").addEventListener("change", hasPasswordChange);
+        if (has_password) {
+          document.getElementById("change_password").addEventListener("change", changePasswordChange);
+        }
+      })();
     </script>
   </form>
 </parcel-modal>

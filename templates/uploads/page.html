@@ -31,11 +31,12 @@
         {% if upload.remaining is number and upload.remaining < upload.limit %}
           <a
             href="#"
+            title="Reset remaining downloads to {{ upload.limit }}"
             hx-post="/uploads/{{ upload.id }}/reset"
             hx-trigger="click"
             hx-target="closest td"
             hx-swap="outerHTML"
-            hx-confirm="Are you sure you want to reset the download counter for this upload?">
+            hx-confirm="Are you sure you want to reset the remaining downloads for this upload?">
             <span class="icon-rotate-ccw"></span>
           </a>
         {% endif %}
@@ -48,8 +49,8 @@
     <td class="text-nowrap hidden lg:table-cell {% if upload.expiry_date and upload.expiry_date is past %}text-danger{% endif %}">
       {% if upload.expiry_date %}
         <span class="hidden xl:block">
-          <parcel-date value="{{ upload.expiry_date | datetime }}">
-            {{ upload.expiry_date | datetime }}
+          <parcel-date value="{{ upload.expiry_date | date }}">
+            {{ upload.expiry_date | date }}
           </parcel-date>
           ({{ upload.expiry_date | datetime_offset }})
         </span>
@@ -59,11 +60,13 @@
       {% endif %}
     </td>
 
-    {% if upload.public %}
-      <td class="text-center text-danger">Yes</td>
-    {% else %}
-      <td class="text-center text-success">No</td>
-    {% endif %}
+    <td class="text-center text-nowrap {% if upload.public %}text-danger{% endif %}">
+      {% if upload.public %}
+        Yes
+      {% else %}
+        No
+      {% endif %}
+    </td>
 
     <td class="text-left text-nowrap hidden xl:table-cell">
       <parcel-datetime value="{{ upload.uploaded_at | datetime }}">

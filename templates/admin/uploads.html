@@ -58,15 +58,15 @@
               </td>
               <td class="text-right text-nowrap">
                 {% if upload.limit %}
-                  {{ upload.limit }} ({{ upload.limit - upload.downloads }} remaining)
+                  {{ upload.limit }} ({{ upload.remaining }} remaining)
                 {% else %}
                   <i>Unlimited</i>
                 {% endif %}
               </td>
               <td class="text-left text-nowrap">
                 {% if upload.expiry_date %}
-                  <parcel-date value="{{ upload.expiry_date | datetime }}">
-                    {{ upload.expiry_date | datetime }}
+                  <parcel-date value="{{ upload.expiry_date | date }}">
+                    {{ upload.expiry_date | date }}
                   </parcel-date>
                 {% else %}
                   <i>Never</i>

@@ -3,21 +3,26 @@ use poem::{
     error::InternalServerError,
     handler,
     http::StatusCode,
-    web::{Data, Html, Path},
+    session::Session,
+    web::{CsrfToken, Data, Html, Path, Query},
     IntoResponse,
 };
+use serde::Deserialize;
 use time::OffsetDateTime;
 
 use crate::{
     app::templates::{authorized_context, default_context, render_template},
     env::Env,
     model::{upload::Upload, user::User},
+    utils::SessionExt,
 };
 
 #[handler]
 pub async fn get_upload(
     env: Data<&Env>,
+    session: &Session,
     user: Option<User>,
+    csrf_token: &CsrfToken,
     Path(slug): Path<String>,
 ) -> poem::Result<Html<String>> {
     let Some(upload) = Upload::get_by_slug(&env.pool, &slug).await.map_err(|err| {
@@ -69,7 +74,7 @@ pub async fn get_upload(
         false
     };
 
-    let can_download = if owner { true } else { !exhausted && !expired };
+    let can_download = !exhausted && !expired;
 
     render_template(
         "uploads/view.html",
@@ -80,6 +85,9 @@ pub async fn get_upload(
             uploader,
             owner,
             can_download,
+            has_password => upload.password.is_some(),
+            csrf_token => csrf_token.0,
+            error => session.take::<String>("download_error"),
             ..if let Some(user) = &user {
                 authorized_context(&env, user)
             } else {
@@ -89,12 +97,18 @@ pub async fn get_upload(
     )
 }
 
+#[derive(Debug, Deserialize)]
+pub struct DeleteUploadQuery {
+    redirect: Option<String>,
+}
+
 #[handler]
 pub async fn delete_upload(
     env: Data<&Env>,
     user: User,
     Path(id): Path<i32>,
-) -> poem::Result<impl IntoResponse> {
+    Query(DeleteUploadQuery { redirect }): Query<DeleteUploadQuery>,
+) -> poem::Result<poem::Response> {
     let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
         tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
         InternalServerError(err)
@@ -132,10 +146,17 @@ pub async fn delete_upload(
             InternalServerError(err)
         })?;
 
-    Ok(Html(if remaining == 0 {
-        "<tr><td colspan=\"9\" class=\"text-center italic\">Nothing to show</td></tr>"
+    Ok(if let Some(redirect) = redirect {
+        Html("")
+            .with_header("HX-Redirect", redirect)
+            .into_response()
     } else {
-        ""
+        Html(if remaining == 0 {
+            "<tr><td colspan=\"9\" class=\"text-center italic\">No more uploads</td></tr>"
+        } else {
+            ""
+        })
+        .with_header("HX-Trigger", "parcelUploadDeleted")
+        .into_response()
     })
-    .with_header("HX-Trigger", "parcelUploadDeleted"))
 }

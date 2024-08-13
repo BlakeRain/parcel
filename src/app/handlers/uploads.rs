@@ -23,7 +23,7 @@ mod list;
 mod new;
 mod upload;
 
-pub use download::get_download;
+pub use download::{get_download, post_download};
 pub use edit::{get_edit, post_edit};
 pub use list::{get_list, get_page, post_delete, ListQuery};
 pub use new::{get_new, post_new};

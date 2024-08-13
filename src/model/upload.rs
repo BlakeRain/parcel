@@ -13,6 +13,8 @@ pub struct Upload {
     pub limit: Option<i64>,
     pub remaining: Option<i64>,
     pub expiry_date: Option<Date>,
+    #[serde(skip)]
+    pub password: Option<String>,
     pub uploaded_by: i32,
     pub uploaded_at: OffsetDateTime,
     pub remote_addr: Option<String>,
@@ -78,43 +80,36 @@ impl Upload {
         Ok(())
     }
 
-    pub async fn edit(
-        &mut self,
-        pool: &SqlitePool,
-        filename: &str,
-        public: bool,
-        limit: Option<i64>,
-        remaining: Option<i64>,
-        expiry: Option<Date>,
-    ) -> sqlx::Result<()> {
+    pub async fn save(&self, pool: &SqlitePool) -> sqlx::Result<()> {
         let count = sqlx::query(
             "UPDATE uploads SET
-                filename = $1,
-                public = $2,
-                \"limit\" = $3,
-                remaining = $4,
-                expiry_date = $5
-            WHERE id = $6",
+            filename = $1,
+            size = $2,
+            public = $3,
+            downloads = $4,
+            \"limit\" = $5,
+            remaining = $6,
+            expiry_date = $7,
+            password = $8
+            WHERE id = $9",
         )
-        .bind(filename)
-        .bind(public)
-        .bind(limit)
-        .bind(remaining)
-        .bind(expiry)
+        .bind(&self.filename)
+        .bind(self.size)
+        .bind(self.public)
+        .bind(self.downloads)
+        .bind(self.limit)
+        .bind(self.remaining)
+        .bind(self.expiry_date)
+        .bind(&self.password)
         .bind(self.id)
         .execute(pool)
         .await?;
 
         if count.rows_affected() == 0 {
-            return Err(sqlx::Error::RowNotFound);
+            Err(sqlx::Error::RowNotFound)
+        } else {
+            Ok(())
         }
-
-        self.filename = filename.to_string();
-        self.public = public;
-        self.limit = limit;
-        self.remaining = remaining;
-
-        Ok(())
     }
 
     pub async fn set_public(&mut self, pool: &SqlitePool, public: bool) -> sqlx::Result<()> {

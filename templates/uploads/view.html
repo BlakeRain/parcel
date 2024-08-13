@@ -3,9 +3,16 @@
 {% block title %}{{ upload.filename }}{% endblock %}
 
 {% block content %}
-  <div id="upload-view-container" class="grow flex flex-col justify-center items-center">
-    <div class="flex flex-col border rounded-md shadow-md border-slate-400 dark:border-gray-700 dark:bg-gray-800 p-6 sm:p-8">
-      <div class="flex flex-row items-center gap-2">
+  <div id="upload-view-container" class="grow flex flex-col justify-center items-center p-4 md:p-0">
+    <form
+      {% if not owner and can_download and has_password %}
+        method="POST"
+        action="/uploads/{{ upload.slug }}/download"
+      {% endif %}
+      class="flex flex-col gap-2 border rounded-md shadow-md border-slate-400 dark:border-gray-700
+      dark:bg-gray-800 p-6 sm:p-8 w-full md:w-[40rem] lg:w-[48rem] aspect-[16/9]">
+
+      <div class="flex flex-row items-center gap-2 mb-auto">
         <div class="text-8xl text-slate-400 hidden md:block">
           <span class="icon-download group-hover:text-blue-600 dark:group-hover:text-blue-500"></span>
         </div>
@@ -39,6 +46,13 @@
             </div>
           {% endif %}
 
+          {% if not owner and upload.remaining == 0 %}
+            <div class="text-danger">
+              <span class="icon-triangle-alert"></span>
+              This upload has reached its download limit
+            </div>
+          {% endif %}
+
           {% if upload.expiry_date %}
             <div class="{% if expired %}text-danger{% else %}text-success{% endif %}">
               Upload expires {{ upload.expiry_date | date_offset }}
@@ -46,7 +60,29 @@
           {% endif %}
         </div>
       </div>
-      <div class="buttons mt-8">
+
+      {% if error %}
+        <div class="text-danger">
+          <span class="icon-triangle-alert"></span>
+          {{ error }}
+        </div>
+      {% endif %}
+
+      {% if not owner and can_download and has_password %}
+        <div>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label for="password" class="mb-2 mt-0">A password is required to download this file</label>
+          <input
+          type="password"
+          class="field"
+          id="password"
+          name="password"
+          placeholder="Password to download this file"
+          required>
+        </div>
+      {% endif %}
+
+      <div class="buttons end mt-2">
         {% if owner %}
           <button
             type="button"
@@ -63,7 +99,7 @@
             type="button"
             class="button hollow danger"
             title="Delete upload"
-            hx-delete="/uploads/{{ upload.id }}"
+            hx-delete="/uploads/{{ upload.id }}?redirect=/"
             hx-trigger="click"
             hx-confirm="Are you sure you want to delete this upload?">
             <span class="icon-trash-2"></span>
@@ -91,17 +127,24 @@
           </button>
         {% endif %}
         <button
-          type="button"
           class="button"
-          {% if can_download %}
+          {% if owner %}
+            type="button"
             onclick="window.location.href='/uploads/{{ upload.slug }}/download'"
+          {% elif can_download %}
+            {% if has_password %}
+              type="submit"
+            {% else %}
+              type="button"
+              onclick="window.location.href='/uploads/{{ upload.slug }}/download'"
+            {% endif %}
           {% else %}
             disabled
-            {% endif %}>
+          {% endif %}>
           <span class="icon-download"></span>
           Download
         </button>
       </div>
-    </div>
+    </form>
   </div>
 {% endblock %}
