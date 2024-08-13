@@ -10,10 +10,9 @@ jobs:
       - name: Checkout the Repository
         uses: actions/checkout@v3
       - name: Setup Node
-        uses: actions/setup-node@v3
-        node-version: "21.x"
-      - name: Install Node Packages
-        run: npm install
+        uses: actions/setup-node@v4
+        with:
+          node-version: "21.x"
       - name: Install the Stable Rust Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
         env:
