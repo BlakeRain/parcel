@@ -30,7 +30,7 @@ class TimeElement extends HTMLElement {
   }
 }
 
-const DATE_FORMAT = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
+const DATE_FORMAT = new Intl.DateTimeFormat(undefined, { dateStyle: "short" });
 const DATE_FORMAT_FULL = new Intl.DateTimeFormat(undefined, {
   dateStyle: "full",
 });
