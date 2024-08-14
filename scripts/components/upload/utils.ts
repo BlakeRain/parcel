@@ -1,5 +1,5 @@
 export function formatBytes(bytes: number, digits?: number): string {
-  const units = ["B", "KB", "MB", "GB", "TB"];
+  const units = ["bytes", "KB", "MB", "GB", "TB"];
   let unit = 0;
 
   while (bytes >= 1024 && unit < units.length - 1) {
