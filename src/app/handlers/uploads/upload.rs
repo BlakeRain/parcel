@@ -17,23 +17,13 @@ use crate::{
     utils::SessionExt,
 };
 
-#[handler]
-pub async fn get_upload(
+async fn render_upload(
     env: Data<&Env>,
-    session: &Session,
     user: Option<User>,
+    session: &Session,
     csrf_token: &CsrfToken,
-    Path(slug): Path<String>,
+    upload: Upload,
 ) -> poem::Result<Html<String>> {
-    let Some(upload) = Upload::get_by_slug(&env.pool, &slug).await.map_err(|err| {
-        tracing::error!(err = ?err, slug = ?slug, "Unable to get upload by slug");
-        InternalServerError(err)
-    })?
-    else {
-        tracing::error!(slug = ?slug, "Unable to find upload with given ID");
-        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
-    };
-
     let owner = if let Some(user) = &user {
         user.admin || upload.uploaded_by == user.id
     } else {
@@ -95,6 +85,48 @@ pub async fn get_upload(
             }
         },
     )
+}
+
+#[handler]
+pub async fn get_upload(
+    env: Data<&Env>,
+    session: &Session,
+    user: Option<User>,
+    csrf_token: &CsrfToken,
+    Path(slug): Path<String>,
+) -> poem::Result<Html<String>> {
+    let Some(upload) = Upload::get_by_slug(&env.pool, &slug).await.map_err(|err| {
+        tracing::error!(err = ?err, slug = ?slug, "Unable to get upload by slug");
+        InternalServerError(err)
+    })?
+    else {
+        tracing::error!(slug = ?slug, "Unable to find upload with given ID");
+        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
+    };
+
+    render_upload(env, user, session, csrf_token, upload).await
+}
+
+#[handler]
+pub async fn get_custom_upload(
+    env: Data<&Env>,
+    session: &Session,
+    user: Option<User>,
+    csrf_token: &CsrfToken,
+    Path((owner, slug)): Path<(i32, String)>,
+) -> poem::Result<Html<String>> {
+    let Some(upload) = Upload::get_by_custom_slug(&env.pool, owner, &slug)
+        .await
+        .map_err(|err| {
+            tracing::error!(err = ?err, slug = ?slug, "Unable to get upload by slug");
+            InternalServerError(err)
+        })?
+    else {
+        tracing::error!(slug = ?slug, "Unable to find upload with given ID");
+        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
+    };
+
+    render_upload(env, user, session, csrf_token, upload).await
 }
 
 #[derive(Debug, Deserialize)]
