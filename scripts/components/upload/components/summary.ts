@@ -25,7 +25,7 @@ const FilesSummary: FunctionComponent = () => {
     <div class="flex flex-row justify-between p-4">
       <div class="font-semibold select-none">
         ${state.mode === StateMode.Complete && "Uploaded "}
-        ${formatBytes(state.totalSize)} ${" bytes over "}
+        ${formatBytes(state.totalSize)} ${" over "}
         ${state.files.length.toString()}
         ${state.files.length === 1 ? " file" : " files"}
       </div>
