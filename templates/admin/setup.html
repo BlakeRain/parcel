@@ -4,26 +4,30 @@
 
 {% block content %}
 
-<div class="grow container mx-auto flex justify-center">
-  <div class="w-full md:w-2/3 lg:w-1/2 flex flex-col items-center border border-slate-400 dark:border-slate-700 rounded-md shadow-md p-4">
+<div class="grow container mx-auto flex justify-center items-center p-4 md:p-0">
+  <div class="flex flex-col gap-2 border rounded-md shadow-md border-slate-400 dark:border-gray-700
+    dark:bg-gray-800 p-6 sm:p-4 w-full md:w-[40rem] lg:w-[48rem] aspect-[16/9]">
     <h1 class="text-2xl font-semibold">⚙️ Initial Setup</h1>
-    <p class="my-4 text-center">
+    <p class="my-4 text-lg">
       Welcome to the initial setup of a new 📦 Parcel installation.
-      <br />
+    </p>
+    <p class="mb-4">
       To set up your installation, you need to create the username and password for the
       first administrator user. You can add more administrators or normal users later.
     </p>
     <div id="error" class="text-danger">
       {% if error %}{{ error }}{% endif %}
     </div>
-    <form id="setup-form" action="/admin/setup" method="POST" class="form w-full lg:w-2/3 xl:w-1/2">
+    <form id="setup-form" action="/admin/setup" method="POST" class="form">
       <input type="hidden" name="token" value="{{ token }}" />
       <label for="username">Administrator Username</label>
       <input class="field" name="username" type="text" placeholder="Administrator Username" />
       <label for="password">Administrator Password</label>
       <input class="field" name="password" type="password" placeholder="Administrator Password" />
       <input class="field" name="confirm" type="password" placeholder="Confirm Administrator Password" />
-      <button type="submit" class="button">👍 Create Administrator</button>
+      <div class="buttons end">
+        <button type="submit" class="button">Create administrator</button>
+      </div>
     </form>
   </div>
 </div>
