@@ -23,6 +23,7 @@ body.has-web-components .no-web-components {
   }
 
   a {
+    @apply cursor-pointer;
     @apply text-blue-900 dark:text-blue-200;
 
     &:hover {
