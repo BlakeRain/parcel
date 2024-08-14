@@ -1,20 +1,8 @@
-<parcel-modal class="hidden" with-htmx>
+<parcel-modal class="hidden" with-htmx hx-target="this" hx-swap="outerHTML">
   <form
     class="form"
-    hx-post="/uploads/{{ upload.id }}/edit"
-    {% if hx_target %}
-      hx-target="{{ hx_target }}"
-      hx-select="{{ hx_target }}"
-    {% else %}
-      hx-target="#upload-list-container"
-      hx-select="#upload-list-container"
-    {% endif %}
-    hx-on::before-request="event.target.closest('parcel-modal').closeModal();"
-    hx-swap="outerHTML">
+    hx-post="/uploads/{{ upload.id }}/edit">
     <input type="hidden" name="token" value="{{ token }}" />
-    {% if ult_dest %}
-      <input type="hidden" name="ult_dest" value="{{ ult_dest }}" />
-    {% endif %}
     <label for="filename">Filename</label>
     <input
       class="field"
@@ -96,6 +84,17 @@
           placeholder="••••••"
           disabled />
       </div>
+      <div>
+        <div class="checkbox">
+          <input
+            type="checkbox"
+            name="has_custom_slug"
+            id="has_custom_slug"
+            {% if upload.custom_slug is string %}checked{% endif %} />
+          <label for="has_custom_slug">File has a custom slug</label>
+        </div>
+        {% include "uploads/edit/slug.html" %}
+      </div>
     </div>
     <div class="buttons reverse end mt-2">
       <button
@@ -139,16 +138,22 @@
         }
 
         function changePasswordChange(event) {
-          console.log("change_password", event.target.checked);
           document.getElementById("password").disabled = !event.target.checked;
+        }
+
+        function hasCustomSlugChange(event) {
+          document.getElementById("custom_slug").disabled = !event.target.checked;
         }
 
         document.getElementById("limit_check").addEventListener("change", limitCheckChange);
         document.getElementById("expiry_check").addEventListener("change", expiryCheckChange);
         document.getElementById("has_password").addEventListener("change", hasPasswordChange);
+
         if (has_password) {
           document.getElementById("change_password").addEventListener("change", changePasswordChange);
         }
+
+        document.getElementById("has_custom_slug").addEventListener("change", hasCustomSlugChange);
       })();
     </script>
   </form>

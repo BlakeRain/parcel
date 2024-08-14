@@ -67,12 +67,64 @@ pub async fn get_edit(
     )
 }
 
+#[derive(Debug, Deserialize)]
+pub struct CheckSlugForm {
+    token: String,
+    custom_slug: String,
+}
+
+#[handler]
+pub async fn post_check_slug(
+    env: Data<&Env>,
+    verifier: &CsrfVerifier,
+    user: User,
+    Path(id): Path<i32>,
+    Form(CheckSlugForm { token, custom_slug }): Form<CheckSlugForm>,
+) -> poem::Result<Html<String>> {
+    if !verifier.is_valid(&token) {
+        tracing::error!("CSRF token is invalid in upload edit");
+        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+    }
+
+    let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
+        tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
+        InternalServerError(err)
+    })?
+    else {
+        tracing::error!("Unrecognized upload ID '{id}'");
+        return render_404("Unrecognized upload ID");
+    };
+
+    if !user.admin && upload.uploaded_by != user.id {
+        tracing::error!(
+            user = user.id,
+            upload = upload.id,
+            "User tried to edit upload without permission"
+        );
+
+        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+    }
+
+    let custom_slug = custom_slug.trim().to_string();
+    let exists = Upload::custom_slug_exists(&env.pool, user.id, Some(id), &custom_slug)
+        .await
+        .map_err(InternalServerError)?;
+
+    render_template(
+        "uploads/edit/slug.html",
+        context! {
+            upload,
+            exists,
+            custom_slug,
+        },
+    )
+}
+
 time::serde::format_description!(iso8601_date, Date, "[year]-[month]-[day]");
 
 #[derive(Debug, Deserialize)]
 pub struct UploadEditForm {
     token: String,
-    ult_dest: Option<String>,
     filename: String,
     public: Option<String>,
     limit: Option<i64>,
@@ -80,6 +132,7 @@ pub struct UploadEditForm {
     expiry_date: Option<Date>,
     has_password: Option<String>,
     password: Option<String>,
+    custom_slug: Option<String>,
 }
 
 #[handler]
@@ -90,15 +143,15 @@ pub async fn post_edit(
     Path(id): Path<i32>,
     Form(UploadEditForm {
         token,
-        ult_dest,
         filename,
         public,
         limit,
         expiry_date,
         has_password,
         password,
+        custom_slug,
     }): Form<UploadEditForm>,
-) -> poem::Result<Redirect> {
+) -> poem::Result<Html<String>> {
     if !verifier.is_valid(&token) {
         tracing::error!("CSRF token is invalid in upload edit");
         return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
@@ -151,6 +204,7 @@ pub async fn post_edit(
         expiry = ?expiry_date,
         has_password = ?has_password,
         new_password = password.is_some(),
+        custom_slug = ?custom_slug,
         "Updating upload");
 
     upload.filename = filename;
@@ -158,10 +212,12 @@ pub async fn post_edit(
     upload.limit = limit;
     upload.remaining = remaining;
     upload.expiry_date = expiry_date;
+    upload.custom_slug = custom_slug;
 
     upload.save(&env.pool).await.map_err(InternalServerError)?;
 
-    Ok(Redirect::see_other(
-        ult_dest.unwrap_or_else(|| "/uploads/list".to_string()),
+    Ok(Html(
+        "<script type=\"text/javascript\">htmx.trigger(\"#upload-list-refresh\", \"refresh\");</script>"
+            .to_string(),
     ))
 }

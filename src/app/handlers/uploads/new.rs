@@ -111,6 +111,7 @@ pub async fn post_new(
                 remaining: None,
                 expiry_date: None,
                 password: None,
+                custom_slug: None,
                 uploaded_by: user.id,
                 uploaded_at: OffsetDateTime::now_utc(),
                 remote_addr: ip.as_ref().map(ToString::to_string),

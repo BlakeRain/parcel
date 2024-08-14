@@ -1,0 +1,23 @@
+<div hx-target="this" hx-swap="outerHTML" class="mt-4">
+  <input
+    class="field"
+    type="text"
+    id="custom_slug"
+    name="custom_slug"
+    hx-post="/uploads/{{ upload.id }}/edit/slug"
+    {% if exists %}
+      value=""
+    {% elif custom_slug is string %}
+      value="{{ custom_slug }}"
+    {% elif upload and upload.custom_slug is string %}
+      value="{{ upload.custom_slug }}"
+    {% else %}
+      disabled
+      {% endif %}
+      required>
+  {% if exists %}
+    <div class="h-4 text-danger">An upload with this custom slug already exists.</div>
+  {% else %}
+    <div class="h-4"></div>
+  {% endif %}
+</div>

@@ -15,6 +15,7 @@ pub struct Upload {
     pub expiry_date: Option<Date>,
     #[serde(skip)]
     pub password: Option<String>,
+    pub custom_slug: Option<String>,
     pub uploaded_by: i32,
     pub uploaded_at: OffsetDateTime,
     pub remote_addr: Option<String>,
@@ -56,11 +57,11 @@ impl Upload {
     pub async fn create(&mut self, pool: &SqlitePool) -> sqlx::Result<()> {
         let result = sqlx::query_scalar::<_, i32>(
             "INSERT INTO uploads (slug, filename, size, public,
-            downloads, \"limit\", remaining, expiry_date,
-            uploaded_by, uploaded_at, remote_addr)
+            downloads, \"limit\", remaining, expiry_date, password,
+            custom_slug, uploaded_by, uploaded_at, remote_addr)
             VALUES ($1, $2, $3, $4,
-                    0, $5, $6, $7,
-                    $8, $9, $10)
+                    0, $5, $6, $7, $8,
+                    $9, $10, $11, $12)
             RETURNING id",
         )
         .bind(&self.slug)
@@ -70,6 +71,8 @@ impl Upload {
         .bind(self.limit)
         .bind(self.remaining)
         .bind(self.expiry_date)
+        .bind(&self.password)
+        .bind(&self.custom_slug)
         .bind(self.uploaded_by)
         .bind(self.uploaded_at)
         .bind(&self.remote_addr)
@@ -90,8 +93,9 @@ impl Upload {
             \"limit\" = $5,
             remaining = $6,
             expiry_date = $7,
-            password = $8
-            WHERE id = $9",
+            password = $8,
+            custom_slug = $9
+            WHERE id = $10",
         )
         .bind(&self.filename)
         .bind(self.size)
@@ -101,6 +105,7 @@ impl Upload {
         .bind(self.remaining)
         .bind(self.expiry_date)
         .bind(&self.password)
+        .bind(&self.custom_slug)
         .bind(self.id)
         .execute(pool)
         .await?;
@@ -170,6 +175,41 @@ impl Upload {
             .bind(slug)
             .fetch_optional(pool)
             .await
+    }
+
+    pub async fn get_by_custom_slug(
+        pool: &SqlitePool,
+        owner: i32,
+        custom_slug: &str,
+    ) -> sqlx::Result<Option<Self>> {
+        sqlx::query_as("SELECT * FROM uploads WHERE uploaded_by = $1 AND custom_slug = $2")
+            .bind(owner)
+            .bind(custom_slug)
+            .fetch_optional(pool)
+            .await
+    }
+
+    pub async fn custom_slug_exists(
+        pool: &SqlitePool,
+        owner: i32,
+        existing: Option<i32>,
+        custom_slug: &str,
+    ) -> sqlx::Result<bool> {
+        let mut query =
+            QueryBuilder::new("SELECT EXISTS(SELECT 1 FROM uploads WHERE uploaded_by = ");
+
+        query.push_bind(owner);
+        query.push(" AND custom_slug = ");
+        query.push_bind(custom_slug);
+
+        if let Some(existing) = existing {
+            query.push(" AND id != ");
+            query.push_bind(existing);
+        }
+
+        query.push(")");
+
+        query.build_query_scalar().fetch_one(pool).await
     }
 
     pub async fn record_download(&mut self, pool: &SqlitePool, public: bool) -> sqlx::Result<()> {
