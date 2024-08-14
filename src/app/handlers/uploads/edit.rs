@@ -3,7 +3,7 @@ use poem::{
     error::InternalServerError,
     handler,
     http::StatusCode,
-    web::{CsrfToken, CsrfVerifier, Data, Form, Html, Path, Query, Redirect},
+    web::{CsrfToken, CsrfVerifier, Data, Form, Html, Path, Query},
 };
 use serde::Deserialize;
 use time::Date;
