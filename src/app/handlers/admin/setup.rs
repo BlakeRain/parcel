@@ -48,7 +48,6 @@ pub async fn get_setup(
 pub struct SetupForm {
     token: String,
     username: String,
-    name: String,
     password: String,
 }
 
@@ -60,7 +59,6 @@ pub async fn post_setup(
     Form(SetupForm {
         token,
         username,
-        name,
         password,
     }): Form<SetupForm>,
 ) -> poem::Result<(StatusCode, HeaderMap, Html<String>)> {
@@ -87,6 +85,7 @@ pub async fn post_setup(
         return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
     }
 
+    let name = username.clone();
     let mut admin = User {
         id: 0,
         username,
