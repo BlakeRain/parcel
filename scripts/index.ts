@@ -69,6 +69,23 @@ document.body.addEventListener("parcelUploadDeleted", () => {
   htmx.trigger("#upload-stats-container", "refresh");
 });
 
+document.body.addEventListener("parcelUploadChanged", (event: CustomEvent) => {
+  const row = document.getElementById("upload-row-" + event.detail.value);
+  const page = row.dataset.page;
+  const order = row.dataset.order;
+  const asc = row.dataset.asc;
+
+  htmx.ajax(
+    "get",
+    "/uploads/list/" + page + "?order=" + order + "&asc=" + asc,
+    {
+      target: "#upload-row-" + event.detail.value,
+      select: "#upload-row-" + event.detail.value,
+      swap: "outerHTML",
+    },
+  );
+});
+
 // Always prevent the default action.
 document.body.addEventListener("dragover", (event: DragEvent) => {
   event.preventDefault();

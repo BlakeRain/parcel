@@ -1,12 +1,9 @@
 {% for upload in uploads %}
-  <tr
-    id="upload-row-{{ upload.id }}"
-    {% if loop.index == (uploads | length) and page < last_page %}
-      hx-trigger="revealed"
-      hx-get="/uploads/list/{{ page + 1 }}?order={{ query.order }}&asc={{ query.asc }}"
-      hx-target="#upload-list tbody"
-      hx-swap="beforeend"
-    {% endif %}>
+<tr
+  id="upload-row-{{ upload.id }}"
+  data-page="{{ page }}"
+  data-order="{{ query.order }}"
+  data-asc="{{ query.asc }}">
     <td class="slim text-center">
       <parcel-grouped-checkbox
         name="selected"
@@ -103,11 +100,9 @@
           <a
             href="#"
             class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
-            hx-post="/uploads/{{ upload.id }}/public?public={{ not upload.public }}&target={{ target }}"
+            hx-post="/uploads/{{ upload.id }}/public?public={{ not upload.public }}"
             hx-trigger="click"
-            hx-target="#upload-row-{{ upload.id }}"
-            hx-select="#upload-row-{{ upload.id }}"
-            hx-swap="outerHTML"
+            hx-swap="none"
             {% if upload.public %}
               title="Deny public access to this upload"
             {% else %}
@@ -139,3 +134,12 @@
     </td>
   </tr>
 {% endfor %}
+{% if page < last_page %}
+  <tr
+    hx-trigger="revealed"
+    hx-get="/uploads/list/{{ page + 1 }}?order={{ query.order }}&asc={{ query.asc }}"
+    hx-target="this"
+    hx-swap="outerHTML">
+    <td colspan="9" class="text-center italic">Loading &hellip;</td>
+  </tr>
+{% endif %}

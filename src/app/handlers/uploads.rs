@@ -3,7 +3,7 @@ use poem::{
     error::InternalServerError,
     handler,
     http::StatusCode,
-    web::{Data, Html, Path, Query, Redirect},
+    web::{Data, Html, Path, Query},
     IntoResponse, Response,
 };
 use serde::Deserialize;
@@ -51,7 +51,6 @@ pub async fn get_stats(env: Data<&Env>, user: User) -> poem::Result<Html<String>
 #[derive(Debug, Deserialize)]
 pub struct MakePublicQuery {
     public: bool,
-    target: Option<String>,
 }
 
 #[handler]
@@ -59,7 +58,7 @@ pub async fn post_public(
     env: Data<&Env>,
     user: User,
     Path(id): Path<i32>,
-    Query(MakePublicQuery { public, target }): Query<MakePublicQuery>,
+    Query(MakePublicQuery { public }): Query<MakePublicQuery>,
 ) -> poem::Result<Response> {
     let Some(mut upload) = Upload::get(&env.pool, id).await.map_err(|err| {
         tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
@@ -86,11 +85,9 @@ pub async fn post_public(
         .await
         .map_err(InternalServerError)?;
 
-    if let Some(target) = target {
-        Ok(Redirect::see_other(target).into_response())
-    } else {
-        Ok(Html("").with_header("HX-Redirect", "/").into_response())
-    }
+    Ok(Html("")
+        .with_header("HX-Trigger", format!("{{ \"parcelUploadChanged\": {id} }}"))
+        .into_response())
 }
 
 #[handler]

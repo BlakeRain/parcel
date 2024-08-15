@@ -114,15 +114,13 @@
             type="button"
             class="button hollow"
             title="Make upload {{ opposite }}"
-            hx-post="/uploads/{{ upload.id }}/public?public={{ not upload.public }}&target=/uploads/{{ upload.slug | urlencode }}"
+            hx-post="/uploads/{{ upload.id }}/public?public={{ not upload.public }}"
             hx-trigger="click"
-            hx-target="#upload-view-container"
-            hx-select="#upload-view-container"
-            hx-swap="outerHTML">
+            hx-swap="none">
             {% if upload.public %}
-              <span class="icon-lock"></span>
+              <span class="icon-eye-off"></span>
             {% else %}
-              <span class="icon-unlock"></span>
+              <span class="icon-eye"></span>
             {% endif %}
             Make {{ opposite }}
           </button>
@@ -154,6 +152,14 @@
 <script type="text/javascript">
   document.body.addEventListener("parcelUploadDeleted", () => {
     window.location.href = "/";
-  })
+  });
+
+  document.body.addEventListener("parcelUploadChanged", () => {
+    htmx.ajax("GET", "/uploads/{{ upload.slug }}", {
+      target: "#upload-view-container",
+      select: "#upload-view-container",
+      swap: "innerHTML"
+    });
+  });
 </script>
 {% endblock %}

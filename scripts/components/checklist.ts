@@ -43,6 +43,10 @@ class CheckboxGroup extends HTMLElement {
     return index;
   }
 
+  unregisterCheckbox(index: number) {
+    this.checkboxes.splice(index, 1);
+  }
+
   updateCheckbox() {
     const checked = this.checkboxes.filter((checkbox) => checkbox.checked);
     this.checkbox.checked = checked.length === this.checkboxes.length;
@@ -67,6 +71,7 @@ class CheckboxGroup extends HTMLElement {
 
 class GroupedCheckbox extends HTMLElement {
   private index = -1;
+  private group_name: string = null;
   private checkbox: HTMLInputElement = null;
 
   get checked() {
@@ -80,14 +85,14 @@ class GroupedCheckbox extends HTMLElement {
   }
 
   connectedCallback() {
-    const group_name = this.getAttribute("group");
-    if (!group_name) {
+    this.group_name = this.getAttribute("group");
+    if (!this.group_name) {
       throw new Error("GroupedCheckbox requires a 'group' attribute");
     }
 
-    const group = CHECKBOX_GROUPS[group_name];
+    const group = CHECKBOX_GROUPS[this.group_name];
     if (!group) {
-      throw new Error(`GroupedCheckbox group '${group_name}' not found`);
+      throw new Error(`GroupedCheckbox group '${this.group_name}' not found`);
     }
 
     this.index = group.registerCheckbox(this);
@@ -118,6 +123,7 @@ class GroupedCheckbox extends HTMLElement {
     if (this.checkbox) {
       this.removeChild(this.checkbox);
       this.checkbox = null;
+      CHECKBOX_GROUPS[this.group_name].unregisterCheckbox(this.index);
     }
   }
 
