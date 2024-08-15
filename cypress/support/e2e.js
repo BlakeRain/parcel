@@ -1,9 +1,9 @@
 Cypress.Commands.add("resetDatabase", () => {
-  cy.task("resetDatabase");
+  cy.task("resetDatabase", null, { log: true });
 });
 
 Cypress.Commands.add("initialUsers", () => {
-  cy.task("initialUsers");
+  cy.task("initialUsers", null, { log: true });
 });
 
 Cypress.Commands.add("login", ({ username, password }) => {

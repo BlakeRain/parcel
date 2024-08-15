@@ -32,6 +32,9 @@ export default defineConfig({
 
           const db = new sqlite.Database(db_url);
           db.serialize(() => {
+            db.run("DELETE FROM uploads");
+            db.run("DELETE FROM users");
+
             const stmt = db.prepare(
               "INSERT INTO users (username, name, password, enabled, admin, created_at) VALUES (?, ?, ?, 1, ?, ?)",
             );

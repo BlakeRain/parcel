@@ -2,7 +2,6 @@ import users from "../fixtures/users.json";
 
 describe("Sign In", () => {
   beforeEach(() => {
-    cy.resetDatabase();
     cy.initialUsers();
   });
 

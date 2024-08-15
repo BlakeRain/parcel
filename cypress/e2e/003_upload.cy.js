@@ -2,7 +2,6 @@ import users from "../fixtures/users.json";
 
 describe("Uploading Files", () => {
   beforeEach(() => {
-    cy.resetDatabase();
     cy.initialUsers();
     cy.login(users.user);
   });
