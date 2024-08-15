@@ -27,13 +27,13 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-      - name: Run Cypress Tests (release)
-        run: npm run ci:release
+      - name: Run Cypress Tests (debug)
+        run: npm run ci:debug
         env:
           DB: /tmp/cypress.db
       - name: Save Cypress artifacts
-        uses: actions/upload-artifact@v2
-        if: failure()
+        uses: actions/upload-artifact@v3
+        if: always()
         with:
           name: cypress-screenshots
           path: cypress/screenshots
