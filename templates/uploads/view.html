@@ -113,7 +113,7 @@
             type="button"
             class="button hollow"
             title="Make upload {{ opposite }}"
-            hx-post="/uploads/{{ upload.id }}/public?public={{ not upload.public }}&ult_dest=/uploads/{{ upload.slug | urlencode }}"
+            hx-post="/uploads/{{ upload.id }}/public?public={{ not upload.public }}&target=/uploads/{{ upload.slug | urlencode }}"
             hx-trigger="click"
             hx-target="#upload-view-container"
             hx-select="#upload-view-container"
