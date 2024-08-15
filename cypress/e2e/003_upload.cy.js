@@ -110,7 +110,8 @@ describe("Uploading Files", () => {
     cy.get("#upload-stats-container").should("contain", "0%");
     cy.get("#upload-stats-container").should("contain", "69 B");
 
-    cy.get(".uploads-table > .uploads-table-row:first-child").within(() => {
+    // The rown is a .uploads-table-row but it is actually the _second_ child after the header.
+    cy.get(".uploads-table > .uploads-table-row:nth-child(2)").within(() => {
       cy.get("div:nth-child(2)").should("contain", "test-file.txt");
       cy.get("div:nth-child(3)").should("contain", "69 B");
       cy.get("div:nth-child(4)").should("contain", "0");
