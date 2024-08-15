@@ -27,3 +27,5 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
+      - name: Run Cypress Tests (release)
+        run: npm run ci:release

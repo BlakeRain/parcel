@@ -1,0 +1,1 @@
+This is a test file that we're going to upload in the Cypress tests.

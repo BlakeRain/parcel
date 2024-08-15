@@ -1,0 +1,14 @@
+{
+  "admin": {
+    "username": "admin",
+    "password": "parcel-test-admin-1234",
+    "name": "Admin",
+    "passwordHash": "$pbkdf2-sha256$i=600000,l=32$sLLixYkQpmg2zQT05IdPTg$LIAouCVkM1zXA4AgivxbR0kgULRc4JcAKDF7xziPac0"
+  },
+  "user": {
+    "username": "user",
+    "password": "parcel-test-user-1234",
+    "name": "User",
+    "passwordHash": "$pbkdf2-sha256$i=600000,l=32$kC5Lq5psY7eMTTfS0ufV5A$qs28/C/wPSWuRndTo7nO5Tp2Oq14IAwRQogkfhEjWGg"
+  }
+}
