@@ -31,3 +31,7 @@ static/main.css
 static/icons/
 static/scripts/bundles/
 static/scripts/vendor/
+
+# Ignore Cypress cache and screenshots
+cypress/screenshots/
+cypress/downloads/

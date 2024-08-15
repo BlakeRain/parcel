@@ -29,3 +29,5 @@ jobs:
           command: clippy
       - name: Run Cypress Tests (release)
         run: npm run ci:release
+        env:
+          DB: /tmp/cypress.db
