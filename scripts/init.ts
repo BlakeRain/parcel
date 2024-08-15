@@ -1,3 +1,4 @@
+import { register as register_baseurl } from "./components/baseurl";
 import { register as register_checklist } from "./components/checklist";
 import { register as register_clipboard } from "./components/clipboard";
 import { register as register_date } from "./components/date";
@@ -32,6 +33,7 @@ function init() {
     console.warn("Web components are not supported");
   }
 
+  register_baseurl();
   register_checklist();
   register_clipboard();
   register_date();

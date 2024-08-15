@@ -1,0 +1,57 @@
+<parcel-modal
+  class="hidden"
+  with-htmx
+  {% if immediate %}
+    with-immediate
+  {% endif %}
+  hx-trigger="parcelUploadChanged"
+  hx-get="/uploads/{{ upload.id }}/share?immediate=true"
+  hx-target="this"
+  hx-swap="outerHTML">
+  <h1 class="text-2xl font-bold mb-4">Share Upload</h1>
+  <div class="flex flex-col gap-2">
+    {% if not upload.public %}
+      <p class="text-danger">
+        This upload is private and cannot be shared.
+      </p>
+      <p>
+        To share this upload, you need to make it public. You can do this by clicking the button below.
+      </p>
+    {% else %}
+      <p>
+        To share this upload, you can use the following link.
+      </p>
+      {% set url = "/uploads/" + (upload.slug | urlencode) %}
+      {% if upload.custom_slug is string %}
+        {% set url = "/uploads/" + (auth.username | urlencode) + "/" + (upload.custom_slug | urlencode) %}
+      {% endif %}
+      <div class="bg-gray-100 border border-gray-300 dark:bg-gray-800 dark:border-gray-700 p-2
+        rounded text-sm flex flex-row gap-2">
+        <pre class="grow"><parcel-baseurl path="{{ url }}"></parcel-baseurl></pre>
+        <parcel-clipboard url value="{{ url }}"></parcel-clipboard>
+      </div>
+      <p class="text-sm">
+        You can either select the text and copy to your clipboard, or click the copy button.
+      </p>
+    {% endif %}
+  </div>
+  <div class="buttons end mt-4">
+    {% if not upload.public %}
+      <button
+        type="button"
+        class="button hollow"
+        hx-post="/uploads/{{ upload.id }}/public?public=true"
+        hx-trigger="click"
+        hx-swap="none">
+        <span class="icon-eye"></span>
+        Make Public
+      </button>
+    {% endif %}
+    <button
+      type="button"
+      class="button"
+      onclick="event.preventDefault(); event.target.closest('parcel-modal').closeModal();">
+      Close
+    </button>
+  </div>
+</parcel-modal>

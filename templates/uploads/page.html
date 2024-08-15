@@ -119,6 +119,17 @@
           <a
             href="#"
             class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
+            title="Share upload link"
+            hx-get="/uploads/{{ upload.id }}/share"
+            hx-trigger="click"
+            hx-target="body"
+            hx-swap="beforeend">
+            <span class="icon-share"></span>
+            Share link &hellip;
+          </a>
+          <a
+            href="#"
+            class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
             title="Delete upload"
             hx-delete="/uploads/{{ upload.id }}"
             hx-trigger="click"

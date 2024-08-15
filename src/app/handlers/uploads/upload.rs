@@ -4,9 +4,10 @@ use poem::{
     handler,
     http::StatusCode,
     session::Session,
-    web::{CsrfToken, Data, Html, Path},
+    web::{CsrfToken, Data, Html, Path, Query},
     IntoResponse,
 };
+use serde::Deserialize;
 use time::OffsetDateTime;
 
 use crate::{
@@ -189,4 +190,46 @@ pub async fn delete_upload(
     })
     .with_header("HX-Trigger", "parcelUploadDeleted")
     .into_response())
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GetShareQuery {
+    #[serde(default)]
+    immediate: bool,
+}
+
+#[handler]
+pub async fn get_share(
+    env: Data<&Env>,
+    user: User,
+    Path(id): Path<i32>,
+    Query(GetShareQuery { immediate }): Query<GetShareQuery>,
+) -> poem::Result<Html<String>> {
+    let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
+        tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
+        InternalServerError(err)
+    })?
+    else {
+        tracing::error!(id = ?id, "Unable to find upload with given ID");
+        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
+    };
+
+    if !user.admin && upload.uploaded_by != user.id {
+        tracing::error!(
+            user = user.id,
+            upload = upload.id,
+            "User tried to share an upload without permission"
+        );
+
+        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+    }
+
+    render_template(
+        "uploads/share.html",
+        context! {
+            upload,
+            immediate,
+            ..authorized_context(&env, &user)
+        },
+    )
 }
