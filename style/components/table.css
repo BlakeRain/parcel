@@ -54,6 +54,10 @@
               @apply border-slate-200 dark:border-slate-600;
             }
           }
+
+          &:hover {
+            @apply bg-slate-200 dark:bg-slate-700/25;
+          }
         }
       }
     }
