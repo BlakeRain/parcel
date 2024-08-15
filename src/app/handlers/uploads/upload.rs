@@ -4,10 +4,9 @@ use poem::{
     handler,
     http::StatusCode,
     session::Session,
-    web::{CsrfToken, Data, Html, Path, Query},
+    web::{CsrfToken, Data, Html, Path},
     IntoResponse,
 };
-use serde::Deserialize;
 use time::OffsetDateTime;
 
 use crate::{
