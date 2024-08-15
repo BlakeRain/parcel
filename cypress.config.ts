@@ -5,10 +5,14 @@ import users from "./cypress/fixtures/users.json";
 export default defineConfig({
   e2e: {
     baseUrl: "http://localhost:3000",
-    setupNodeEvents(on, config) {
+    setupNodeEvents(on) {
       on("task", {
         resetDatabase() {
-          const db_url = process.env.DB || "parcel.db";
+          const db_url = process.env.DB;
+          if (!db_url) {
+            throw new Error("Missing 'DB' environment variable");
+          }
+
           const db = new sqlite.Database(db_url);
 
           db.serialize(() => {
@@ -21,7 +25,11 @@ export default defineConfig({
         },
 
         initialUsers() {
-          const db_url = process.env.DB || "parcel.db";
+          const db_url = process.env.DB;
+          if (!db_url) {
+            throw new Error("Missing 'DB' environment variable");
+          }
+
           const db = new sqlite.Database(db_url);
           db.serialize(() => {
             const stmt = db.prepare(
