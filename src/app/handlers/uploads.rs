@@ -95,14 +95,14 @@ pub async fn post_reset(
     env: Data<&Env>,
     user: User,
     Path(id): Path<i32>,
-) -> poem::Result<Html<String>> {
+) -> poem::Result<Response> {
     let Some(mut upload) = Upload::get(&env.pool, id).await.map_err(|err| {
         tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
         InternalServerError(err)
     })?
     else {
         tracing::error!("Unrecognized upload ID '{id}'");
-        return render_404("Unrecognized upload ID");
+        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
     if !user.admin && upload.uploaded_by != user.id {
@@ -120,12 +120,7 @@ pub async fn post_reset(
         .await
         .map_err(InternalServerError)?;
 
-    Ok(Html(if let Some(limit) = upload.limit {
-        format!(
-            "<td class=\"text-right text-nowrap\">{} / {}</td>",
-            limit, limit
-        )
-    } else {
-        "<i>Unlimited</i>".to_string()
-    }))
+    Ok(Html("")
+        .with_header("HX-Trigger", format!("{{ \"parcelUploadChanged\": {id} }}"))
+        .into_response())
 }

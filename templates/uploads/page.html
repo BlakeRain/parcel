@@ -34,8 +34,7 @@
             title="Reset remaining downloads to {{ upload.limit }}"
             hx-post="/uploads/{{ upload.id }}/reset"
             hx-trigger="click"
-            hx-target="closest td"
-            hx-swap="outerHTML"
+            hx-swap="none"
             hx-confirm="Are you sure you want to reset the remaining downloads for this upload?">
             <span class="icon-rotate-ccw"></span>
           </a>
@@ -99,6 +98,17 @@
           <a
             href="#"
             class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
+            title="Share upload link"
+            hx-get="/uploads/{{ upload.id }}/share"
+            hx-trigger="click"
+            hx-target="body"
+            hx-swap="beforeend">
+            <span class="icon-share"></span>
+            Share link &hellip;
+          </a>
+          <a
+            href="#"
+            class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
             hx-post="/uploads/{{ upload.id }}/public?public={{ not upload.public }}"
             hx-trigger="click"
             hx-swap="none"
@@ -116,25 +126,27 @@
               Make public
             {% endif %}
           </a>
-          <a
-            href="#"
-            class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
-            title="Share upload link"
-            hx-get="/uploads/{{ upload.id }}/share"
-            hx-trigger="click"
-            hx-target="body"
-            hx-swap="beforeend">
-            <span class="icon-share"></span>
-            Share link &hellip;
-          </a>
+          {% if upload.limit is number and upload.remaining is number and upload.remaining < upload.limit %}
+            <a
+              href="#"
+              class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
+              title="Reset remaining downloads to {{ upload.limit }}"
+              hx-post="/uploads/{{ upload.id }}/reset"
+              hx-trigger="click"
+              hx-swap="none"
+              hx-confirm="Are you sure you want to reset the remaining downloads for this upload?">
+              <span class="icon-rotate-ccw"></span>
+              Reset remaining
+            </a>
+          {% endif %}
           <a
             href="#"
             class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
             title="Delete upload"
             hx-delete="/uploads/{{ upload.id }}"
             hx-trigger="click"
-            hx-target="closest tr"
-            hx-swap="outerHTML swap:0.5s"
+            hx-target="closest .uploads-table-row"
+            hx-swap="outerHTML"
             hx-confirm="Are you sure you want to delete this upload?">
             <span class="icon-trash-2"></span>
             Delete upload
