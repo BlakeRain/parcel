@@ -99,6 +99,29 @@
             <span class="icon-pencil"></span>
             Edit upload
           </a>
+          {% set target = ("/uploads/list/" + (page | safe) + "?order=" + query.order + "&asc=" + (query.asc | safe)) | urlencode %}
+          <a
+            href="#"
+            class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
+            hx-post="/uploads/{{ upload.id }}/public?public={{ not upload.public }}&target={{ target }}"
+            hx-trigger="click"
+            hx-target="#upload-row-{{ upload.id }}"
+            hx-select="#upload-row-{{ upload.id }}"
+            hx-swap="outerHTML"
+            {% if upload.public %}
+              title="Deny public access to this upload"
+            {% else %}
+              hx-confirm="Are you sure you want to allow public access to this upload?"
+              title="Allow public access to this upload"
+            {% endif %}>
+            {% if upload.public %}
+              <span class="icon-eye-off"></span>
+              Make private
+            {% else %}
+              <span class="icon-eye"></span>
+              Make public
+            {% endif %}
+          </a>
           <a
             href="#"
             class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
