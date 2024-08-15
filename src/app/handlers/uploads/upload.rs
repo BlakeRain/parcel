@@ -113,9 +113,20 @@ pub async fn get_custom_upload(
     session: &Session,
     user: Option<User>,
     csrf_token: &CsrfToken,
-    Path((owner, slug)): Path<(i32, String)>,
+    Path((owner, slug)): Path<(String, String)>,
 ) -> poem::Result<Html<String>> {
-    let Some(upload) = Upload::get_by_custom_slug(&env.pool, owner, &slug)
+    let Some(owner) = User::get_by_username(&env.pool, &owner)
+        .await
+        .map_err(|err| {
+            tracing::error!(err = ?err, owner = ?owner, "Unable to get user by username");
+            InternalServerError(err)
+        })?
+    else {
+        tracing::error!(owner = ?owner, "Unable to find user with given username");
+        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
+    };
+
+    let Some(upload) = Upload::get_by_custom_slug(&env.pool, owner.id, &slug)
         .await
         .map_err(|err| {
             tracing::error!(err = ?err, slug = ?slug, "Unable to get upload by slug");

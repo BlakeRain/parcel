@@ -17,9 +17,9 @@
 
     <td>
       <div class="flex flex-row gap-1">
-        {% set upload_url = "/uploads/" + upload.slug %}
+        {% set upload_url = "/uploads/" + (upload.slug | urlencode) %}
         {% if upload.custom_slug is string %}
-          {% set upload_url = "/uploads/" + (upload.uploaded_by | safe) + "/" + upload.custom_slug %}
+          {% set upload_url = "/uploads/" + (auth.username | urlencode) + "/" + (upload.custom_slug | urlencode) %}
         {% endif %}
         <a class="truncate" href="{{ upload_url}}">{{ upload.filename }}</a>
         <parcel-clipboard url="true" value="{{ upload_url }}"></parcel-clipboard>
