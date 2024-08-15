@@ -110,19 +110,17 @@ describe("Uploading Files", () => {
     cy.get("#upload-stats-container").should("contain", "0%");
     cy.get("#upload-stats-container").should("contain", "69 B");
 
-    cy.get("#upload-list-container table > tbody > tr:first-child").within(
-      () => {
-        cy.get("td:nth-child(2)").should("contain", "test-file.txt");
-        cy.get("td:nth-child(3)").should("contain", "69 B");
-        cy.get("td:nth-child(4)").should("contain", "0");
-        cy.get("td:nth-child(5)").should("contain", "∞");
-        cy.get("td:nth-child(7)").should("contain", "No");
-        cy.get("td:nth-child(8)").should(
-          "contain",
-          new Date().toISOString().split("T")[0],
-        );
-      },
-    );
+    cy.get(".uploads-table > .uploads-table-row:first-child").within(() => {
+      cy.get("div:nth-child(2)").should("contain", "test-file.txt");
+      cy.get("div:nth-child(3)").should("contain", "69 B");
+      cy.get("div:nth-child(4)").should("contain", "0");
+      cy.get("div:nth-child(5)").should("contain", "∞");
+      cy.get("div:nth-child(7)").should("contain", "No");
+      cy.get("div:nth-child(8)").should(
+        "contain",
+        new Date().toISOString().split("T")[0],
+      );
+    });
   });
 
   it("Drop file body, add file, remove all", () => {
