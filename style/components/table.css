@@ -1,7 +1,7 @@
 @layer components {
   div.table {
     @apply bg-slate-50 dark:bg-slate-800/25;
-    @apply rounded-xl flex flex-col overflow-auto;
+    @apply rounded-xl flex flex-col;
 
     table {
       @apply text-slate-800 dark:text-slate-200;
