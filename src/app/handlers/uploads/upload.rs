@@ -140,17 +140,11 @@ pub async fn get_custom_upload(
     render_upload(env, user, session, csrf_token, upload).await
 }
 
-#[derive(Debug, Deserialize)]
-pub struct DeleteUploadQuery {
-    redirect: Option<String>,
-}
-
 #[handler]
 pub async fn delete_upload(
     env: Data<&Env>,
     user: User,
     Path(id): Path<i32>,
-    Query(DeleteUploadQuery { redirect }): Query<DeleteUploadQuery>,
 ) -> poem::Result<poem::Response> {
     let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
         tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
@@ -189,17 +183,11 @@ pub async fn delete_upload(
             InternalServerError(err)
         })?;
 
-    Ok(if let Some(redirect) = redirect {
-        Html("")
-            .with_header("HX-Redirect", redirect)
-            .into_response()
+    Ok(Html(if remaining == 0 {
+        "<tr><td colspan=\"9\" class=\"text-center italic\">No more uploads</td></tr>"
     } else {
-        Html(if remaining == 0 {
-            "<tr><td colspan=\"9\" class=\"text-center italic\">No more uploads</td></tr>"
-        } else {
-            ""
-        })
-        .with_header("HX-Trigger", "parcelUploadDeleted")
-        .into_response()
+        ""
     })
+    .with_header("HX-Trigger", "parcelUploadDeleted")
+    .into_response())
 }
