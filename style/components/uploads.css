@@ -1,0 +1,107 @@
+@layer components {
+  .uploads-table {
+    @apply bg-slate-50 dark:bg-slate-800/25;
+    @apply border-collapse border-b border-slate-200 dark:border-slate-600;
+    @apply grid;
+    @apply mb-8;
+
+    > .uploads-table-header {
+      @apply grid grid-cols-subgrid;
+      @apply text-slate-800 dark:text-slate-200 text-sm font-medium;
+      @apply border-b dark:border-slate-600;
+
+      > div {
+        @apply p-2 hidden overflow-hidden;
+      }
+    }
+
+    > .uploads-table-row {
+      @apply grid grid-cols-subgrid;
+      @apply bg-white dark:bg-slate-800;
+      @apply text-slate-500 dark:text-slate-400 text-sm;
+      @apply border-b border-slate-100 dark:border-slate-600;
+
+      @apply hover:bg-neutral-200/25 dark:hover:bg-slate-700/25;
+
+      > div {
+        @apply p-2 hidden;
+
+        /* We want to hide overflow on everything but the last child (which has our dropdown). */
+        &:not(:last-child) {
+          @apply overflow-hidden;
+        }
+      }
+    }
+
+    > .uploads-table-sentinel {
+      @apply p-2;
+      @apply text-slate-500 dark:text-slate-400 text-sm text-center italic;
+    }
+  }
+
+  .uploads-table {
+    grid-template-columns: 3rem 1fr /*10rem*/ /*8rem*/ /*7rem*/ /*12rem*/ 5rem /*11rem*/ 4rem;
+
+    > .uploads-table-header, > .uploads-table-row, > .uploads-table-sentinel {
+      @apply col-span-4;
+    }
+
+    > .uploads-table-header > div, > .uploads-table-row > div {
+      &:nth-child(2) {
+        @apply flex;
+      }
+
+      &:nth-child(1), &:nth-child(7), &:nth-child(9) {
+        @apply block;
+      }
+    }
+  }
+
+  @media screen(md) {
+    .uploads-table {
+      grid-template-columns: 3rem 1fr 10rem /*8rem*/ /*7rem*/ /*12rem*/ 5rem /*11rem*/ 4rem;
+
+      > .uploads-table-header, > .uploads-table-row, > .uploads-table-sentinel {
+        @apply col-span-5;
+      }
+
+      > .uploads-table-header > div, > .uploads-table-row > div {
+        &:nth-child(3) {
+          @apply block;
+        }
+      }
+    }
+  }
+
+  @media screen(lg) {
+    .uploads-table {
+      grid-template-columns: 3rem 1fr 10rem /*8rem*/ 7rem 12rem 5rem /*11rem*/ 4rem;
+
+      > .uploads-table-header, > .uploads-table-row, > .uploads-table-sentinel {
+        @apply col-span-7;
+      }
+
+      > .uploads-table-header > div, > .uploads-table-row > div {
+        &:nth-child(5), &:nth-child(6) {
+          @apply block;
+        }
+      }
+    }
+  }
+
+  @media screen(xl) {
+    .uploads-table {
+      grid-template-columns: 3rem 1fr 10rem 8rem 7rem 12rem 5rem 11rem 4rem;
+
+      > .uploads-table-header, > .uploads-table-row, > .uploads-table-sentinel {
+        @apply col-span-9;
+      }
+
+      > .uploads-table-header > div, > .uploads-table-row > div {
+        &:nth-child(4), &:nth-child(8) {
+          @apply block;
+        }
+      }
+    }
+  }
+}

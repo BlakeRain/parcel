@@ -4,6 +4,7 @@ use poem::{
     handler,
     http::StatusCode,
     web::{CsrfToken, CsrfVerifier, Data, Form, Html, Path, Query},
+    IntoResponse, Response,
 };
 use serde::Deserialize;
 use time::Date;
@@ -151,7 +152,7 @@ pub async fn post_edit(
         password,
         custom_slug,
     }): Form<UploadEditForm>,
-) -> poem::Result<Html<String>> {
+) -> poem::Result<Response> {
     if !verifier.is_valid(&token) {
         tracing::error!("CSRF token is invalid in upload edit");
         return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
@@ -216,8 +217,7 @@ pub async fn post_edit(
 
     upload.save(&env.pool).await.map_err(InternalServerError)?;
 
-    Ok(Html(
-        "<script type=\"text/javascript\">htmx.trigger(\"#upload-list-refresh\", \"refresh\");</script>"
-            .to_string(),
-    ))
+    Ok(Html("")
+        .with_header("HX-Trigger", format!("{{ \"parcelUploadChanged\": {id} }}"))
+        .into_response())
 }

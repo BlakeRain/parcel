@@ -11,14 +11,14 @@
     }
 
     &.triangle-tl:before {
-      @apply border-t-0 border-b-neutral-100 dark:border-b-gray-700;
+      @apply border-t-0 border-b-neutral-200 dark:border-b-gray-700;
 
       top: -0.5rem;
       left: 0.5rem;
     }
 
     &.triangle-tr:before {
-      @apply border-t-0 border-b-neutral-100 dark:border-b-gray-700;
+      @apply border-t-0 border-b-neutral-200 dark:border-b-gray-700;
 
       top: -0.5rem;
       right: 0.5rem;

@@ -1,33 +1,32 @@
 {% for upload in uploads %}
-<tr
+<div
   id="upload-row-{{ upload.id }}"
+  class="uploads-table-row"
   data-page="{{ page }}"
   data-order="{{ query.order }}"
   data-asc="{{ query.asc }}">
-    <td class="slim text-center">
+    <div class="text-center">
       <parcel-grouped-checkbox
         name="selected"
         group="uploads"
         value="{{ upload.id }}">
       </parcel-grouped-checkbox>
-    </td>
+    </div>
 
-    <td>
-      <div class="flex flex-row gap-1">
-        {% set upload_url = "/uploads/" + (upload.slug | urlencode) %}
-        {% if upload.custom_slug is string %}
-          {% set upload_url = "/uploads/" + (auth.username | urlencode) + "/" + (upload.custom_slug | urlencode) %}
-        {% endif %}
-        <a class="truncate" href="{{ upload_url}}">{{ upload.filename }}</a>
-        <parcel-clipboard url="true" value="{{ upload_url }}"></parcel-clipboard>
-      </div>
-    </td>
+    <div class="flex flex-row gap-1">
+      {% set upload_url = "/uploads/" + (upload.slug | urlencode) %}
+      {% if upload.custom_slug is string %}
+        {% set upload_url = "/uploads/" + (auth.username | urlencode) + "/" + (upload.custom_slug | urlencode) %}
+      {% endif %}
+      <a class="truncate" href="{{ upload_url}}">{{ upload.filename }}</a>
+      <parcel-clipboard url="true" value="{{ upload_url }}"></parcel-clipboard>
+    </div>
 
-    <td class="text-right text-nowrap hidden md:table-cell">{{ upload.size | filesizeformat }}</td>
+    <div class="text-right text-nowrap">{{ upload.size | filesizeformat }}</div>
 
-    <td class="text-right text-nowrap hidden xl:table-cell">{{ upload.downloads }}</td>
+    <div class="text-right text-nowrap">{{ upload.downloads }}</div>
 
-    <td class="text-right text-nowrap hidden lg:table-cell {% if upload.remaining is number and upload.remaining == 0 %}text-danger{% endif %}">
+    <div class="text-right text-nowrap {% if upload.remaining is number and upload.remaining == 0 %}text-danger{% endif %}">
       {% if upload.limit is number %}
         {% if upload.remaining is number and upload.remaining < upload.limit %}
           <a
@@ -45,9 +44,9 @@
       {% else -%}
         &#8734;
       {%- endif %}
-    </td>
+    </div>
 
-    <td class="text-nowrap hidden lg:table-cell {% if upload.expiry_date and upload.expiry_date is past %}text-danger{% endif %}">
+    <div class="text-nowrap {% if upload.expiry_date and upload.expiry_date is past %}text-danger{% endif %}">
       {% if upload.expiry_date %}
         <span class="hidden xl:block">
           <parcel-date value="{{ upload.expiry_date | date }}">
@@ -59,23 +58,23 @@
           {{ upload.expiry_date | datetime_offset }}
         </span>
       {% endif %}
-    </td>
+    </div>
 
-    <td class="text-center text-nowrap {% if upload.public %}text-danger{% endif %}">
+    <div class="text-center text-nowrap {% if upload.public %}text-danger{% endif %}">
       {% if upload.public %}
         Yes
       {% else %}
         No
       {% endif %}
-    </td>
+    </div>
 
-    <td class="text-left text-nowrap hidden xl:table-cell">
+    <div class="text-left text-nowrap">
       <parcel-datetime value="{{ upload.uploaded_at | datetime }}">
         {{ upload.uploaded_at | datetime }}
       </parcel-datetime>
-    </td>
+    </div>
 
-    <td>
+    <div>
       <parcel-dropdown>
         <div class="flex flex-col my-2 dark:text-neutral-100">
           <a
@@ -131,15 +130,16 @@
           </a>
         </div>
       </parcel-dropdown>
-    </td>
-  </tr>
+    </div>
+  </div>
 {% endfor %}
 {% if page < last_page %}
-  <tr
+  <div
+    class="uploads-table-sentinel"
     hx-trigger="revealed"
     hx-get="/uploads/list/{{ page + 1 }}?order={{ query.order }}&asc={{ query.asc }}"
     hx-target="this"
     hx-swap="outerHTML">
-    <td colspan="9" class="text-center italic">Loading &hellip;</td>
-  </tr>
+    Loading &hellip;
+  </div>
 {% endif %}

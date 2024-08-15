@@ -29,7 +29,7 @@ class Dropdown extends HTMLElement {
 
     this.dropdown = document.createElement("div");
     this.dropdown.className =
-      "has-triangle triangle-tr absolute right-[-0.3rem] top-[1.9rem] hidden z-10 w-44 rounded-lg shadow bg-neutral-100 dark:bg-gray-700";
+      "has-triangle triangle-tr absolute right-[-0.3rem] top-[1.9rem] hidden z-10 w-44 rounded-lg shadow bg-neutral-200 dark:bg-gray-700 text-neutral-800 dark:text-neutral-300";
 
     while (this.firstChild) {
       this.dropdown.appendChild(this.firstChild);
