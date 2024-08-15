@@ -1,7 +1,8 @@
-import { register as register_checklist } from "./components/checklist.js";
-import { register as register_clipboard } from "./components/clipboard.js";
-import { register as register_date } from "./components/date.js";
-import { register as register_modal } from "./components/modal.js";
+import { register as register_checklist } from "./components/checklist";
+import { register as register_clipboard } from "./components/clipboard";
+import { register as register_date } from "./components/date";
+import { register as register_modal } from "./components/modal";
+import { register as register_dropdown } from "./components/dropdown";
 
 function add_dropdowns() {
   document.querySelectorAll(".dropdown").forEach((element) => {
@@ -35,6 +36,7 @@ function init() {
   register_clipboard();
   register_date();
   register_modal();
+  register_dropdown();
   add_dropdowns();
 }
 
