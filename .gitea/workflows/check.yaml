@@ -32,7 +32,7 @@ jobs:
         env:
           DB: /tmp/cypress.db
       - name: Save Cypress artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v2
         if: failure()
         with:
           name: cypress-screenshots

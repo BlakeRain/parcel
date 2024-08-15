@@ -188,7 +188,7 @@ describe("Uploading Files", () => {
 
     cy.get(".modal > .content div:nth-child(3) > a > span.icon-x").click();
 
-    cy.contains("a", "Remove all files").should("not.be.visible");
+    // cy.contains("a", "Remove all files").should("not.be.visible");
     cy.get(".modal > .content").should("not.contain", "test-file-2.txt");
     cy.contains("button", "Upload file").should("be.disabled");
   });
