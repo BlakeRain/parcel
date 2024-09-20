@@ -32,7 +32,6 @@ export default defineConfig({
 
           const db = new sqlite.Database(db_url);
           db.serialize(() => {
-            console.log("Deleting all users and uploads");
             db.run("DELETE FROM uploads");
             db.run("DELETE FROM users");
 
@@ -40,7 +39,6 @@ export default defineConfig({
               "INSERT INTO users (username, name, password, enabled, admin, created_at) VALUES (?, ?, ?, 1, ?, ?)",
             );
 
-            console.log("Inserting initial users");
             stmt.run(
               users.admin.username,
               users.admin.name,
@@ -61,7 +59,6 @@ export default defineConfig({
           });
 
           db.close();
-          console.log("Initial users inserted");
           return null;
         },
       });
