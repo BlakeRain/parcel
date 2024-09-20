@@ -13,8 +13,6 @@ jobs:
         uses: actions/setup-node@v4
       - name: Install the Stable Rust Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
-        env:
-          RUSTUP_PERMIT_COPY_RENAME:
         with:
           toolchain: stable
           components: clippy
