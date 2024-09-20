@@ -27,7 +27,7 @@
     "cy:run": "cypress run",
     "ci:serve:debug": "cargo run",
     "ci:serve:release": "cargo run --release",
-    "ci:debug": "start-server-and-test ci:serve:debug http://localhost:3000 cy:run",
-    "ci:release": "start-server-and-test ci:serve:release http://localhost:3000 cy:run"
+    "ci:debug": "start-server-and-test ci:serve:debug http://127.0.0.1:3000 cy:run",
+    "ci:release": "start-server-and-test ci:serve:release http://127.0.0.1:3000 cy:run"
   }
 }
