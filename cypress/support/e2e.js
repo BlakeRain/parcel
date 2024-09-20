@@ -15,6 +15,7 @@ Cypress.Commands.add("login", ({ username, password }) => {
   cy.request("/user/signin")
     .its("body")
     .then((body) => {
+      expect(body).to.include("<form");
       const $html = Cypress.$(body);
       const token = $html.find("input[name=token]").val();
 
@@ -27,6 +28,8 @@ Cypress.Commands.add("login", ({ username, password }) => {
           username,
           password,
         },
+      }).then((response) => {
+        expect(response.status).to.eq(200);
       });
     });
 });
