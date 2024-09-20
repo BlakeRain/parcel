@@ -30,7 +30,7 @@ totp-lite = { version = "2.0" }
 tracing = { version = "0.1", features = ["log"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
-esbuild-bundle = { git = "https://github.com/BlakeRain/esbuild-bundle" }
+esbuild-bundle = { git = "https://github.com/BlakeRain/esbuild-bundle", tag = "v0.1.2" }
 poem-route-macro = { git = "https://github.com/BlakeRain/poem-route-macro" }
 
 [build-dependencies]

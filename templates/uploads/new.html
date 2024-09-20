@@ -1,4 +1,4 @@
 <parcel-modal class="hidden" with-htmx {% if immediate %}with-immediate{% endif %}>
   <parcel-upload-form csrf_token="{{ csrf_token }}"></parcel-upload-form>
 </parcel-modal>
-<script type="module" src="/{{ upload_js | safe }}"></script>
+<script type="module" src="/static/scripts/bundles/{{ upload_js | safe }}"></script>
