@@ -112,7 +112,7 @@
         // htmx.logAll();
       </script>
     {% endif %}
-    <script type="module" src="/{{ env.init_js | safe }}"></script>
+    <script type="module" src="/static/scripts/bundles/{{ env.init_js | safe }}"></script>
     {% block scripts %}{% endblock %}
   </body>
 </html>
