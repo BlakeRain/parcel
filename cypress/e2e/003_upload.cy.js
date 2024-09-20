@@ -28,6 +28,9 @@ describe("Uploading Files", () => {
         action: "drag-drop",
       });
 
+    // Wait for the upad to register
+    cy.wait(1000);
+
     cy.get(".modal > .content").should("contain", "69.00");
     cy.get(".modal > .content").should("contain", "test-file.txt");
     cy.contains("button", "Upload file").should("be.enabled");
@@ -47,6 +50,9 @@ describe("Uploading Files", () => {
     cy.get("body").selectFile("cypress/uploads/test-file.txt", {
       action: "drag-drop",
     });
+
+    // Wait for the upad to register
+    cy.wait(1000);
 
     cy.get(".modal > .content").should("be.visible");
     cy.get(".modal > .content").should("contain", "69.00");
@@ -74,6 +80,9 @@ describe("Uploading Files", () => {
       action: "drag-drop",
     });
 
+    // Wait for the upad to register
+    cy.wait(1000);
+
     cy.get(".modal > .content").should("be.visible");
     cy.get(".modal > .content").should("contain", "69.00");
     cy.get(".modal > .content").should("contain", "test-file.txt");
@@ -99,6 +108,9 @@ describe("Uploading Files", () => {
     cy.get("body").selectFile("cypress/uploads/test-file.txt", {
       action: "drag-drop",
     });
+
+    // Wait for the upad to register
+    cy.wait(1000);
 
     cy.get(".modal > .content").should("be.visible");
     cy.contains("button", "Upload file").should("be.enabled").click();
@@ -127,9 +139,15 @@ describe("Uploading Files", () => {
   it("Drop file body, add file, remove all", () => {
     cy.visit("/");
 
+    cy.get("#upload-stats-container").should("contain", "0%");
+    cy.get("#upload-stats-container").should("contain", "0 B");
+
     cy.get("body").selectFile("cypress/uploads/test-file.txt", {
       action: "drag-drop",
     });
+
+    // Wait for the upad to register
+    cy.wait(1000);
 
     cy.get(".modal > .content").should("be.visible");
     cy.get(".modal > .content").should("contain", "69.00");
@@ -142,6 +160,9 @@ describe("Uploading Files", () => {
       .selectFile("cypress/uploads/test-file-2.txt", {
         action: "drag-drop",
       });
+
+    // Wait for the upad to register
+    cy.wait(1000);
 
     cy.get(".modal > .content").should("contain", "99.00");
     cy.get(".modal > .content").should("contain", "2 files");
@@ -157,9 +178,15 @@ describe("Uploading Files", () => {
   it("Drop file body, add file, remove by cross", () => {
     cy.visit("/");
 
+    cy.get("#upload-stats-container").should("contain", "0%");
+    cy.get("#upload-stats-container").should("contain", "0 B");
+
     cy.get("body").selectFile("cypress/uploads/test-file.txt", {
       action: "drag-drop",
     });
+
+    // Wait for the upad to register
+    cy.wait(1000);
 
     cy.get(".modal > .content").should("be.visible");
     cy.get(".modal > .content").should("contain", "69.00");
@@ -172,6 +199,9 @@ describe("Uploading Files", () => {
       .selectFile("cypress/uploads/test-file-2.txt", {
         action: "drag-drop",
       });
+
+    // Wait for the upad to register
+    cy.wait(1000);
 
     cy.get(".modal > .content").should("contain", "99.00");
     cy.get(".modal > .content").should("contain", "2 files");
