@@ -25,6 +25,8 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
+      - name: Run build before Cypress Tests
+        run: cargo build
       - name: Run Cypress Tests (debug)
         run: npm run ci:debug
         env:
