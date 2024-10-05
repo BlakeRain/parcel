@@ -13,6 +13,7 @@ Parcel is a simple light-weight file upload application with a nice UI and a sma
 - Support multiple users and administrators
 - Uploaded files can be made public to allow download from anywhere
 - Number of downloads can be limited, and downloads can have an expiry date
+- Public downloads can be password protected
 - Files are stored in separate cache directory
 - Data is stored in an [SQLite] database
 - Written in [Rust] using the [Poem] web framework
