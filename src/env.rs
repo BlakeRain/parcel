@@ -1,7 +1,8 @@
 use std::{path::PathBuf, str::FromStr, sync::Arc};
 
 use sqlx::{
-    sqlite::{SqliteConnectOptions, SqliteJournalMode},
+    pool::PoolOptions,
+    sqlite::{SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous},
     SqlitePool,
 };
 
@@ -50,8 +51,12 @@ impl Env {
 
         let opts = SqliteConnectOptions::from_str(db)?
             .create_if_missing(true)
-            .journal_mode(SqliteJournalMode::Wal);
-        let pool = SqlitePool::connect_with(opts).await?;
+            .journal_mode(SqliteJournalMode::Wal)
+            .synchronous(SqliteSynchronous::Normal);
+        let pool = PoolOptions::new()
+            .max_connections(1)
+            .connect_with(opts)
+            .await?;
         MIGRATOR.run(&pool).await?;
 
         let analytics_domain = analytics_domain.clone();
