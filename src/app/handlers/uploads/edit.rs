@@ -3,7 +3,7 @@ use poem::{
     error::InternalServerError,
     handler,
     http::StatusCode,
-    web::{CsrfToken, CsrfVerifier, Data, Form, Html, Path, Query},
+    web::{CsrfToken, CsrfVerifier, Data, Form, Html, Path},
     IntoResponse, Response,
 };
 use serde::Deserialize;
@@ -18,22 +18,12 @@ use crate::{
     },
 };
 
-#[derive(Debug, Deserialize)]
-pub struct EditQuery {
-    hx_target: Option<String>,
-    ult_dest: Option<String>,
-}
-
 #[handler]
 pub async fn get_edit(
     env: Data<&Env>,
     token: &CsrfToken,
     user: User,
     Path(id): Path<i32>,
-    Query(EditQuery {
-        hx_target,
-        ult_dest,
-    }): Query<EditQuery>,
 ) -> poem::Result<Html<String>> {
     let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
         tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
@@ -61,8 +51,6 @@ pub async fn get_edit(
             now => time::OffsetDateTime::now_utc(),
             has_password => upload.password.is_some(),
             upload,
-            hx_target,
-            ult_dest,
             ..authorized_context(&env, &user)
         },
     )

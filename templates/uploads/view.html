@@ -88,7 +88,7 @@
             type="button"
             class="button hollow"
             title="Edit upload settings"
-            hx-get="/uploads/{{ upload.id }}/edit?hx_target=%23upload-view-container&ult_dest=/uploads/{{ upload.slug | urlencode }}"
+            hx-get="/uploads/{{ upload.id }}/edit"
             hx-trigger="click"
             hx-target="body"
             hx-swap="beforeend">
