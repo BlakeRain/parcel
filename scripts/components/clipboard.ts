@@ -12,7 +12,6 @@ class ClipboardElement extends HTMLElement {
     }
 
     const urlAttribute = this.getAttribute("url");
-    console.log(urlAttribute);
     if (urlAttribute !== null) {
       const base = window.location.protocol + "//" + window.location.host;
 
