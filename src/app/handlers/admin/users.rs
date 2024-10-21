@@ -16,6 +16,7 @@ use crate::{
     },
     env::Env,
     model::{
+        types::Key,
         upload::Upload,
         user::{hash_password, User},
     },
@@ -86,8 +87,8 @@ pub async fn post_new(
     let admin = admin.as_deref() == Some("on");
     let enabled = enabled.as_deref() == Some("on");
 
-    let mut user = User {
-        id: 0,
+    let user = User {
+        id: Key::new(),
         username,
         name,
         password: hash_password(&password),
@@ -113,15 +114,15 @@ pub async fn post_new(
 pub async fn get_user(
     env: Data<&Env>,
     token: &CsrfToken,
-    Path(user_id): Path<i32>,
+    Path(user_id): Path<Key<User>>,
     Admin(admin): Admin,
 ) -> poem::Result<Html<String>> {
     let Some(user) = User::get(&env.pool, user_id).await.map_err(|err| {
-        tracing::error!(err = ?err, user_id = user_id, "Failed to get user");
+        tracing::error!(err = ?err, user_id = %user_id, "Failed to get user");
         InternalServerError(err)
     })?
     else {
-        tracing::error!(user_id = user_id, "Unrecognized user ID");
+        tracing::error!(user_id = %user_id, "Unrecognized user ID");
         return render_404("Unrecognized user ID");
     };
 
@@ -149,7 +150,7 @@ pub struct EditUserForm {
 pub async fn post_user(
     env: Data<&Env>,
     Admin(auth): Admin,
-    Path(user_id): Path<i32>,
+    Path(user_id): Path<Key<User>>,
     verifier: &CsrfVerifier,
     Form(EditUserForm {
         token,
@@ -166,11 +167,11 @@ pub async fn post_user(
     }
 
     let Some(mut user) = User::get(&env.pool, user_id).await.map_err(|err| {
-        tracing::error!(err = ?err, user_id = user_id, "Failed to get user");
+        tracing::error!(err = ?err, user_id = %user_id, "Failed to get user");
         InternalServerError(err)
     })?
     else {
-        tracing::error!(user_id = user_id, "Unrecognized user ID");
+        tracing::error!(user_id = %user_id, "Unrecognized user ID");
         return Ok(Redirect::see_other("/admin/users"));
     };
 
@@ -199,12 +200,12 @@ pub async fn post_user(
     user.update(&env.pool, &username, &name, admin, enabled, limit)
         .await
         .map_err(|err| {
-            tracing::error!(err = ?err, user_id = user_id, "Failed to update user");
+            tracing::error!(err = ?err, user_id = %user_id, "Failed to update user");
             InternalServerError(err)
         })?;
 
     tracing::info!(
-        user_id = user_id, admin = admin, enabled = enabled, limit = ?limit,
+        user_id = %user_id, admin = admin, enabled = enabled, limit = ?limit,
         "Updated user"
     );
 
@@ -215,40 +216,40 @@ pub async fn post_user(
 pub async fn delete_user(
     env: Data<&Env>,
     Admin(_): Admin,
-    Path(user_id): Path<i32>,
+    Path(user_id): Path<Key<User>>,
 ) -> poem::Result<Redirect> {
     User::delete(&env.pool, user_id).await.map_err(|err| {
-        tracing::error!(err = ?err, user_id = user_id, "Failed to delete user");
+        tracing::error!(err = ?err, user_id = %user_id, "Failed to delete user");
         InternalServerError(err)
     })?;
 
     let upload_slugs = Upload::delete_for_user(&env.pool, user_id)
         .await
         .map_err(|err| {
-            tracing::error!(err = ?err, user_id = user_id, "Failed to delete users uploads");
+            tracing::error!(err = ?err, user_id = %user_id, "Failed to delete users uploads");
             InternalServerError(err)
         })?;
 
     for slug in upload_slugs {
         let path = env.cache_dir.join(&slug);
-        tracing::info!(path = ?path, owner = user_id, "Deleting cached upload");
+        tracing::info!(path = ?path, owner = %user_id, "Deleting cached upload");
         if let Err(err) = tokio::fs::remove_file(&path).await {
-            tracing::error!(path = ?path, err = ?err, owner = user_id, "Failed to delete cached upload");
+            tracing::error!(path = ?path, err = ?err, owner = %user_id, "Failed to delete cached upload");
         }
     }
 
-    tracing::info!(user_id = user_id, "Deleted user");
+    tracing::info!(user_id = %user_id, "Deleted user");
     Ok(Redirect::see_other("/admin/users"))
 }
 
 #[handler]
 pub async fn post_disable_user(
     env: Data<&Env>,
-    Path(user_id): Path<i32>,
+    Path(user_id): Path<Key<User>>,
     Admin(_): Admin,
 ) -> poem::Result<Redirect> {
     let Some(mut user) = User::get(&env.pool, user_id).await.map_err(|err| {
-        tracing::error!(err = ?err, user_id = user_id, "Failed to get user");
+        tracing::error!(err = ?err, user_id = %user_id, "Failed to get user");
         InternalServerError(err)
     })?
     else {
@@ -257,22 +258,22 @@ pub async fn post_disable_user(
     };
 
     user.set_enabled(&env.pool, false).await.map_err(|err| {
-        tracing::error!(err = ?err, user_id = user_id, "Failed to disable user");
+        tracing::error!(err = ?err, user_id = %user_id, "Failed to disable user");
         InternalServerError(err)
     })?;
 
-    tracing::info!(user_id = user_id, "Disabled user");
+    tracing::info!(user_id = %user_id, "Disabled user");
     Ok(Redirect::see_other("/admin/users"))
 }
 
 #[handler]
 pub async fn post_enable_user(
     env: Data<&Env>,
-    Path(user_id): Path<i32>,
+    Path(user_id): Path<Key<User>>,
     Admin(_): Admin,
 ) -> poem::Result<Redirect> {
     let Some(mut user) = User::get(&env.pool, user_id).await.map_err(|err| {
-        tracing::error!(err = ?err, user_id = user_id, "Failed to get user");
+        tracing::error!(err = ?err, user_id = %user_id, "Failed to get user");
         InternalServerError(err)
     })?
     else {
@@ -281,10 +282,10 @@ pub async fn post_enable_user(
     };
 
     user.set_enabled(&env.pool, true).await.map_err(|err| {
-        tracing::error!(err = ?err, user_id = user_id, "Failed to enable user");
+        tracing::error!(err = ?err, user_id = %user_id, "Failed to enable user");
         InternalServerError(err)
     })?;
 
-    tracing::info!(user_id = user_id, "Enabled user");
+    tracing::info!(user_id = %user_id, "Enabled user");
     Ok(Redirect::see_other("/admin/users"))
 }

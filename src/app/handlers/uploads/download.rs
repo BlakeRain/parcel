@@ -22,14 +22,14 @@ use crate::{
 
 async fn send_download(env: &Env, owner: bool, mut upload: Upload) -> poem::Result<Response> {
     let path = env.cache_dir.join(&upload.slug);
-    tracing::info!(upload = upload.id, path = ?path, "Opening file for upload");
+    tracing::info!(upload = %upload.id, path = ?path, "Opening file for upload");
     let file = tokio::fs::File::open(&path).await.map_err(|err| {
-        tracing::error!(err = ?err, path = ?path, "Unable to open file");
+        tracing::error!(%upload.id, ?err, ?path, "Unable to open file");
         InternalServerError(err)
     })?;
 
     let meta = file.metadata().await.map_err(|err| {
-        tracing::error!(err = ?err, path = ?path, "Unable to get metadata for file");
+        tracing::error!(%upload.id, ?err, ?path, "Unable to get metadata for file");
         InternalServerError(err)
     })?;
 
@@ -37,11 +37,11 @@ async fn send_download(env: &Env, owner: bool, mut upload: Upload) -> poem::Resu
         .record_download(&env.pool, !owner)
         .await
         .map_err(|err| {
-            tracing::error!(err = ?err, slug = ?upload.slug, "Unable to record download");
+            tracing::error!(%upload.id, ?err, ?upload.slug, "Unable to record download");
             InternalServerError(err)
         })?;
 
-    tracing::info!(upload = upload.id, meta = ?meta,
+    tracing::info!(%upload.id, ?meta,
                    "Sending file to client");
 
     Ok(Response::builder()
@@ -62,11 +62,11 @@ pub async fn get_download(
     Path(slug): Path<String>,
 ) -> poem::Result<Response> {
     let Some(mut upload) = Upload::get_by_slug(&env.pool, &slug).await.map_err(|err| {
-        tracing::error!(err = ?err, slug = ?slug, "Unable to get upload by slug");
+        tracing::error!(?err, ?slug, "Unable to get upload by slug");
         InternalServerError(err)
     })?
     else {
-        tracing::error!(slug = ?slug, "Unable to find upload with given ID");
+        tracing::error!(?slug, "Unable to find upload with given ID");
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
@@ -77,9 +77,10 @@ pub async fn get_download(
     };
 
     if !upload.public && !owner {
+        let uid = user.as_ref().map(|user| user.id);
         tracing::error!(
-            user = ?user,
-            upload = ?upload,
+            user = ?uid,
+            %upload.id,
             "User tried to access private upload without permission"
         );
 
@@ -96,13 +97,13 @@ pub async fn get_download(
 
         if let Some(expiry) = upload.expiry_date {
             if expiry < OffsetDateTime::now_utc().date() {
-                tracing::error!(upload = ?upload, "Upload has expired");
+                tracing::error!(%upload.id, "Upload has expired");
                 return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
             }
         }
 
         if upload.password.is_some() {
-            tracing::error!(upload = ?upload, "Upload requires password");
+            tracing::error!(%upload.id, "Upload requires password");
             session.set("download_error", "This upload requires a password");
             return Ok(Redirect::see_other(format!("/uploads/{slug}")).into_response());
         }
@@ -135,11 +136,11 @@ pub async fn post_download(
     }
 
     let Some(mut upload) = Upload::get_by_slug(&env.pool, &slug).await.map_err(|err| {
-        tracing::error!(err = ?err, slug = ?slug, "Unable to get upload by slug");
+        tracing::error!(?err, ?slug, "Unable to get upload by slug");
         InternalServerError(err)
     })?
     else {
-        tracing::error!(slug = ?slug, "Unable to find upload with given ID");
+        tracing::error!(?slug, "Unable to find upload with given ID");
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
@@ -158,7 +159,7 @@ pub async fn post_download(
     };
 
     if !verify_password(hash, &password) {
-        tracing::error!(upload = ?upload, "Invalid password provided");
+        tracing::error!(%upload.id, "Invalid password provided");
         session.set("download_error", "Incorrect password");
         return Ok(Redirect::see_other(format!("/uploads/{slug}")).into_response());
     }

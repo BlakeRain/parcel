@@ -72,17 +72,16 @@ pub async fn post_settings(
             User::get_by_username(&env.pool, &username)
                 .await
                 .map_err(|err| {
-                    tracing::error!(username = ?username, err = ?err,
-                    "Failed to get user by username");
+                    tracing::error!(?username, ?err, "Failed to get user by username");
                     InternalServerError(err)
                 })?
         {
             tracing::error!(
-                user_id = user.id,
-                username = user.username,
-                name = user.name,
-                new_username = username,
-                existing_id = existing.id,
+                user_id = %user.id,
+                username = ?user.username,
+                name = ?user.name,
+                new_username = ?username,
+                existing_id = %existing.id,
                 "Username is already taken"
             );
 
@@ -91,16 +90,16 @@ pub async fn post_settings(
         }
 
         tracing::info!(
-            user_id = user.id,
-            username = user.username,
-            new_username = username,
+            user_id = %user.id,
+            username = ?user.username,
+            new_username = ?username,
             "Changing username"
         );
 
         user.set_username(&env.pool, &username)
             .await
             .map_err(|err| {
-                tracing::error!(user_id = user.id, username = ?username, err = ?err,
+                tracing::error!(%user.id, ?username, ?err,
                     "Failed to set username");
                 InternalServerError(err)
             })?;
@@ -108,15 +107,14 @@ pub async fn post_settings(
 
     if user.name != name {
         tracing::info!(
-            user_id = user.id,
-            username = user.username,
-            name = name,
+            user_id = %user.id,
+            username = ?user.username,
+            name = ?name,
             "Changing name"
         );
 
         user.set_name(&env.pool, &name).await.map_err(|err| {
-            tracing::error!(user_id = user.id, username = ?username, err = ?err,
-            "Failed to set name");
+            tracing::error!(%user.id, ?username, ?err, "Failed to set name");
             InternalServerError(err)
         })?;
     }
@@ -148,16 +146,12 @@ pub async fn post_password(
         return Err(CsrfError.into());
     }
 
-    tracing::info!(
-        user_id = user.id,
-        username = user.username,
-        "Changing password"
-    );
+    tracing::info!(%user.id, ?user.username, "Changing password");
 
     user.set_password(&env.pool, &password)
         .await
         .map_err(|err| {
-            tracing::error!(user_id = user.id, username = ?user.username, err = ?err,
+            tracing::error!(%user.id, ?user.username, ?err,
                     "Failed to set password");
             InternalServerError(err)
         })?;
@@ -205,7 +199,7 @@ pub fn get_setup_totp(
     );
 
     let qrcode = QRBuilder::new(otp_url.as_bytes()).build().map_err(|err| {
-        tracing::error!(err = ?err, "Failed to generate QR code");
+        tracing::error!(?err, "Failed to generate QR code");
         InternalServerError(err)
     })?;
 
@@ -246,7 +240,7 @@ pub async fn post_setup_totp(
     let totp = form.code.trim();
     if !totp.chars().all(|c| c.is_ascii_digit()) {
         tracing::error!(
-            user = user.id,
+            %user.id,
             "TOTP code provided was not a sequence of ASCII digits"
         );
 
@@ -260,7 +254,7 @@ pub async fn post_setup_totp(
 
     if totp.len() != 6 {
         tracing::error!(
-            user = user.id,
+            %user.id,
             length = totp.len(),
             "Incorrect number of digits provided for TOTP code (expected 6)"
         );
@@ -274,7 +268,7 @@ pub async fn post_setup_totp(
     }
 
     let Some(secret) = session.get::<String>("totp_secret") else {
-        tracing::error!(user = user.id, "TOTP secret missing from session");
+        tracing::error!(%user.id, "TOTP secret missing from session");
 
         session.set(
             "totp_error",
@@ -287,7 +281,7 @@ pub async fn post_setup_totp(
     let Some(decoded_secret) = base32::decode(base32::Alphabet::Rfc4648 { padding: true }, &secret)
     else {
         tracing::error!(
-            user = user.id,
+            %user.id,
             "TOTP secret from session was not valid base-32"
         );
 
@@ -314,7 +308,7 @@ pub async fn post_setup_totp(
 
     if totp != expected {
         tracing::error!(
-            user = user.id,
+            %user.id,
             "TOTP code provided did not match the expected value"
         );
 
@@ -329,7 +323,7 @@ pub async fn post_setup_totp(
     user.set_totp_secret(&env.pool, &secret)
         .await
         .map_err(|err| {
-            tracing::error!(user = user.id, err = ?err, "Failed to set TOTP secret");
+            tracing::error!(%user.id, ?err, "Failed to set TOTP secret");
             InternalServerError(err)
         })?;
 
@@ -378,7 +372,7 @@ pub async fn post_remove_totp(
     }
 
     user.remove_totp_secret(&env.pool).await.map_err(|err| {
-        tracing::error!(user = user.id, err = ?err, "Failed to remove TOTP secret");
+        tracing::error!(%user.id, ?err, "Failed to remove TOTP secret");
         InternalServerError(err)
     })?;
 

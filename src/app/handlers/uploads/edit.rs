@@ -13,6 +13,7 @@ use crate::{
     app::templates::{authorized_context, render_404, render_template},
     env::Env,
     model::{
+        types::Key,
         upload::Upload,
         user::{hash_password, User},
     },
@@ -23,10 +24,10 @@ pub async fn get_edit(
     env: Data<&Env>,
     token: &CsrfToken,
     user: User,
-    Path(id): Path<i32>,
+    Path(id): Path<Key<Upload>>,
 ) -> poem::Result<Html<String>> {
     let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
-        tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
+        tracing::error!(?err, %id, "Unable to get upload by ID");
         InternalServerError(err)
     })?
     else {
@@ -36,8 +37,8 @@ pub async fn get_edit(
 
     if !user.admin && upload.uploaded_by != user.id {
         tracing::error!(
-            user = user.id,
-            upload = upload.id,
+            %user.id,
+            %upload.id,
             "User tried to edit upload without permission"
         );
 
@@ -67,7 +68,7 @@ pub async fn post_check_slug(
     env: Data<&Env>,
     verifier: &CsrfVerifier,
     user: User,
-    Path(id): Path<i32>,
+    Path(id): Path<Key<Upload>>,
     Form(CheckSlugForm { token, custom_slug }): Form<CheckSlugForm>,
 ) -> poem::Result<Html<String>> {
     if !verifier.is_valid(&token) {
@@ -76,7 +77,7 @@ pub async fn post_check_slug(
     }
 
     let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
-        tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
+        tracing::error!(?err, %id, "Unable to get upload by ID");
         InternalServerError(err)
     })?
     else {
@@ -86,8 +87,8 @@ pub async fn post_check_slug(
 
     if !user.admin && upload.uploaded_by != user.id {
         tracing::error!(
-            user = user.id,
-            upload = upload.id,
+            %user.id,
+            %upload.id,
             "User tried to edit upload without permission"
         );
 
@@ -129,7 +130,7 @@ pub async fn post_edit(
     env: Data<&Env>,
     verifier: &CsrfVerifier,
     user: User,
-    Path(id): Path<i32>,
+    Path(id): Path<Key<Upload>>,
     Form(UploadEditForm {
         token,
         filename,
@@ -147,7 +148,7 @@ pub async fn post_edit(
     }
 
     let Some(mut upload) = Upload::get(&env.pool, id).await.map_err(|err| {
-        tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
+        tracing::error!(?err, %id, "Unable to get upload by ID");
         InternalServerError(err)
     })?
     else {
@@ -157,8 +158,8 @@ pub async fn post_edit(
 
     if !user.admin && upload.uploaded_by != user.id {
         tracing::error!(
-            user = user.id,
-            upload = upload.id,
+            %user.id,
+            %upload.id,
             "User tried to edit upload without permission"
         );
 
@@ -186,7 +187,7 @@ pub async fn post_edit(
     }
 
     tracing::info!(
-        upload = id,
+        upload = %id,
         filename = ?filename,
         limit = ?limit,
         remaining = ?remaining,

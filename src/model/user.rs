@@ -10,9 +10,11 @@ use time::OffsetDateTime;
 
 use crate::app::errors::NotSignedInError;
 
+use super::types::Key;
+
 #[derive(Debug, FromRow, Serialize)]
 pub struct User {
-    pub id: i32,
+    pub id: Key<User>,
     pub username: String,
     pub name: String,
     #[serde(skip)]
@@ -23,7 +25,7 @@ pub struct User {
     pub admin: bool,
     pub limit: Option<i64>,
     pub created_at: OffsetDateTime,
-    pub created_by: Option<i32>,
+    pub created_by: Option<Key<User>>,
 }
 
 pub async fn requires_setup(pool: &SqlitePool) -> sqlx::Result<bool> {
@@ -51,12 +53,13 @@ pub fn verify_password(hash: &str, plain: &str) -> bool {
 }
 
 impl User {
-    pub async fn create(&mut self, pool: &SqlitePool) -> sqlx::Result<()> {
-        let result = sqlx::query_scalar::<_, i32>(
-            "INSERT INTO users (username, name, password, enabled, admin,
-            \"limit\", created_at, created_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    pub async fn create(&self, pool: &SqlitePool) -> sqlx::Result<()> {
+        sqlx::query(
+            "INSERT INTO users (id, username, name, password, enabled, admin,
+            \"limit\", created_at, created_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             RETURNING id",
         )
+        .bind(self.id)
         .bind(&self.username)
         .bind(&self.name)
         .bind(&self.password)
@@ -68,7 +71,6 @@ impl User {
         .fetch_one(pool)
         .await?;
 
-        self.id = result;
         Ok(())
     }
 
@@ -149,7 +151,7 @@ impl User {
         Ok(())
     }
 
-    pub async fn get(pool: &SqlitePool, id: i32) -> sqlx::Result<Option<Self>> {
+    pub async fn get(pool: &SqlitePool, id: Key<User>) -> sqlx::Result<Option<Self>> {
         sqlx::query_as("SELECT * FROM users WHERE id = ?")
             .bind(id)
             .fetch_optional(pool)
@@ -169,7 +171,7 @@ impl User {
             .await
     }
 
-    pub async fn delete(pool: &SqlitePool, id: i32) -> sqlx::Result<()> {
+    pub async fn delete(pool: &SqlitePool, id: Key<User>) -> sqlx::Result<()> {
         sqlx::query("DELETE FROM users WHERE id = $1")
             .bind(id)
             .execute(pool)
@@ -214,7 +216,7 @@ impl<'r> FromRequest<'r> for User {
 
         let session = <&Session>::from_request(request, request_body).await?;
 
-        let Some(user_id) = session.get::<i32>("user_id") else {
+        let Some(user_id) = session.get::<Key<User>>("user_id") else {
             tracing::debug!("User not signed in (no 'user_id' in session)");
             session.set("destination", request.uri().to_string());
             session.set("error", "You need to sign in to access this resource");

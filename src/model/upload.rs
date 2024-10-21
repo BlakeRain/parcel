@@ -2,9 +2,11 @@ use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, QueryBuilder, SqlitePool};
 use time::{Date, OffsetDateTime};
 
+use super::{types::Key, user::User};
+
 #[derive(Debug, FromRow, Serialize)]
 pub struct Upload {
-    pub id: i32,
+    pub id: Key<Upload>,
     pub slug: String,
     pub filename: String,
     pub size: i64,
@@ -16,7 +18,7 @@ pub struct Upload {
     #[serde(skip)]
     pub password: Option<String>,
     pub custom_slug: Option<String>,
-    pub uploaded_by: i32,
+    pub uploaded_by: Key<User>,
     pub uploaded_at: OffsetDateTime,
     pub remote_addr: Option<String>,
 }
@@ -54,16 +56,17 @@ impl UploadOrder {
 }
 
 impl Upload {
-    pub async fn create(&mut self, pool: &SqlitePool) -> sqlx::Result<()> {
-        let result = sqlx::query_scalar::<_, i32>(
-            "INSERT INTO uploads (slug, filename, size, public,
+    pub async fn create(&self, pool: &SqlitePool) -> sqlx::Result<()> {
+        sqlx::query(
+            "INSERT INTO uploads (id, slug, filename, size, public,
             downloads, \"limit\", remaining, expiry_date, password,
             custom_slug, uploaded_by, uploaded_at, remote_addr)
-            VALUES ($1, $2, $3, $4,
-                    0, $5, $6, $7, $8,
-                    $9, $10, $11, $12)
+            VALUES ($1, $2, $3, $4, $5,
+                    0, $6, $7, $8, $9,
+                    $10, $11, $12, $13)
             RETURNING id",
         )
+        .bind(self.id)
         .bind(&self.slug)
         .bind(&self.filename)
         .bind(self.size)
@@ -79,7 +82,6 @@ impl Upload {
         .fetch_one(pool)
         .await?;
 
-        self.id = result;
         Ok(())
     }
 
@@ -136,7 +138,7 @@ impl Upload {
         Ok(())
     }
 
-    pub async fn get(pool: &SqlitePool, id: i32) -> sqlx::Result<Option<Self>> {
+    pub async fn get(pool: &SqlitePool, id: Key<Upload>) -> sqlx::Result<Option<Self>> {
         sqlx::query_as("SELECT * FROM uploads WHERE id = $1")
             .bind(id)
             .fetch_optional(pool)
@@ -145,7 +147,7 @@ impl Upload {
 
     pub async fn get_for_user(
         pool: &SqlitePool,
-        owner: i32,
+        owner: Key<User>,
         order: UploadOrder,
         asc: bool,
         offset: u32,
@@ -163,7 +165,7 @@ impl Upload {
         .await
     }
 
-    pub async fn count_for_user(pool: &SqlitePool, owner: i32) -> sqlx::Result<u32> {
+    pub async fn count_for_user(pool: &SqlitePool, owner: Key<User>) -> sqlx::Result<u32> {
         sqlx::query_scalar("SELECT COUNT(*) FROM uploads WHERE uploaded_by = $1")
             .bind(owner)
             .fetch_one(pool)
@@ -179,7 +181,7 @@ impl Upload {
 
     pub async fn get_by_custom_slug(
         pool: &SqlitePool,
-        owner: i32,
+        owner: Key<User>,
         custom_slug: &str,
     ) -> sqlx::Result<Option<Self>> {
         sqlx::query_as("SELECT * FROM uploads WHERE uploaded_by = $1 AND custom_slug = $2")
@@ -191,8 +193,8 @@ impl Upload {
 
     pub async fn custom_slug_exists(
         pool: &SqlitePool,
-        owner: i32,
-        existing: Option<i32>,
+        owner: Key<User>,
+        existing: Option<Key<Upload>>,
         custom_slug: &str,
     ) -> sqlx::Result<bool> {
         let mut query =
@@ -259,7 +261,7 @@ impl Upload {
         Ok(())
     }
 
-    pub async fn delete_for_user(pool: &SqlitePool, owner: i32) -> sqlx::Result<Vec<String>> {
+    pub async fn delete_for_user(pool: &SqlitePool, owner: Key<User>) -> sqlx::Result<Vec<String>> {
         sqlx::query_scalar("DELETE FROM uploads WHERE uploaded_by = $1 RETURNING slug")
             .bind(owner)
             .fetch_all(pool)
@@ -286,7 +288,7 @@ impl UploadStats {
         .await
     }
 
-    pub async fn get_for(pool: &SqlitePool, owner: i32) -> sqlx::Result<UploadStats> {
+    pub async fn get_for(pool: &SqlitePool, owner: Key<User>) -> sqlx::Result<UploadStats> {
         sqlx::query_as(
             "SELECT COUNT(*) AS total, COUNT(public) AS public,
             SUM(downloads) AS downloads, SUM(size) AS size

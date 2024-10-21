@@ -12,6 +12,7 @@ use crate::{
     app::templates::{authorized_context, render_404, render_template},
     env::Env,
     model::{
+        types::Key,
         upload::{Upload, UploadStats},
         user::User,
     },
@@ -57,11 +58,11 @@ pub struct MakePublicQuery {
 pub async fn post_public(
     env: Data<&Env>,
     user: User,
-    Path(id): Path<i32>,
+    Path(id): Path<Key<Upload>>,
     Query(MakePublicQuery { public }): Query<MakePublicQuery>,
 ) -> poem::Result<Response> {
     let Some(mut upload) = Upload::get(&env.pool, id).await.map_err(|err| {
-        tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
+        tracing::error!(?err, %id, "Unable to get upload by ID");
         InternalServerError(err)
     })?
     else {
@@ -71,15 +72,15 @@ pub async fn post_public(
 
     if !user.admin && upload.uploaded_by != user.id {
         tracing::error!(
-            user = user.id,
-            upload = upload.id,
+            %user.id,
+            %upload.id,
             "User tried to edit upload without permission"
         );
 
         return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
     }
 
-    tracing::info!(id = id, public = public, "Setting upload public state");
+    tracing::info!(%upload.id, public, "Setting upload public state");
     upload
         .set_public(&env.pool, public)
         .await
@@ -94,10 +95,10 @@ pub async fn post_public(
 pub async fn post_reset(
     env: Data<&Env>,
     user: User,
-    Path(id): Path<i32>,
+    Path(id): Path<Key<Upload>>,
 ) -> poem::Result<Response> {
     let Some(mut upload) = Upload::get(&env.pool, id).await.map_err(|err| {
-        tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
+        tracing::error!(?err, %id, "Unable to get upload by ID");
         InternalServerError(err)
     })?
     else {
@@ -107,14 +108,14 @@ pub async fn post_reset(
 
     if !user.admin && upload.uploaded_by != user.id {
         tracing::error!(
-            user = user.id,
-            upload = upload.id,
+            %user.id,
+            %upload.id,
             "User tried to reset upload without permission"
         );
         return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
     }
 
-    tracing::info!(id = id, "Resetting upload download stats");
+    tracing::info!(%upload.id, "Resetting upload download stats");
     upload
         .reset_remaining(&env.pool)
         .await

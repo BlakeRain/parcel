@@ -12,6 +12,7 @@ use crate::{
     app::templates::{authorized_context, render_template},
     env::Env,
     model::{
+        types::Key,
         upload::{Upload, UploadOrder},
         user::User,
     },
@@ -34,14 +35,14 @@ pub async fn get_list(
     let total = Upload::count_for_user(&env.pool, user.id)
         .await
         .map_err(|err| {
-            tracing::error!(user = user.id, err = ?err, "Unable to get upload count for user");
+            tracing::error!(%user.id, ?err, "Unable to get upload count for user");
             InternalServerError(err)
         })?;
 
     let uploads = Upload::get_for_user(&env.pool, user.id, query.order, query.asc, 0, 50)
         .await
         .map_err(|err| {
-            tracing::error!(user = user.id, err = ?err, "Unable to get uploads for user");
+            tracing::error!(%user.id, ?err, "Unable to get uploads for user");
             InternalServerError(err)
         })?;
 
@@ -60,7 +61,7 @@ pub async fn get_list(
 pub async fn post_delete(
     env: Data<&Env>,
     user: User,
-    Form(form): Form<Vec<(String, i32)>>,
+    Form(form): Form<Vec<(String, Key<Upload>)>>,
 ) -> poem::Result<impl IntoResponse> {
     let ids = form
         .into_iter()
@@ -70,7 +71,7 @@ pub async fn post_delete(
 
     for id in ids {
         let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
-            tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
+            tracing::error!(?err, ?id, "Unable to get upload by ID");
             InternalServerError(err)
         })?
         else {
@@ -80,8 +81,8 @@ pub async fn post_delete(
 
         if !user.admin && upload.uploaded_by != user.id {
             tracing::error!(
-                user = user.id,
-                upload = upload.id,
+                %user.id,
+                %upload.id,
                 "User tried to delete upload without permission"
             );
 
@@ -94,9 +95,9 @@ pub async fn post_delete(
         })?;
 
         let path = env.cache_dir.join(&upload.slug);
-        tracing::info!(path = ?path, id = id, "Deleting cached upload");
+        tracing::info!(?path, %id, "Deleting cached upload");
         if let Err(err) = tokio::fs::remove_file(&path).await {
-            tracing::error!(path = ?path, err = ?err, id = id, "Failed to delete cached upload");
+            tracing::error!(?path, ?err, %id, "Failed to delete cached upload");
         }
     }
 
@@ -113,7 +114,7 @@ pub async fn get_page(
     let total = Upload::count_for_user(&env.pool, user.id)
         .await
         .map_err(|err| {
-            tracing::error!(user = user.id, err = ?err, "Unable to get upload count for user");
+            tracing::error!(%user.id, ?err, "Unable to get upload count for user");
             InternalServerError(err)
         })?;
 
@@ -123,7 +124,7 @@ pub async fn get_page(
     let uploads = Upload::get_for_user(&env.pool, user.id, query.order, query.asc, offset, 50)
         .await
         .map_err(|err| {
-            tracing::error!(user = user.id, err = ?err, "Unable to get uploads for user");
+            tracing::error!(%user.id, ?err, "Unable to get uploads for user");
             InternalServerError(err)
         })?;
 

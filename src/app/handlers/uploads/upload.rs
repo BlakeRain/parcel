@@ -13,7 +13,7 @@ use time::OffsetDateTime;
 use crate::{
     app::templates::{authorized_context, default_context, render_template},
     env::Env,
-    model::{upload::Upload, user::User},
+    model::{types::Key, upload::Upload, user::User},
     utils::SessionExt,
 };
 
@@ -31,9 +31,10 @@ async fn render_upload(
     };
 
     if !upload.public && !owner {
+        let uid = user.as_ref().map(|u| u.id.to_string());
         tracing::error!(
-            user = ?user,
-            upload = ?upload,
+            user = ?uid,
+            upload = %upload.id,
             "User tried to access private upload without permission"
         );
 
@@ -43,12 +44,12 @@ async fn render_upload(
     let Some(uploader) = User::get(&env.pool, upload.uploaded_by)
         .await
         .map_err(|err| {
-            tracing::error!(err = ?err, user_id = ?upload.uploaded_by,
+            tracing::error!(?err, user_id = %upload.uploaded_by,
                             "Unable to get user by ID");
             InternalServerError(err)
         })?
     else {
-        tracing::error!(user_id = ?upload.uploaded_by, "Unable to find user with given ID");
+        tracing::error!(user_id = %upload.uploaded_by, "Unable to find user with given ID");
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
@@ -96,11 +97,11 @@ pub async fn get_upload(
     Path(slug): Path<String>,
 ) -> poem::Result<Html<String>> {
     let Some(upload) = Upload::get_by_slug(&env.pool, &slug).await.map_err(|err| {
-        tracing::error!(err = ?err, slug = ?slug, "Unable to get upload by slug");
+        tracing::error!(?err, ?slug, "Unable to get upload by slug");
         InternalServerError(err)
     })?
     else {
-        tracing::error!(slug = ?slug, "Unable to find upload with given ID");
+        tracing::error!(?slug, "Unable to find upload with given ID");
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
@@ -118,22 +119,22 @@ pub async fn get_custom_upload(
     let Some(owner) = User::get_by_username(&env.pool, &owner)
         .await
         .map_err(|err| {
-            tracing::error!(err = ?err, owner = ?owner, "Unable to get user by username");
+            tracing::error!(?err, ?owner, "Unable to get user by username");
             InternalServerError(err)
         })?
     else {
-        tracing::error!(owner = ?owner, "Unable to find user with given username");
+        tracing::error!(?owner, "Unable to find user with given username");
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
     let Some(upload) = Upload::get_by_custom_slug(&env.pool, owner.id, &slug)
         .await
         .map_err(|err| {
-            tracing::error!(err = ?err, slug = ?slug, "Unable to get upload by slug");
+            tracing::error!(?err, ?slug, "Unable to get upload by slug");
             InternalServerError(err)
         })?
     else {
-        tracing::error!(slug = ?slug, "Unable to find upload with given ID");
+        tracing::error!(?slug, "Unable to find upload with given ID");
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
@@ -144,21 +145,21 @@ pub async fn get_custom_upload(
 pub async fn delete_upload(
     env: Data<&Env>,
     user: User,
-    Path(id): Path<i32>,
+    Path(id): Path<Key<Upload>>,
 ) -> poem::Result<poem::Response> {
     let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
-        tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
+        tracing::error!(?err, %id, "Unable to get upload by ID");
         InternalServerError(err)
     })?
     else {
-        tracing::error!(id = ?id, "Unable to find upload with given ID");
+        tracing::error!(%id, "Unable to find upload with given ID");
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
     if !user.admin && upload.uploaded_by != user.id {
         tracing::error!(
-            user = user.id,
-            upload = upload.id,
+            user = %user.id,
+            upload = %upload.id,
             "User tried to delete upload without permission"
         );
 
@@ -166,20 +167,20 @@ pub async fn delete_upload(
     }
 
     upload.delete(&env.pool).await.map_err(|err| {
-        tracing::error!(err = ?err, upload = ?upload, "Unable to delete upload");
+        tracing::error!(?err, %upload.id, "Unable to delete upload");
         InternalServerError(err)
     })?;
 
     let path = env.cache_dir.join(&upload.slug);
-    tracing::info!(path = ?path, id = id, "Deleting cached upload");
+    tracing::info!(?path, %upload.id, "Deleting cached upload");
     if let Err(err) = tokio::fs::remove_file(&path).await {
-        tracing::error!(path = ?path, err = ?err, id = id, "Failed to delete cached upload");
+        tracing::error!(?path, ?err, %upload.id, "Failed to delete cached upload");
     }
 
     let remaining = Upload::count_for_user(&env.pool, user.id)
         .await
         .map_err(|err| {
-            tracing::error!(err = ?err, "Failed to count remaining uploads for user");
+            tracing::error!(%user.id, ?err, "Failed to count remaining uploads for user");
             InternalServerError(err)
         })?;
 
@@ -202,22 +203,22 @@ pub struct GetShareQuery {
 pub async fn get_share(
     env: Data<&Env>,
     user: User,
-    Path(id): Path<i32>,
+    Path(id): Path<Key<Upload>>,
     Query(GetShareQuery { immediate }): Query<GetShareQuery>,
 ) -> poem::Result<Html<String>> {
     let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
-        tracing::error!(err = ?err, id = ?id, "Unable to get upload by ID");
+        tracing::error!(?err, %id, "Unable to get upload by ID");
         InternalServerError(err)
     })?
     else {
-        tracing::error!(id = ?id, "Unable to find upload with given ID");
+        tracing::error!(%id, "Unable to find upload with given ID");
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
     if !user.admin && upload.uploaded_by != user.id {
         tracing::error!(
-            user = user.id,
-            upload = upload.id,
+            %user.id,
+            %upload.id,
             "User tried to share an upload without permission"
         );
 

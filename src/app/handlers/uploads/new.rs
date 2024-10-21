@@ -14,7 +14,7 @@ use time::OffsetDateTime;
 use crate::{
     app::templates::{authorized_context, render_template},
     env::Env,
-    model::{upload::Upload, user::User},
+    model::{types::Key, upload::Upload, user::User},
 };
 
 #[derive(Debug, Deserialize)]
@@ -78,30 +78,27 @@ pub async fn post_new(
 
             {
                 let mut file = tokio::fs::File::create(&path).await.map_err(|err| {
-                    tracing::error!(err = ?err, path = ?path,
-                                        "Unable to create file");
+                    tracing::error!(?err, ?path, "Unable to create file");
                     InternalServerError(err)
                 })?;
 
                 if let Err(err) = tokio::io::copy(&mut field, &mut file).await {
-                    tracing::error!(err = ?err, path = ?path,
-                                        "Unable to copy from stream to file");
+                    tracing::error!(?err, ?path, "Unable to copy from stream to file");
                     failures.push(filename.clone());
                     continue;
                 }
             }
 
             let meta = tokio::fs::metadata(&path).await.map_err(|err| {
-                tracing::error!(err = ?err, path = ?path,
-                                    "Unable to get metadata for file");
+                tracing::error!(?err, ?path, "Unable to get metadata for file");
                 InternalServerError(err)
             })?;
 
             let size = meta.len() as i64;
-            tracing::info!(slug = slug, size = size, "Upload to cache complete");
+            tracing::info!(?slug, size, "Upload to cache complete");
 
             let mut upload = Upload {
-                id: 0,
+                id: Key::new(),
                 slug,
                 filename,
                 size,
@@ -119,7 +116,7 @@ pub async fn post_new(
 
             uploads.push(upload);
         } else {
-            tracing::info!(field_name = field.name(), "Ignoring unrecognized field");
+            tracing::info!(field_name = ?field.name(), "Ignoring unrecognized field");
         }
     }
 
@@ -128,7 +125,7 @@ pub async fn post_new(
 
         for upload in uploads {
             let path = env.cache_dir.join(&upload.slug);
-            tracing::info!(path = ?path, slug = ?upload.slug, "Deleting cached upload");
+            tracing::info!(?path, ?upload.slug, "Deleting cached upload");
             if let Err(err) = tokio::fs::remove_file(&path).await {
                 tracing::error!(path = ?path, err = ?err, slug = ?upload.slug,
                         "Failed to delete cached upload");
@@ -141,11 +138,11 @@ pub async fn post_new(
     let mut result = UploadResult::default();
     for mut upload in uploads {
         upload.create(&env.pool).await.map_err(|err| {
-            tracing::error!(err = ?err, "Unable to create upload");
+            tracing::error!(?err, "Unable to create upload");
             InternalServerError(err)
         })?;
 
-        tracing::info!(upload = ?upload, "Created upload");
+        tracing::info!(%upload.id, "Created upload");
         result.uploads.insert(upload.filename.clone(), Some(upload));
     }
 

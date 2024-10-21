@@ -12,7 +12,10 @@ use time::OffsetDateTime;
 use crate::{
     app::templates::{default_context, render_template},
     env::Env,
-    model::user::{hash_password, requires_setup, User},
+    model::{
+        types::Key,
+        user::{hash_password, requires_setup, User},
+    },
 };
 
 #[handler]
@@ -86,8 +89,8 @@ pub async fn post_setup(
     }
 
     let name = username.clone();
-    let mut admin = User {
-        id: 0,
+    let admin = User {
+        id: Key::new(),
         username,
         name,
         password: hash_password(&password),

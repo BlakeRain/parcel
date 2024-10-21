@@ -14,7 +14,10 @@ use crate::{
         templates::{default_context, render_template},
     },
     env::Env,
-    model::user::{requires_setup, User},
+    model::{
+        types::Key,
+        user::{requires_setup, User},
+    },
     utils::SessionExt,
 };
 
@@ -70,34 +73,33 @@ pub async fn post_signin(
     let user = User::get_by_username(&env.pool, &username)
         .await
         .map_err(|err| {
-            tracing::error!(username = ?username, err = ?err,
-                            "Failed to get user by username");
+            tracing::error!(?username, ?err, "Failed to get user by username");
             InternalServerError(err)
         })?;
 
     let user = match user {
         Some(user) => user,
         None => {
-            tracing::info!(username = ?username, "User not found");
+            tracing::info!(?username, "User not found");
             session.set("error", "Invalid username or password");
             return Ok(Redirect::see_other("/user/signin"));
         }
     };
 
     if !user.verify_password(&password) {
-        tracing::info!(username = ?username, "Invalid password");
+        tracing::info!(?username, "Invalid password");
         session.set("error", "Invalid username or password");
         return Ok(Redirect::see_other("/user/signin"));
     }
 
     if !user.enabled {
-        tracing::info!(username = ?username, "User is disabled");
+        tracing::info!(?username, "User is disabled");
         session.set("error", "Your account is disabled");
         return Ok(Redirect::see_other("/user/signin"));
     }
 
     if user.totp.is_some() {
-        tracing::info!(user_id = user.id, username = ?username, "User requires TOTP");
+        tracing::info!(%user.id, ?username, "User requires TOTP");
         session.set("_authenticating", user.id);
         return Ok(Redirect::see_other("/user/signin/totp"));
     }
@@ -105,7 +107,7 @@ pub async fn post_signin(
     session.remove("_authenticating");
     session.set("user_id", user.id);
 
-    tracing::info!(user_id = user.id, username = ?username, "User signed in");
+    tracing::info!(%user.id, ?username, "User signed in");
 
     if let Some(destination) = session.take::<String>("destination") {
         Ok(Redirect::see_other(destination))
@@ -156,7 +158,7 @@ pub async fn post_signin_totp(
     verifier: &CsrfVerifier,
     Form(TotpForm { token, code }): Form<TotpForm>,
 ) -> poem::Result<Redirect> {
-    let Some(user_id) = session.get::<i32>("_authenticating") else {
+    let Some(user_id) = session.get::<Key<User>>("_authenticating") else {
         tracing::error!("User not authenticating");
         session.set("error", "You need to sign in first");
         return Ok(Redirect::see_other("/user/signin"));
@@ -168,18 +170,18 @@ pub async fn post_signin_totp(
     }
 
     let Some(user) = User::get(&env.pool, user_id).await.map_err(|err| {
-        tracing::error!(user_id = user_id, err = ?err, "Failed to get user by ID");
+        tracing::error!(%user_id, ?err, "Failed to get user by ID");
         InternalServerError(err)
     })?
     else {
-        tracing::error!(user_id = user_id, "User not found");
+        tracing::error!(%user_id, "User not found");
         session.remove("_authenticating");
         session.set("error", "You need to sign in first");
         return Ok(Redirect::see_other("/user/signin"));
     };
 
     let Some(ref secret) = user.totp else {
-        tracing::error!(user_id = user_id, "User does not have TOTP secret");
+        tracing::error!(%user_id, "User does not have TOTP secret");
         session.remove("_authenticating");
         session.set("error", "You need to sign in first");
         return Ok(Redirect::see_other("/user/signin"));
@@ -188,7 +190,7 @@ pub async fn post_signin_totp(
     let totp = code.trim();
     if !totp.chars().all(|c| c.is_ascii_digit()) {
         tracing::error!(
-            user = user.id,
+            %user.id,
             "TOTP code provided was not a sequence of ASCII digits"
         );
 
@@ -202,7 +204,7 @@ pub async fn post_signin_totp(
 
     if totp.len() != 6 {
         tracing::error!(
-            user = user.id,
+            %user.id,
             length = totp.len(),
             "Incorrect number of digits provided for TOTP code (expected 6)"
         );
@@ -218,7 +220,7 @@ pub async fn post_signin_totp(
     let Some(decoded_secret) = base32::decode(base32::Alphabet::Rfc4648 { padding: true }, secret)
     else {
         tracing::error!(
-            user = user.id,
+            %user.id,
             "TOTP secret from session was not valid base-32"
         );
 
@@ -244,7 +246,7 @@ pub async fn post_signin_totp(
 
     if totp != expected {
         tracing::error!(
-            user = user.id,
+            %user.id,
             "TOTP code provided did not match the expected value"
         );
 
@@ -259,7 +261,7 @@ pub async fn post_signin_totp(
     session.remove("_authenticating");
     session.set("user_id", user.id);
 
-    tracing::info!(user_id = user.id, "User signed in after TOTP");
+    tracing::info!(%user.id, "User signed in after TOTP");
 
     if let Some(destination) = session.take::<String>("destination") {
         Ok(Redirect::see_other(destination))
