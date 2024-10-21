@@ -7,6 +7,7 @@ use poem::{
     IntoResponse, Response,
 };
 use serde::Deserialize;
+use serde_json::json;
 
 use crate::{
     app::templates::{authorized_context, render_404, render_template},
@@ -87,7 +88,13 @@ pub async fn post_public(
         .map_err(InternalServerError)?;
 
     Ok(Html("")
-        .with_header("HX-Trigger", format!("{{ \"parcelUploadChanged\": {id} }}"))
+        .with_header(
+            "HX-Trigger",
+            json!({
+                "parcelUploadChanged": id,
+            })
+            .to_string(),
+        )
         .into_response())
 }
 
@@ -122,6 +129,12 @@ pub async fn post_reset(
         .map_err(InternalServerError)?;
 
     Ok(Html("")
-        .with_header("HX-Trigger", format!("{{ \"parcelUploadChanged\": {id} }}"))
+        .with_header(
+            "HX-Trigger",
+            json!({
+                "parcelUploadChanged": id,
+            })
+            .to_string(),
+        )
         .into_response())
 }

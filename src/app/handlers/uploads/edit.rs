@@ -7,6 +7,7 @@ use poem::{
     IntoResponse, Response,
 };
 use serde::Deserialize;
+use serde_json::json;
 use time::Date;
 
 use crate::{
@@ -207,6 +208,12 @@ pub async fn post_edit(
     upload.save(&env.pool).await.map_err(InternalServerError)?;
 
     Ok(Html("")
-        .with_header("HX-Trigger", format!("{{ \"parcelUploadChanged\": {id} }}"))
+        .with_header(
+            "HX-Trigger",
+            json!({
+                "parcelUploadChanged": id,
+            })
+            .to_string(),
+        )
         .into_response())
 }
