@@ -33,5 +33,5 @@
 {% endblock %}
 
 {% block scripts %}
-  <script type="module" src="/static/scripts/bundles/{{ index_js | safe }}"></script>
+  <script type="module" src="/static/scripts/bundles/{{ index_js | safe }}{% if build.profile != "debug" %}.min{% endif %}.js"></script>
 {% endblock %}
