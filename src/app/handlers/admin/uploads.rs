@@ -10,16 +10,16 @@ use time::{Date, OffsetDateTime};
 
 use crate::{
     app::{
-        extractors::admin::Admin,
+        extractors::admin::SessionAdmin,
         templates::{authorized_context, render_template},
     },
     env::Env,
-    model::upload::Upload,
+    model::{types::Key, upload::Upload, user::User},
 };
 
 #[derive(FromRow, Serialize)]
 pub struct UploadListItem {
-    pub id: i32,
+    pub id: Key<Upload>,
     pub slug: String,
     pub filename: String,
     pub size: i32,
@@ -28,14 +28,17 @@ pub struct UploadListItem {
     pub limit: Option<i32>,
     pub remaining: Option<i32>,
     pub expiry_date: Option<Date>,
-    pub uploaded_by_id: i32,
+    pub uploaded_by_id: Key<User>,
     pub uploaded_by_name: String,
     pub uploaded_at: OffsetDateTime,
     pub remote_addr: String,
 }
 
 #[handler]
-pub async fn get_uploads(env: Data<&Env>, Admin(admin): Admin) -> poem::Result<Html<String>> {
+pub async fn get_uploads(
+    env: Data<&Env>,
+    SessionAdmin(admin): SessionAdmin,
+) -> poem::Result<Html<String>> {
     let uploads = sqlx::query_as::<_, UploadListItem>(
         "SELECT uploads.id, uploads.slug, uploads.filename, uploads.size, uploads.public,
                 uploads.downloads, uploads.\"limit\", uploads.remaining, uploads.expiry_date,
@@ -63,7 +66,7 @@ pub async fn get_uploads(env: Data<&Env>, Admin(admin): Admin) -> poem::Result<H
 }
 
 #[handler]
-pub fn get_cache(env: Data<&Env>, Admin(admin): Admin) -> poem::Result<Html<String>> {
+pub fn get_cache(env: Data<&Env>, SessionAdmin(admin): SessionAdmin) -> poem::Result<Html<String>> {
     render_template("admin/uploads/cache.html", authorized_context(&env, &admin))
 }
 
@@ -184,7 +187,10 @@ where
 }
 
 #[handler]
-pub async fn post_cache(env: Data<&Env>, Admin(admin): Admin) -> poem::Result<Html<String>> {
+pub async fn post_cache(
+    env: Data<&Env>,
+    SessionAdmin(admin): SessionAdmin,
+) -> poem::Result<Html<String>> {
     let summary = find_cache_files::<CacheFilesSummary>(*env).await?;
     render_template(
         "admin/uploads/cache.html",
@@ -196,7 +202,10 @@ pub async fn post_cache(env: Data<&Env>, Admin(admin): Admin) -> poem::Result<Ht
 }
 
 #[handler]
-pub async fn delete_cache(env: Data<&Env>, Admin(admin): Admin) -> poem::Result<Html<String>> {
+pub async fn delete_cache(
+    env: Data<&Env>,
+    SessionAdmin(admin): SessionAdmin,
+) -> poem::Result<Html<String>> {
     let result = find_cache_files::<CacheFilesCleanup>(*env).await?;
     render_template(
         "admin/uploads/cache.html",

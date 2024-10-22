@@ -5,7 +5,7 @@
     hx-target="#user-list-container"
     hx-select="#user-list-container"
     hx-swap="outerHTML">
-    <input type="hidden" name="token" value="{{ token }}" />
+    <input type="hidden" name="token" value="{{ token }}">
     <label for="username">Username</label>
     <input
       type="text"
@@ -14,8 +14,7 @@
       id="username"
       placeholder="Username"
       value="{{ user.username }}"
-      required
-    />
+      required>
     <label for="name">Display name</label>
     <input
       type="text"
@@ -24,16 +23,15 @@
       id="name"
       placeholder="Display Name"
       value="{{ user.name }}"
-      required
-    />
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-2 mt-4">
+      required>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
       <div>
         <div class="checkbox">
           <input
           type="checkbox"
           name="admin"
           id="admin"
-          {% if user.admin %}checked{% endif %} />
+          {% if user.admin %}checked{% endif %}>
           <label for="admin">User is an administrator</label>
         </div>
         <div class="checkbox">
@@ -46,19 +44,21 @@
                 name="enabled"
                 id="enabled"
               {% endif %}
-              {% if user.enabled %}checked{% endif %} />
+              {% if user.enabled %}checked{% endif %}>
           <label for="enabled">User account is enabled</label>
         </div>
         <div class="checkbox">
-          <input type="checkbox" name="limit_check" id="limit_check" {% if user.limit %}checked{% endif %} />
+          <input
+            type="checkbox"
+            name="limit_check"
+            id="limit_check"
+            {% if user.limit %}checked{% endif %}>
           <label for="limit_check">User has an upload limit</label>
         </div>
-      </div>
-      <div class="flex flex-col gap-2 justify-end">
-        <label>Upload limit in megabytes</label>
+        <label for="limit">Upload limit in megabytes</label>
         <input
           type="number"
-          class="field"
+          class="field mt-2"
           name="limit"
           id="limit"
           {% if user.limit %}
@@ -67,10 +67,36 @@
             value="1024"
           {% endif %}
           min="0"
-          {% if not user.limit %}disabled{% endif %} />
+          {% if not user.limit %}disabled{% endif %}>
+      </div>
+      <div class="flex flex-col gap-2 justify-end">
+        <div class="checkbox">
+          <input
+            type="checkbox"
+            name="teams_check"
+            id="teams_check"
+            {% if membership | length > 0 %}checked{% endif %}>
+          <label for="teams_check">User is in onr or more teams</label>
+        </div>
+        <select
+          class="field grow"
+          name="teams"
+          id="teams"
+          multiple
+          {% if membership | length == 0 %}disabled{% endif %}>
+          {% for team in teams %}
+            <option
+              value="{{ team.id }}"
+              {% if team.id in membership %}
+                selected
+              {% endif %}>
+            {{ team.name }} {% if team.disabled %}(disabled){% endif %}
+            </option>
+          {% endfor %}
+        </select>
       </div>
     </div>
-    <div class="buttons reverse end mt-4">
+    <div class="buttons reverse end items-end mt-4">
       <button
         type="submit"
         class="button"
@@ -78,6 +104,7 @@
         Save changes
       </button>
       <button
+        type="button"
         class="button hollow"
         onclick="event.preventDefault(); event.target.closest('parcel-modal').closeModal();">
         Cancel
@@ -86,6 +113,10 @@
     <script type="text/javascript">
       document.querySelector("input[name='limit_check']").addEventListener("change", (event) => {
         event.target.form.querySelector("input[name='limit']").disabled = !event.target.checked;
+      });
+
+      document.querySelector("input[name='teams_check']").addEventListener("change", (event) => {
+        event.target.form.querySelector("select[name='teams']").disabled = !event.target.checked;
       });
     </script>
   </form>

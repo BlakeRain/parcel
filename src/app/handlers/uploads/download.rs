@@ -13,11 +13,9 @@ use serde::Deserialize;
 use time::OffsetDateTime;
 
 use crate::{
+    app::extractors::user::SessionUser,
     env::Env,
-    model::{
-        upload::Upload,
-        user::{verify_password, User},
-    },
+    model::{upload::Upload, user::verify_password},
 };
 
 async fn send_download(env: &Env, owner: bool, mut upload: Upload) -> poem::Result<Response> {
@@ -58,7 +56,7 @@ async fn send_download(env: &Env, owner: bool, mut upload: Upload) -> poem::Resu
 pub async fn get_download(
     env: Data<&Env>,
     session: &Session,
-    user: Option<User>,
+    user: Option<SessionUser>,
     Path(slug): Path<String>,
 ) -> poem::Result<Response> {
     let Some(mut upload) = Upload::get_by_slug(&env.pool, &slug).await.map_err(|err| {
@@ -70,7 +68,7 @@ pub async fn get_download(
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
-    let owner = if let Some(user) = &user {
+    let owner = if let Some(SessionUser(user)) = &user {
         user.admin || upload.uploaded_by == user.id
     } else {
         false
@@ -122,7 +120,7 @@ pub struct DownloadForm {
 pub async fn post_download(
     env: Data<&Env>,
     session: &Session,
-    user: Option<User>,
+    user: Option<SessionUser>,
     verifier: &CsrfVerifier,
     Path(slug): Path<String>,
     Form(DownloadForm {

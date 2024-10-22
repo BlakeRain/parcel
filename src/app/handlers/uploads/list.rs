@@ -9,12 +9,14 @@ use poem::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    app::templates::{authorized_context, render_template},
+    app::{
+        extractors::user::SessionUser,
+        templates::{authorized_context, render_template},
+    },
     env::Env,
     model::{
         types::Key,
         upload::{Upload, UploadOrder},
-        user::User,
     },
 };
 
@@ -29,7 +31,7 @@ pub struct ListQuery {
 #[handler]
 pub async fn get_list(
     env: Data<&Env>,
-    user: User,
+    SessionUser(user): SessionUser,
     Query(query): Query<ListQuery>,
 ) -> poem::Result<Html<String>> {
     let total = Upload::count_for_user(&env.pool, user.id)
@@ -60,7 +62,7 @@ pub async fn get_list(
 #[handler]
 pub async fn post_delete(
     env: Data<&Env>,
-    user: User,
+    SessionUser(user): SessionUser,
     Form(form): Form<Vec<(String, Key<Upload>)>>,
 ) -> poem::Result<impl IntoResponse> {
     let ids = form
@@ -107,7 +109,7 @@ pub async fn post_delete(
 #[handler]
 pub async fn get_page(
     env: Data<&Env>,
-    user: User,
+    SessionUser(user): SessionUser,
     Path(page): Path<u32>,
     Query(query): Query<ListQuery>,
 ) -> poem::Result<Html<String>> {

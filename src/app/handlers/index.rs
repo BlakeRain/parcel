@@ -6,9 +6,11 @@ use poem::{
 };
 
 use crate::{
-    app::templates::{authorized_context, render_template},
+    app::{
+        extractors::user::SessionUser,
+        templates::{authorized_context, render_template},
+    },
     env::Env,
-    model::user::User,
 };
 
 use super::uploads::ListQuery;
@@ -16,7 +18,7 @@ use super::uploads::ListQuery;
 #[handler]
 pub fn get_index(
     env: Data<&Env>,
-    user: User,
+    SessionUser(user): SessionUser,
     Query(query): Query<ListQuery>,
 ) -> poem::Result<impl IntoResponse> {
     render_template(

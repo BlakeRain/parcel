@@ -11,20 +11,19 @@ use serde_json::json;
 use time::Date;
 
 use crate::{
-    app::templates::{authorized_context, render_404, render_template},
-    env::Env,
-    model::{
-        types::Key,
-        upload::Upload,
-        user::{hash_password, User},
+    app::{
+        extractors::user::SessionUser,
+        templates::{authorized_context, render_404, render_template},
     },
+    env::Env,
+    model::{types::Key, upload::Upload, user::hash_password},
 };
 
 #[handler]
 pub async fn get_edit(
     env: Data<&Env>,
     token: &CsrfToken,
-    user: User,
+    SessionUser(user): SessionUser,
     Path(id): Path<Key<Upload>>,
 ) -> poem::Result<Html<String>> {
     let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
@@ -68,7 +67,7 @@ pub struct CheckSlugForm {
 pub async fn post_check_slug(
     env: Data<&Env>,
     verifier: &CsrfVerifier,
-    user: User,
+    SessionUser(user): SessionUser,
     Path(id): Path<Key<Upload>>,
     Form(CheckSlugForm { token, custom_slug }): Form<CheckSlugForm>,
 ) -> poem::Result<Html<String>> {
@@ -130,7 +129,7 @@ pub struct UploadEditForm {
 pub async fn post_edit(
     env: Data<&Env>,
     verifier: &CsrfVerifier,
-    user: User,
+    SessionUser(user): SessionUser,
     Path(id): Path<Key<Upload>>,
     Form(UploadEditForm {
         token,

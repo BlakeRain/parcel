@@ -11,6 +11,8 @@ use crate::env::Env;
 
 mod extractors {
     pub mod admin;
+    pub mod form;
+    pub mod user;
 }
 
 pub mod errors;
@@ -21,6 +23,10 @@ mod handlers {
     pub mod index;
     pub mod uploads;
     pub mod users;
+
+    pub mod teams {
+        pub mod uploads;
+    }
 }
 
 pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> impl IntoEndpoint {
@@ -48,6 +54,8 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> impl IntoEndpoint {
         "/uploads/:id/share"            handlers::uploads::share              GET
         "/uploads/:id/download"         handlers::uploads::download           GET POST
         "/uploads/:owner/:slug"         handlers::uploads::custom_upload      GET
+        "/teams/:id/uploads/list"       handlers::teams::uploads::list        GET
+        "/teams/:id/uploads/list/:page" handlers::teams::uploads::page        GET
         "/user/signin"                  handlers::users::signin               GET POST
         "/user/signin/totp"             handlers::users::signin_totp          GET POST
         "/user/signout"                 handlers::users::signout              GET
@@ -64,6 +72,9 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> impl IntoEndpoint {
         "/admin/users/:id"              handlers::admin::users::user          GET POST DELETE
         "/admin/users/:id/disable"      handlers::admin::users::disable_user      POST
         "/admin/users/:id/enable"       handlers::admin::users::enable_user       POST
+        "/admin/teams"                  handlers::admin::teams::teams         GET
+        "/admin/teams/new"              handlers::admin::teams::new           GET POST
+        "/admin/teams/:id"              handlers::admin::teams::team          GET POST
     })
     .catch_error(errors::NotSignedInError::handle)
     .catch_error(errors::CsrfError::handle)

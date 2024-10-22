@@ -2,9 +2,11 @@ use poem::{http::StatusCode, FromRequest, Request, RequestBody};
 
 use crate::model::user::User;
 
-pub struct Admin(pub User);
+use super::user::SessionUser;
 
-impl std::ops::Deref for Admin {
+pub struct SessionAdmin(pub User);
+
+impl std::ops::Deref for SessionAdmin {
     type Target = User;
 
     fn deref(&self) -> &Self::Target {
@@ -12,14 +14,14 @@ impl std::ops::Deref for Admin {
     }
 }
 
-impl<'r> FromRequest<'r> for Admin {
+impl<'r> FromRequest<'r> for SessionAdmin {
     async fn from_request(
         request: &'r Request,
         request_body: &mut RequestBody,
     ) -> poem::Result<Self> {
-        let user = User::from_request(request, request_body).await?;
+        let SessionUser(user) = SessionUser::from_request(request, request_body).await?;
         if user.admin {
-            Ok(Admin(user))
+            Ok(SessionAdmin(user))
         } else {
             tracing::warn!(
                 "Non-admin user {:?} ({}) attempted to access admin-only page",

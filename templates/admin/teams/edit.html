@@ -1,0 +1,73 @@
+<parcel-modal class="hidden" with-htmx>
+  <form
+    class="form"
+    hx-post="/admin/teams/{{ team.id }}"
+    hx-target="#teams-list-container"
+    hx-select="#teams-list-container"
+    hx-swap="outerHTML">
+    <input type="hidden" name="token" value="{{ token }}">
+    <label for="name">Team name</label>
+    <input
+      type="text"
+      class="field"
+      name="name"
+      id="name"
+      placeholder="Team Name"
+      value="{{ team.name }}"
+      required>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-2 mt-4">
+      <div>
+        <div class="checkbox">
+          <input
+            type="checkbox"
+            name="enabled"
+            id="enabled"
+            {% if team.enabled %}checked{% endif %}>
+          <label for="enaabled">Team is enabled</label>
+        </div>
+        <div class="checkbox">
+          <input
+            type="checkbox"
+            name="limit_check"
+            id="limit_check"
+            {% if team.limit %}checked{% endif %}>
+          <label for="limit_check">Team has an upload limit</label>
+        </div>
+      </div>
+      <div class="flex flex-col gap-2 justify-end">
+        <label>Upload limit in megabytes</label>
+        <input
+          type="number"
+          class="field"
+          name="limit"
+          id="limit"
+          {% if team.limit %}
+            value="{{ (team.limit / 1048576) | int }}"
+          {% else %}
+            value="1024"
+          {% endif %}
+          min="0"
+          {% if not team.limit %}disabled{% endif %}>
+      </div>
+    </div>
+    <div class="buttons reverse end mt-4">
+      <button
+        type="submit"
+        class="button"
+        onclick="event.target.closest('parcel-modal').closeModal();">
+        Save changes
+      </button>
+      <button
+        type="button"
+        class="button hollow"
+        onclick="event.preventDefault(); event.target.closest('parcel-modal').closeModal();">
+        Cancel
+      </button>
+    </div>
+    <script type="text/javascript">
+      document.querySelector("input[name='limit_check']").addEventListener("change", (event) => {
+        event.target.form.querySelector("input[name='limit']").disabled = !event.target.checked;
+      });
+    </script>
+  </form>
+</parcel-modal>

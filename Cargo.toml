@@ -11,6 +11,7 @@ clap = { version = "4.4", features = ["derive", "env"] }
 fast_qr = { version = "0.12", features = ["svg"] }
 futures-util = { version = "0.3" }
 humansize = { version = "2.1" }
+mime = { version = "0.3" }
 minijinja = { version = "2.0", features = ["unicode", "loader", "json", "urlencode", "speedups"] }
 nanoid = { version = "0.4" }
 pbkdf2 = { version = "0.12", features = ["simple"] }
@@ -19,6 +20,7 @@ rand_core = { version = "0.6", features = ["std"] }
 rand = { version = "0.8" }
 rust-embed = { version = "8.0", features = ["debug-embed", "interpolate-folder-path"] }
 serde = { version = "1.0", features = ["derive"] }
+serde_html_form = { version = "0.2" }
 serde_json = { version = "1.0" }
 sqlx = { version = "0.8", features = ["sqlite", "runtime-tokio", "time", "uuid"] }
 thiserror = { version = "1.0" }

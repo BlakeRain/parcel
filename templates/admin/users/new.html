@@ -8,8 +8,7 @@
       name="username"
       id="username"
       placeholder="Username"
-      required
-    />
+      required>
     <label for="name">Display name</label>
     <input
       type="text"
@@ -17,8 +16,7 @@
       name="name"
       id="name"
       placeholder="Display Name"
-      required
-    />
+      required>
     <label for="password">Password</label>
     <input
       type="password"
@@ -26,24 +24,21 @@
       name="password"
       id="password"
       placeholder="Password"
-      required
-    />
+      required>
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-2 mt-4">
       <div>
         <div class="checkbox">
-          <input type="checkbox" name="admin" id="admin" />
+          <input type="checkbox" name="admin" id="admin">
           <label for="admin">User is an administrator</label>
         </div>
         <div class="checkbox">
-          <input type="checkbox" name="enabled" id="enabled" checked />
+          <input type="checkbox" name="enabled" id="enabled" checked>
           <label for="enabled">User account is enabled</label>
         </div>
         <div class="checkbox">
-          <input type="checkbox" name="limit_check" id="limit_check" checked />
+          <input type="checkbox" name="limit_check" id="limit_check" checked>
           <label for="limit_check">User has an upload limit</label>
         </div>
-      </div>
-      <div class="flex flex-col gap-2 justify-end">
         <label>Upload limit in megabytes</label>
         <input
           type="number"
@@ -51,8 +46,28 @@
           name="limit"
           id="limit"
           value="1024"
-          min="0"
-        />
+          min="0">
+      </div>
+      <div class="flex flex-col gap-2 justify-end">
+        <div class="checkbox">
+          <input
+            type="checkbox"
+            name="teams_check"
+            id="teams_check">
+          <label for="teams_check">User is in onr or more teams</label>
+        </div>
+        <select
+          class="field grow"
+          name="teams"
+          id="teams"
+          multiple
+          disabled>
+          {% for team in teams %}
+            <option value="{{ team.id }}">
+              {{ team.name }} {% if team.disabled %}(disabled){% endif %}
+            </option>
+          {% endfor %}
+        </select>
       </div>
     </div>
     <div class="buttons reverse end mt-4">
@@ -69,7 +84,11 @@
     <script type="text/javascript">
       document.querySelector("input[name='limit_check']").addEventListener("change", (event) => {
         event.target.form.querySelector("input[name='limit']").disabled = !event.target.checked;
-      })
+      });
+
+      document.querySelector("input[name='teams_check']").addEventListener("change", (event) => {
+        event.target.form.querySelector("select[name='teams']").disabled = !event.target.checked;
+      });
     </script>
   </form>
 </parcel-modal>

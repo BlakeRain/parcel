@@ -43,4 +43,13 @@
       @apply dark:bg-gray-800 dark:border-gray-700 dark:text-gray-500;
     }
   }
+
+  select.field {
+    option {
+      &:active {
+        @apply bg-gray-200;
+        @apply dark:bg-gray-800;
+      }
+    }
+  }
 }

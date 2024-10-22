@@ -16,6 +16,7 @@ use serde::Deserialize;
 use crate::{
     app::{
         errors::CsrfError,
+        extractors::user::SessionUser,
         templates::{authorized_context, render_template},
     },
     env::Env,
@@ -26,7 +27,7 @@ use crate::{
 #[handler]
 pub fn get_settings(
     env: Data<&Env>,
-    user: User,
+    SessionUser(user): SessionUser,
     session: &Session,
     token: &CsrfToken,
 ) -> poem::Result<Html<String>> {
@@ -53,7 +54,7 @@ pub struct SettingsForm {
 #[handler]
 pub async fn post_settings(
     env: Data<&Env>,
-    mut user: User,
+    SessionUser(mut user): SessionUser,
     verifier: &CsrfVerifier,
     session: &Session,
     Form(SettingsForm {
@@ -136,7 +137,7 @@ pub struct PasswordForm {
 #[handler]
 pub async fn post_password(
     env: Data<&Env>,
-    mut user: User,
+    SessionUser(mut user): SessionUser,
     verifier: &CsrfVerifier,
     session: &Session,
     Form(PasswordForm { token, password }): Form<PasswordForm>,
@@ -180,7 +181,7 @@ fn generate_totp_secret() -> String {
 #[handler]
 pub fn get_setup_totp(
     env: Data<&Env>,
-    user: User,
+    SessionUser(user): SessionUser,
     csrf_token: &CsrfToken,
     session: &Session,
 ) -> poem::Result<Html<String>> {
@@ -227,7 +228,7 @@ pub struct SetupTotpForm {
 #[handler]
 pub async fn post_setup_totp(
     env: Data<&Env>,
-    mut user: User,
+    SessionUser(mut user): SessionUser,
     verifier: &CsrfVerifier,
     session: &Session,
     Form(form): Form<SetupTotpForm>,
@@ -341,7 +342,7 @@ pub async fn post_setup_totp(
 #[handler]
 pub fn get_remove_totp(
     env: Data<&Env>,
-    user: User,
+    SessionUser(user): SessionUser,
     csrf_token: &CsrfToken,
 ) -> poem::Result<Html<String>> {
     render_template(
@@ -361,7 +362,7 @@ pub struct RemoveTotpForm {
 #[handler]
 pub async fn post_remove_totp(
     env: Data<&Env>,
-    mut user: User,
+    SessionUser(mut user): SessionUser,
     verifier: &CsrfVerifier,
     session: &Session,
     Form(form): Form<RemoveTotpForm>,

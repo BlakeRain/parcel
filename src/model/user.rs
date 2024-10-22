@@ -1,16 +1,15 @@
+use std::collections::HashSet;
+
 use pbkdf2::{
     password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Pbkdf2,
 };
-use poem::{error::InternalServerError, session::Session, FromRequest, Request, RequestBody};
 use rand_core::OsRng;
 use serde::Serialize;
 use sqlx::{FromRow, SqlitePool};
 use time::OffsetDateTime;
 
-use crate::app::errors::NotSignedInError;
-
-use super::types::Key;
+use super::{team::Team, types::Key};
 
 #[derive(Debug, FromRow, Serialize)]
 pub struct User {
@@ -68,7 +67,7 @@ impl User {
         .bind(self.limit)
         .bind(self.created_at)
         .bind(self.created_by)
-        .fetch_one(pool)
+        .execute(pool)
         .await?;
 
         Ok(())
@@ -203,46 +202,44 @@ impl User {
         self.totp = None;
         Ok(())
     }
-}
 
-impl<'r> FromRequest<'r> for User {
-    async fn from_request(
-        request: &'r Request,
-        request_body: &mut RequestBody,
-    ) -> poem::Result<Self> {
-        let env = request
-            .data::<crate::env::Env>()
-            .expect("Env to be provided");
+    pub async fn get_teams(&self, pool: &SqlitePool) -> sqlx::Result<HashSet<Key<Team>>> {
+        Ok(
+            sqlx::query_scalar("SELECT team FROM team_members WHERE user = $1")
+                .bind(self.id)
+                .fetch_all(pool)
+                .await?
+                .into_iter()
+                .collect(),
+        )
+    }
 
-        let session = <&Session>::from_request(request, request_body).await?;
+    pub async fn is_member_of(&self, pool: &SqlitePool, team: Key<Team>) -> sqlx::Result<bool> {
+        let result = sqlx::query("SELECT 1 FROM team_members WHERE user = $1 AND team = $2")
+            .bind(self.id)
+            .bind(team)
+            .fetch_optional(pool)
+            .await?;
 
-        let Some(user_id) = session.get::<Key<User>>("user_id") else {
-            tracing::debug!("User not signed in (no 'user_id' in session)");
-            session.set("destination", request.uri().to_string());
-            session.set("error", "You need to sign in to access this resource");
-            return Err(NotSignedInError.into());
-        };
+        Ok(result.is_some())
+    }
 
-        let Some(user) = Self::get(&env.pool, user_id)
-            .await
-            .map_err(InternalServerError)?
-        else {
-            tracing::error!("User {user_id} not found in database");
-            session.remove("user_id");
-            session.set("destination", request.uri().to_string());
-            session.set("error", "You have been signed out");
-            return Err(NotSignedInError.into());
-        };
+    pub async fn join_team(&self, pool: &SqlitePool, team: Key<Team>) -> sqlx::Result<()> {
+        sqlx::query("INSERT INTO team_members (team, user) VALUES ($1, $2)")
+            .bind(team)
+            .bind(self.id)
+            .execute(pool)
+            .await?;
+        Ok(())
+    }
 
-        if !user.enabled {
-            tracing::error!("User {:?} ({user_id}) is disabled", user.username);
-            session.remove("user_id");
-            session.set("destination", request.uri().to_string());
-            session.set("error", "You have been signed out");
-            return Err(NotSignedInError.into());
-        }
-
-        Ok(user)
+    pub async fn leave_team(&self, pool: &SqlitePool, team: Key<Team>) -> sqlx::Result<()> {
+        sqlx::query("DELETE FROM team_members WHERE team = $1 AND user = $2")
+            .bind(team)
+            .bind(self.id)
+            .execute(pool)
+            .await?;
+        Ok(())
     }
 }
 

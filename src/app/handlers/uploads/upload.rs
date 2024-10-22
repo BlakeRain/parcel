@@ -11,7 +11,10 @@ use serde::Deserialize;
 use time::OffsetDateTime;
 
 use crate::{
-    app::templates::{authorized_context, default_context, render_template},
+    app::{
+        extractors::user::SessionUser,
+        templates::{authorized_context, default_context, render_template},
+    },
     env::Env,
     model::{types::Key, upload::Upload, user::User},
     utils::SessionExt,
@@ -19,7 +22,7 @@ use crate::{
 
 async fn render_upload(
     env: Data<&Env>,
-    user: Option<User>,
+    user: Option<&User>,
     session: &Session,
     csrf_token: &CsrfToken,
     upload: Upload,
@@ -92,7 +95,7 @@ async fn render_upload(
 pub async fn get_upload(
     env: Data<&Env>,
     session: &Session,
-    user: Option<User>,
+    user: Option<SessionUser>,
     csrf_token: &CsrfToken,
     Path(slug): Path<String>,
 ) -> poem::Result<Html<String>> {
@@ -105,14 +108,14 @@ pub async fn get_upload(
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
-    render_upload(env, user, session, csrf_token, upload).await
+    render_upload(env, user.as_deref(), session, csrf_token, upload).await
 }
 
 #[handler]
 pub async fn get_custom_upload(
     env: Data<&Env>,
     session: &Session,
-    user: Option<User>,
+    user: Option<SessionUser>,
     csrf_token: &CsrfToken,
     Path((owner, slug)): Path<(String, String)>,
 ) -> poem::Result<Html<String>> {
@@ -138,13 +141,13 @@ pub async fn get_custom_upload(
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
-    render_upload(env, user, session, csrf_token, upload).await
+    render_upload(env, user.as_deref(), session, csrf_token, upload).await
 }
 
 #[handler]
 pub async fn delete_upload(
     env: Data<&Env>,
-    user: User,
+    SessionUser(user): SessionUser,
     Path(id): Path<Key<Upload>>,
 ) -> poem::Result<poem::Response> {
     let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
@@ -202,7 +205,7 @@ pub struct GetShareQuery {
 #[handler]
 pub async fn get_share(
     env: Data<&Env>,
-    user: User,
+    SessionUser(user): SessionUser,
     Path(id): Path<Key<Upload>>,
     Query(GetShareQuery { immediate }): Query<GetShareQuery>,
 ) -> poem::Result<Html<String>> {

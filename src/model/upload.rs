@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, QueryBuilder, SqlitePool};
 use time::{Date, OffsetDateTime};
 
-use super::{types::Key, user::User};
+use super::{team::Team, types::Key, user::User};
 
 #[derive(Debug, FromRow, Serialize)]
 pub struct Upload {
@@ -18,6 +18,8 @@ pub struct Upload {
     #[serde(skip)]
     pub password: Option<String>,
     pub custom_slug: Option<String>,
+    pub owner_team: Option<Key<Team>>,
+    pub owner_user: Option<Key<User>>,
     pub uploaded_by: Key<User>,
     pub uploaded_at: OffsetDateTime,
     pub remote_addr: Option<String>,
@@ -60,10 +62,12 @@ impl Upload {
         sqlx::query(
             "INSERT INTO uploads (id, slug, filename, size, public,
             downloads, \"limit\", remaining, expiry_date, password,
-            custom_slug, uploaded_by, uploaded_at, remote_addr)
+            custom_slug, uploaded_by, uploaded_at, remote_addr,
+            owner_team, owner_user)
             VALUES ($1, $2, $3, $4, $5,
                     0, $6, $7, $8, $9,
-                    $10, $11, $12, $13)
+                    $10, $11, $12, $13,
+                    $14, $15)
             RETURNING id",
         )
         .bind(self.id)
@@ -79,7 +83,9 @@ impl Upload {
         .bind(self.uploaded_by)
         .bind(self.uploaded_at)
         .bind(&self.remote_addr)
-        .fetch_one(pool)
+        .bind(self.owner_team)
+        .bind(self.owner_user)
+        .execute(pool)
         .await?;
 
         Ok(())
@@ -96,8 +102,10 @@ impl Upload {
             remaining = $6,
             expiry_date = $7,
             password = $8,
-            custom_slug = $9
-            WHERE id = $10",
+            custom_slug = $9,
+            owner_team = $10,
+            owner_user = $11
+            WHERE id = $12",
         )
         .bind(&self.filename)
         .bind(self.size)
@@ -108,6 +116,8 @@ impl Upload {
         .bind(self.expiry_date)
         .bind(&self.password)
         .bind(&self.custom_slug)
+        .bind(self.owner_team)
+        .bind(self.owner_user)
         .bind(self.id)
         .execute(pool)
         .await?;
@@ -154,7 +164,7 @@ impl Upload {
         limit: u32,
     ) -> sqlx::Result<Vec<Self>> {
         sqlx::query_as(&format!(
-            "SELECT * FROM uploads WHERE uploaded_by = $1 ORDER BY {} {} LIMIT {} OFFSET {}",
+            "SELECT * FROM uploads WHERE owner_user = $1 ORDER BY {} {} LIMIT {} OFFSET {}",
             order.get_order_field(),
             if asc { "ASC" } else { "DESC" },
             limit,
@@ -165,8 +175,35 @@ impl Upload {
         .await
     }
 
+    pub async fn get_for_team(
+        pool: &SqlitePool,
+        owner: Key<Team>,
+        order: UploadOrder,
+        asc: bool,
+        offset: u32,
+        limit: u32,
+    ) -> sqlx::Result<Vec<Self>> {
+        sqlx::query_as(&format!(
+            "SELECT * FROM uploads WHERE owner_team = $1 ORDER BY {} {} LIMIT {} OFFSET {}",
+            order.get_order_field(),
+            if asc { "ASC" } else { "DESC" },
+            limit,
+            offset
+        ))
+        .bind(owner)
+        .fetch_all(pool)
+        .await
+    }
+
     pub async fn count_for_user(pool: &SqlitePool, owner: Key<User>) -> sqlx::Result<u32> {
-        sqlx::query_scalar("SELECT COUNT(*) FROM uploads WHERE uploaded_by = $1")
+        sqlx::query_scalar("SELECT COUNT(*) FROM uploads WHERE owner_user = $1")
+            .bind(owner)
+            .fetch_one(pool)
+            .await
+    }
+
+    pub async fn count_for_team(pool: &SqlitePool, owner: Key<Team>) -> sqlx::Result<u32> {
+        sqlx::query_scalar("SELECT COUNT(*) FROM uploads WHERE owner_team = $1")
             .bind(owner)
             .fetch_one(pool)
             .await
@@ -184,7 +221,19 @@ impl Upload {
         owner: Key<User>,
         custom_slug: &str,
     ) -> sqlx::Result<Option<Self>> {
-        sqlx::query_as("SELECT * FROM uploads WHERE uploaded_by = $1 AND custom_slug = $2")
+        sqlx::query_as("SELECT * FROM uploads WHERE owner_user = $1 AND custom_slug = $2")
+            .bind(owner)
+            .bind(custom_slug)
+            .fetch_optional(pool)
+            .await
+    }
+
+    pub async fn get_by_custom_team_slug(
+        pool: &SqlitePool,
+        owner: Key<Team>,
+        custom_slug: &str,
+    ) -> sqlx::Result<Option<Self>> {
+        sqlx::query_as("SELECT * FROM uploads WHERE owner_team = $1 AND custom_slug = $2")
             .bind(owner)
             .bind(custom_slug)
             .fetch_optional(pool)
@@ -198,7 +247,30 @@ impl Upload {
         custom_slug: &str,
     ) -> sqlx::Result<bool> {
         let mut query =
-            QueryBuilder::new("SELECT EXISTS(SELECT 1 FROM uploads WHERE uploaded_by = ");
+            QueryBuilder::new("SELECT EXISTS(SELECT 1 FROM uploads WHERE owner_user = ");
+
+        query.push_bind(owner);
+        query.push(" AND custom_slug = ");
+        query.push_bind(custom_slug);
+
+        if let Some(existing) = existing {
+            query.push(" AND id != ");
+            query.push_bind(existing);
+        }
+
+        query.push(")");
+
+        query.build_query_scalar().fetch_one(pool).await
+    }
+
+    pub async fn custom_team_slug_exists(
+        pool: &SqlitePool,
+        owner: Key<Team>,
+        existing: Option<Key<Upload>>,
+        custom_slug: &str,
+    ) -> sqlx::Result<bool> {
+        let mut query =
+            QueryBuilder::new("SELECT EXISTS(SELECT 1 FROM uploads WHERE owner_team = ");
 
         query.push_bind(owner);
         query.push(" AND custom_slug = ");
@@ -262,7 +334,14 @@ impl Upload {
     }
 
     pub async fn delete_for_user(pool: &SqlitePool, owner: Key<User>) -> sqlx::Result<Vec<String>> {
-        sqlx::query_scalar("DELETE FROM uploads WHERE uploaded_by = $1 RETURNING slug")
+        sqlx::query_scalar("DELETE FROM uploads WHERE owner_user = $1 RETURNING slug")
+            .bind(owner)
+            .fetch_all(pool)
+            .await
+    }
+
+    pub async fn delete_for_team(pool: &SqlitePool, owner: Key<Team>) -> sqlx::Result<Vec<String>> {
+        sqlx::query_scalar("DELETE FROM uploads WHERE owner_team = $1 RETURNING slug")
             .bind(owner)
             .fetch_all(pool)
             .await
@@ -288,12 +367,24 @@ impl UploadStats {
         .await
     }
 
-    pub async fn get_for(pool: &SqlitePool, owner: Key<User>) -> sqlx::Result<UploadStats> {
+    pub async fn get_for_user(pool: &SqlitePool, owner: Key<User>) -> sqlx::Result<UploadStats> {
         sqlx::query_as(
             "SELECT COUNT(*) AS total, COUNT(public) AS public,
             SUM(downloads) AS downloads, SUM(size) AS size
             FROM uploads
-            WHERE uploaded_by = $1",
+            WHERE owner_user = $1",
+        )
+        .bind(owner)
+        .fetch_one(pool)
+        .await
+    }
+
+    pub async fn get_for_team(pool: &SqlitePool, owner: Key<Team>) -> sqlx::Result<UploadStats> {
+        sqlx::query_as(
+            "SELECT COUNT(*) AS total, COUNT(public) AS public,
+            SUM(downloads) AS downloads, SUM(size) AS size
+            FROM uploads
+            WHERE owner_team = $1",
         )
         .bind(owner)
         .fetch_one(pool)

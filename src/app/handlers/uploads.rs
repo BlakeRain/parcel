@@ -10,12 +10,14 @@ use serde::Deserialize;
 use serde_json::json;
 
 use crate::{
-    app::templates::{authorized_context, render_404, render_template},
+    app::{
+        extractors::user::SessionUser,
+        templates::{authorized_context, render_404, render_template},
+    },
     env::Env,
     model::{
         types::Key,
         upload::{Upload, UploadStats},
-        user::User,
     },
 };
 
@@ -32,8 +34,11 @@ pub use new::{get_new, post_new};
 pub use upload::{delete_upload, get_custom_upload, get_share, get_upload};
 
 #[handler]
-pub async fn get_stats(env: Data<&Env>, user: User) -> poem::Result<Html<String>> {
-    let stats = UploadStats::get_for(&env.pool, user.id)
+pub async fn get_stats(
+    env: Data<&Env>,
+    SessionUser(user): SessionUser,
+) -> poem::Result<Html<String>> {
+    let stats = UploadStats::get_for_user(&env.pool, user.id)
         .await
         .map_err(InternalServerError)?;
 
@@ -58,7 +63,7 @@ pub struct MakePublicQuery {
 #[handler]
 pub async fn post_public(
     env: Data<&Env>,
-    user: User,
+    SessionUser(user): SessionUser,
     Path(id): Path<Key<Upload>>,
     Query(MakePublicQuery { public }): Query<MakePublicQuery>,
 ) -> poem::Result<Response> {
@@ -101,7 +106,7 @@ pub async fn post_public(
 #[handler]
 pub async fn post_reset(
     env: Data<&Env>,
-    user: User,
+    SessionUser(user): SessionUser,
     Path(id): Path<Key<Upload>>,
 ) -> poem::Result<Response> {
     let Some(mut upload) = Upload::get(&env.pool, id).await.map_err(|err| {

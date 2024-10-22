@@ -12,9 +12,12 @@ use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
 use crate::{
-    app::templates::{authorized_context, render_template},
+    app::{
+        extractors::user::SessionUser,
+        templates::{authorized_context, render_template},
+    },
     env::Env,
-    model::{types::Key, upload::Upload, user::User},
+    model::{types::Key, upload::Upload},
 };
 
 #[derive(Debug, Deserialize)]
@@ -27,7 +30,7 @@ pub struct NewQuery {
 pub fn get_new(
     env: Data<&Env>,
     csrf_token: &CsrfToken,
-    user: User,
+    SessionUser(user): SessionUser,
     Query(NewQuery { immediate }): Query<NewQuery>,
 ) -> poem::Result<Html<String>> {
     render_template(
@@ -50,7 +53,7 @@ pub struct UploadResult {
 pub async fn post_new(
     env: Data<&Env>,
     RealIp(ip): RealIp,
-    user: User,
+    SessionUser(user): SessionUser,
     csrf_verifier: &CsrfVerifier,
     mut form: Multipart,
 ) -> poem::Result<Json<UploadResult>> {
@@ -109,6 +112,8 @@ pub async fn post_new(
                 expiry_date: None,
                 password: None,
                 custom_slug: None,
+                owner_user: Some(user.id),
+                owner_team: None,
                 uploaded_by: user.id,
                 uploaded_at: OffsetDateTime::now_utc(),
                 remote_addr: ip.as_ref().map(ToString::to_string),
