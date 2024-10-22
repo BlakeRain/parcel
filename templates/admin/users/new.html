@@ -35,6 +35,13 @@
           <input type="checkbox" name="enabled" id="enabled" checked>
           <label for="enabled">User account is enabled</label>
         </div>
+        <label>Teams</label>
+        <script type="text/json" id="teams_data">
+          {{ teams | tojson }}
+        </script>
+        <parcel-select name="teams" id="teams" options="#teams_data" class="mt-2" />
+      </div>
+      <div class="flex flex-col justify-end">
         <div class="checkbox">
           <input type="checkbox" name="limit_check" id="limit_check" checked>
           <label for="limit_check">User has an upload limit</label>
@@ -47,27 +54,6 @@
           id="limit"
           value="1024"
           min="0">
-      </div>
-      <div class="flex flex-col gap-2 justify-end">
-        <div class="checkbox">
-          <input
-            type="checkbox"
-            name="teams_check"
-            id="teams_check">
-          <label for="teams_check">User is in onr or more teams</label>
-        </div>
-        <select
-          class="field grow"
-          name="teams"
-          id="teams"
-          multiple
-          disabled>
-          {% for team in teams %}
-            <option value="{{ team.id }}">
-              {{ team.name }} {% if team.disabled %}(disabled){% endif %}
-            </option>
-          {% endfor %}
-        </select>
       </div>
     </div>
     <div class="buttons reverse end mt-4">
@@ -84,10 +70,6 @@
     <script type="text/javascript">
       document.querySelector("input[name='limit_check']").addEventListener("change", (event) => {
         event.target.form.querySelector("input[name='limit']").disabled = !event.target.checked;
-      });
-
-      document.querySelector("input[name='teams_check']").addEventListener("change", (event) => {
-        event.target.form.querySelector("select[name='teams']").disabled = !event.target.checked;
       });
     </script>
   </form>

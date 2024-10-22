@@ -1,0 +1,40 @@
+@layer components {
+  .parcel-select {
+    @apply relative flex flex-row gap-1 cursor-pointer;
+    @apply p-2.5 sm:text-sm border rounded-lg;
+    @apply bg-gray-50 border-gray-300 text-gray-900;
+    @apply dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white;
+
+    &:after {
+      @apply text-xs inline-flex items-center;
+
+      content: '▼';
+    }
+
+    &.open {
+      @apply ring-primary-600 dark:ring-blue-500;
+      @apply border-primary-600 dark:border-blue-500;
+
+      &:after {
+        @apply -rotate-180 transition-transform;
+      }
+    }
+  }
+
+  .parcel-select-options {
+    @apply absolute left-0 right-0 top-full flex flex-col;
+    @apply border rounded-md shadow-md;
+    @apply bg-gray-50 border-gray-300 text-gray-900;
+    @apply dark:bg-gray-700 dark:border-gray-600 dark:text-white;
+    @apply overflow-x-clip overflow-y-scroll;
+
+    .parcel-select-option {
+      @apply flex flex-row gap-1 mt-0 whitespace-nowrap cursor-pointer px-2 py-2 transition-colors;
+      @apply hover:bg-primary-100 dark:hover:bg-gray-800/50;
+
+      &:has(input:checked) {
+        @apply bg-primary-600 text-white;
+      }
+    }
+  }
+}

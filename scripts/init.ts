@@ -3,6 +3,7 @@ import { register as register_checklist } from "./components/checklist";
 import { register as register_clipboard } from "./components/clipboard";
 import { register as register_date } from "./components/date";
 import { register as register_modal } from "./components/modal";
+import { register as register_select } from "./components/select";
 import { register as register_dropdown } from "./components/dropdown";
 
 function add_dropdowns() {
@@ -38,6 +39,7 @@ function init() {
   register_clipboard();
   register_date();
   register_modal();
+  register_select();
   register_dropdown();
   add_dropdowns();
 }

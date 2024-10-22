@@ -148,14 +148,14 @@ impl TeamList {
 
 #[derive(Debug, FromRow, Serialize)]
 pub struct TeamSelect {
-    pub id: Key<Team>,
-    pub name: String,
+    pub value: Key<Team>,
+    pub label: String,
     pub enabled: bool,
 }
 
 impl TeamSelect {
     pub async fn get(pool: &SqlitePool) -> sqlx::Result<Vec<Self>> {
-        sqlx::query_as("SELECT id, name, enabled FROM teams ORDER BY name ASC")
+        sqlx::query_as("SELECT id as value, name as label, enabled FROM teams ORDER BY name ASC")
             .fetch_all(pool)
             .await
     }

@@ -39,7 +39,7 @@
               type="checkbox"
               {% if user.id == auth.id %}
                 disabled
-                title="You cannn't disable your own account"
+                title="You cannot disable your own account"
               {% else %}
                 name="enabled"
                 id="enabled"
@@ -47,6 +47,16 @@
               {% if user.enabled %}checked{% endif %}>
           <label for="enabled">User account is enabled</label>
         </div>
+        <label>Teams</label>
+        <script type="text/json" id="teams_data">
+          {{ teams | tojson }}
+        </script>
+        <script type="text/json" id="membership_data">
+          {{ membership | tojson }}
+        </script>
+        <parcel-select name="teams" id="teams" options="#teams_data" values="#membership_data" class="mt-2" />
+      </div>
+      <div class="flex flex-col justify-end">
         <div class="checkbox">
           <input
             type="checkbox"
@@ -69,32 +79,6 @@
           min="0"
           {% if not user.limit %}disabled{% endif %}>
       </div>
-      <div class="flex flex-col gap-2 justify-end">
-        <div class="checkbox">
-          <input
-            type="checkbox"
-            name="teams_check"
-            id="teams_check"
-            {% if membership | length > 0 %}checked{% endif %}>
-          <label for="teams_check">User is in onr or more teams</label>
-        </div>
-        <select
-          class="field grow"
-          name="teams"
-          id="teams"
-          multiple
-          {% if membership | length == 0 %}disabled{% endif %}>
-          {% for team in teams %}
-            <option
-              value="{{ team.id }}"
-              {% if team.id in membership %}
-                selected
-              {% endif %}>
-            {{ team.name }} {% if team.disabled %}(disabled){% endif %}
-            </option>
-          {% endfor %}
-        </select>
-      </div>
     </div>
     <div class="buttons reverse end items-end mt-4">
       <button
@@ -113,10 +97,6 @@
     <script type="text/javascript">
       document.querySelector("input[name='limit_check']").addEventListener("change", (event) => {
         event.target.form.querySelector("input[name='limit']").disabled = !event.target.checked;
-      });
-
-      document.querySelector("input[name='teams_check']").addEventListener("change", (event) => {
-        event.target.form.querySelector("select[name='teams']").disabled = !event.target.checked;
       });
     </script>
   </form>
