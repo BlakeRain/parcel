@@ -21,12 +21,9 @@ pub mod templates;
 mod handlers {
     pub mod admin;
     pub mod index;
+    pub mod teams;
     pub mod uploads;
     pub mod users;
-
-    pub mod teams {
-        pub mod uploads;
-    }
 }
 
 pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> impl IntoEndpoint {
@@ -45,7 +42,6 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> impl IntoEndpoint {
         "/uploads/list"                 handlers::uploads::list               GET
         "/uploads/list/:page"           handlers::uploads::page               GET
         "/uploads/new"                  handlers::uploads::new                GET POST
-        "/uploads/stats"                handlers::uploads::stats              GET
         "/uploads/:id"                  handlers::uploads::upload             GET      DELETE
         "/uploads/:id/edit"             handlers::uploads::edit               GET POST
         "/uploads/:id/edit/slug"        handlers::uploads::check_slug             POST
@@ -54,6 +50,7 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> impl IntoEndpoint {
         "/uploads/:id/share"            handlers::uploads::share              GET
         "/uploads/:id/download"         handlers::uploads::download           GET POST
         "/uploads/:owner/:slug"         handlers::uploads::custom_upload      GET
+        "/teams/:id"                    handlers::teams::team                 GET
         "/teams/:id/uploads/list"       handlers::teams::uploads::list        GET
         "/teams/:id/uploads/list/:page" handlers::teams::uploads::page        GET
         "/user/signin"                  handlers::users::signin               GET POST

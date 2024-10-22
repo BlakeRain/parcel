@@ -16,7 +16,7 @@ use crate::{
     env::Env,
     model::{
         types::Key,
-        upload::{Upload, UploadOrder},
+        upload::{Upload, UploadOrder, UploadStats},
     },
 };
 
@@ -34,12 +34,9 @@ pub async fn get_list(
     SessionUser(user): SessionUser,
     Query(query): Query<ListQuery>,
 ) -> poem::Result<Html<String>> {
-    let total = Upload::count_for_user(&env.pool, user.id)
+    let stats = UploadStats::get_for_user(&env.pool, user.id)
         .await
-        .map_err(|err| {
-            tracing::error!(%user.id, ?err, "Unable to get upload count for user");
-            InternalServerError(err)
-        })?;
+        .map_err(InternalServerError)?;
 
     let uploads = Upload::get_for_user(&env.pool, user.id, query.order, query.asc, 0, 50)
         .await
@@ -51,9 +48,11 @@ pub async fn get_list(
     render_template(
         "uploads/list.html",
         context! {
-            total,
+            stats,
             uploads,
             query,
+            page => 0,
+            limit => user.limit,
             ..authorized_context(&env, &user)
         },
     )
@@ -113,17 +112,7 @@ pub async fn get_page(
     Path(page): Path<u32>,
     Query(query): Query<ListQuery>,
 ) -> poem::Result<Html<String>> {
-    let total = Upload::count_for_user(&env.pool, user.id)
-        .await
-        .map_err(|err| {
-            tracing::error!(%user.id, ?err, "Unable to get upload count for user");
-            InternalServerError(err)
-        })?;
-
-    let last_page = total / 50;
-    let page = page.min(last_page);
-    let offset = page * 50;
-    let uploads = Upload::get_for_user(&env.pool, user.id, query.order, query.asc, offset, 50)
+    let uploads = Upload::get_for_user(&env.pool, user.id, query.order, query.asc, 50 * page, 50)
         .await
         .map_err(|err| {
             tracing::error!(%user.id, ?err, "Unable to get uploads for user");
@@ -134,7 +123,6 @@ pub async fn get_page(
         "uploads/page.html",
         context! {
             page,
-            last_page,
             uploads,
             query,
             ..authorized_context(&env, &user)

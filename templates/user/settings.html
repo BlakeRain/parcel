@@ -4,30 +4,30 @@
 
 {% block content %}
 <div class="grow container mx-auto">
-  {% if not auth.has_totp %}
-    <div class="border rounded-md shadow-md border-red-500 bg-red-200 dark:bg-red-900/25 flex flex-col gap-4 p-6 mt-4">
-      <h1 class="text-danger font-semibold">
-        Two-factor authentication is not enabled on your account.
-      </h1>
-      <p>
-        Two-factor authentication (2FA) is an extra layer of security for your account. When
-        enabled, you will need to provide a code from your authenticator app in addition to your
-        password when logging in.
-      </p>
-      <div class="buttons">
-        <button
-          type="button"
-          class="button"
-          title="Add MFA to your account"
-          hx-get="/user/settings/totp"
-          hx-target="body"
-          hx-swap="beforeend">
-          Setup two-factor authentication
-        </button>
-      </div>
-    </div>
-  {% endif %}
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-4 p-4 lg:p-0 lg:mt-4">
+    {% if not auth.has_totp %}
+      <div class="lg:col-span-2 border rounded-md shadow-md border-red-500 bg-red-200 dark:bg-red-900/25 flex flex-col gap-4 p-6 mt-4">
+        <h1 class="text-danger font-semibold">
+          Two-factor authentication is not enabled on your account.
+        </h1>
+        <p>
+          Two-factor authentication (2FA) is an extra layer of security for your account. When
+          enabled, you will need to provide a code from your authenticator app in addition to your
+          password when logging in.
+        </p>
+        <div class="buttons">
+          <button
+            type="button"
+            class="button"
+            title="Add MFA to your account"
+            hx-get="/user/settings/totp"
+            hx-target="body"
+            hx-swap="beforeend">
+            Setup two-factor authentication
+          </button>
+        </div>
+      </div>
+    {% endif %}
     <div class="panel">
       <h1 class="heading">
         Account settings
@@ -94,7 +94,7 @@
           placeholder="New password"
           required />
         <input
-          class="field"
+          class="field mt-2 mb-4"
           type="password"
           name="confirm"
           id="confirm"
@@ -115,7 +115,7 @@
           {% else %}
             <button
               type="button"
-              class="button hollow"
+              class="button"
               title="Add MFA to your account"
               hx-get="/user/settings/totp"
               hx-target="body"

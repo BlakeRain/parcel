@@ -1,4 +1,3 @@
-use minijinja::context;
 use poem::{
     error::InternalServerError,
     handler,
@@ -10,15 +9,9 @@ use serde::Deserialize;
 use serde_json::json;
 
 use crate::{
-    app::{
-        extractors::user::SessionUser,
-        templates::{authorized_context, render_404, render_template},
-    },
+    app::{extractors::user::SessionUser, templates::render_404},
     env::Env,
-    model::{
-        types::Key,
-        upload::{Upload, UploadStats},
-    },
+    model::{types::Key, upload::Upload},
 };
 
 mod download;
@@ -32,28 +25,6 @@ pub use edit::{get_edit, post_check_slug, post_edit};
 pub use list::{get_list, get_page, post_delete, ListQuery};
 pub use new::{get_new, post_new};
 pub use upload::{delete_upload, get_custom_upload, get_share, get_upload};
-
-#[handler]
-pub async fn get_stats(
-    env: Data<&Env>,
-    SessionUser(user): SessionUser,
-) -> poem::Result<Html<String>> {
-    let stats = UploadStats::get_for_user(&env.pool, user.id)
-        .await
-        .map_err(InternalServerError)?;
-
-    // Generate a random int between 10 and 90
-    let random = rand::random::<i8>() % 80 + 10;
-
-    render_template(
-        "uploads/stats.html",
-        context! {
-            stats,
-            random,
-            ..authorized_context(&env, &user)
-        },
-    )
-}
 
 #[derive(Debug, Deserialize)]
 pub struct MakePublicQuery {

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Home{% endblock %}
+{% block title %}{% if team %}{{ team.name }}{% else %}Your{% endif %} Uploads{% endblock %}
 
 {% block head %}
   <style>
@@ -12,10 +12,10 @@
 {% endblock %}
 
 {% block content %}
-  <div class="grow container mx-auto flex flex-col gap-4 p-4 lg:p-0 lg:mt-4">
-    <div hx-get="/uploads/stats" hx-target="this" hx-trigger="load" hx-swap="outerHTML"></div>
+  <div class="grow container mx-auto flex flex-col p-4 lg:p-0 lg:mt-4">
+    {% include "uploads/tabs.html" %}
     <div
-      hx-get="/uploads/list?order={{ query.order }}&asc={{ query.asc }}"
+      hx-get="{% if team %}/teams/{{ team.id }}{% endif %}/uploads/list?order={{ query.order }}&asc={{ query.asc }}"
       hx-target="this"
       hx-trigger="load"
       hx-swap="outerHTML"></div>

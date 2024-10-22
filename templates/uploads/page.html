@@ -14,9 +14,10 @@
     </div>
 
     <div class="flex flex-row gap-1">
-      {% set upload_url = "/uploads/" + (upload.slug | urlencode) %}
-      {% if upload.custom_slug is string %}
+      {% if not team and upload.custom_slug %}
         {% set upload_url = "/uploads/" + (auth.username | urlencode) + "/" + (upload.custom_slug | urlencode) %}
+      {% else %}
+        {% set upload_url = "/uploads/" + (upload.slug | urlencode) %}
       {% endif %}
       <a class="truncate" href="{{ upload_url}}">{{ upload.filename }}</a>
       <parcel-clipboard url="true" value="{{ upload_url }}"></parcel-clipboard>
@@ -156,13 +157,12 @@
     </div>
   </div>
 {% endfor %}
-{% if page < last_page %}
+{% if uploads | length > 0 %}
   <div
     class="uploads-table-sentinel"
     hx-trigger="revealed"
-    hx-get="/uploads/list/{{ page + 1 }}?order={{ query.order }}&asc={{ query.asc }}"
+    hx-get="{% if team %}/teams/{{ team.id }}{% endif %}/uploads/list/{{ page + 1 }}?order={{ query.order }}&asc={{ query.asc }}"
     hx-target="this"
     hx-swap="outerHTML">
-    Loading &hellip;
   </div>
 {% endif %}

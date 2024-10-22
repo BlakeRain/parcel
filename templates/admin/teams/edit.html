@@ -25,6 +25,8 @@
             {% if team.enabled %}checked{% endif %}>
           <label for="enaabled">Team is enabled</label>
         </div>
+      </div>
+      <div class="flex flex-col justify-end">
         <div class="checkbox">
           <input
             type="checkbox"
@@ -33,9 +35,6 @@
             {% if team.limit %}checked{% endif %}>
           <label for="limit_check">Team has an upload limit</label>
         </div>
-      </div>
-      <div class="flex flex-col gap-2 justify-end">
-        <label>Upload limit in megabytes</label>
         <input
           type="number"
           class="field"

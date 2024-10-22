@@ -65,10 +65,6 @@ function getDropIndicator(): DropIndicator {
   return DROP_INDICATOR;
 }
 
-document.body.addEventListener("parcelUploadDeleted", () => {
-  htmx.trigger("#upload-stats-container", "refresh");
-});
-
 document.body.addEventListener("parcelUploadChanged", (event: CustomEvent) => {
   const row = document.getElementById("upload-row-" + event.detail.value);
   const page = row.dataset.page;

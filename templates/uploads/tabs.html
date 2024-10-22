@@ -1,0 +1,12 @@
+<div class="tabs">
+  <a href="/" class="tab{% if not team %} active{% endif %}">
+    <span class="icon-house"></span>
+    Your Uploads
+  </a>
+  {% for tab in teams %}
+    <a href="/teams/{{ tab.id }}" class="tab{% if team and tab.id == team.id %} active{% endif %}">
+      <span class="icon-users"></span>
+      {{ tab.name }}
+    </a>
+  {% endfor %}
+</div>

@@ -1,50 +1,31 @@
-<div
-  id="upload-stats-container"
-  hx-get="/uploads/stats"
-  hx-trigger="refresh"
-  hx-target="this"
-  hx-swap="outerHTML"
-  class="flex flex-row justify-between gap-2 p-4 border border-slate-400 dark:border-gray-700 dark:bg-gray-800 rounded-md shadow-md">
-  <div class="flex flex-col sm:flex-row items-center gap-2">
-    <div class="w-40 md:w-80 rounded-full dark:bg-gray-700 border border-blue-600 dark:border-0">
-      {% if auth.limit is number and stats.size > 0 %}
-        {% set percent = (stats.size / (auth.limit | default(value = 0)) * 100) | round | int %}
-        <div
-          id="upload-stats-progress-inner"
-          class="smoothly {% if percent > 100 %}bg-red-600{% else %}bg-blue-600{% endif %} text-xs
-          font-medium text-blue-100 text-center p-0.5 leading-none rounded-full whitespace-nowrap"
-          style="width: {% if percent > 100 %}100{% else %}{{ percent }}{% endif %}%;">
-          {% if percent < 1 %}{{ "< 1" }}{% else %}{{ percent }}{% endif %}%
-        </div>
-      {% else %}
-        <div class="text-xs w-full text-center p-0.5">
-          0%
-        </div>
-      {% endif %}
-    </div>
-    <div>
-      <span>Used</span>
-      <span>{{ stats.size | filesizeformat }}</span>
-      <span>of</span>
-      <span>
-        {% if auth.limit is number %}
-          {{ auth.limit | filesizeformat }}
-        {% else %}
-          ∞
-        {% endif %}
-      </span>
-    </div>
+<div class="grow sm:grow-0 md:grow lg:grow-0 flex flex-row sm:flex-col md:flex-row md:items-center gap-2">
+  <div class="grow sm:grow-0 md:grow lg:grow-0 lg:w-80 rounded-full dark:bg-gray-700 border border-blue-600 dark:border-0">
+    {% if limit is number and stats.size > 0 %}
+      {% set percent = (stats.size / (limit | default(value = 0)) * 100) | round | int %}
+      <div
+        id="upload-stats-progress-inner"
+        class="rounded-full smoothly {% if percent > 80 %}bg-red-100 dark:bg-red-600{% else %}bg-blue-300 dark:bg-blue-600{% endif %}
+        font-medium text-xs text-blue-900 dark:text-blue-100 text-center p-1 leading-none rounded-full
+        whitespace-nowrap min-w-12"
+        style="width: {% if percent > 100 %}100{% else %}{{ percent }}{% endif %}%;">
+        {% if percent < 1 %}{{ "< 1" }}{% else %}{{ percent }}{% endif %}%
+      </div>
+    {% else %}
+      <div class="text-xs w-full text-center p-0.5">
+        0%
+      </div>
+    {% endif %}
   </div>
-  <div>
-    <button
-      type="button"
-      class="button"
-      hx-get="/uploads/new"
-      hx-trigger="click"
-      hx-target="body"
-      hx-swap="beforeend">
-      <span class="icon-upload"></span>
-      Upload
-    </button>
+  <div class="whitespace-nowrap">
+    <span>Used</span>
+    <span>{{ stats.size | filesizeformat }}</span>
+    <span>of</span>
+    <span>
+      {% if limit is number %}
+        {{ limit | filesizeformat }}
+      {% else %}
+        ∞
+      {% endif %}
+    </span>
   </div>
 </div>

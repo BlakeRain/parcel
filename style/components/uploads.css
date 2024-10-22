@@ -34,7 +34,6 @@
     }
 
     > .uploads-table-sentinel {
-      @apply p-2;
       @apply text-slate-500 dark:text-slate-400 text-sm text-center italic;
     }
   }

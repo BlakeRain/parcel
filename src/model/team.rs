@@ -57,48 +57,11 @@ impl Team {
             .await
     }
 
-    pub async fn delete(pool: &SqlitePool, id: Key<Team>) -> sqlx::Result<()> {
-        sqlx::query("DELETE FROM team_members WHERE team = $1")
-            .bind(id)
-            .execute(pool)
-            .await?;
-
-        sqlx::query("DELTETE FROM team WHERE id = $1")
-            .bind(id)
-            .execute(pool)
-            .await?;
-
-        Ok(())
-    }
-
-    pub async fn add_member(&self, pool: &SqlitePool, user: Key<User>) -> sqlx::Result<()> {
-        sqlx::query("INSERT INTO team_members (team, user) VALUES ($1, $2)")
-            .bind(self.id)
+    pub async fn get_for_user(pool: &SqlitePool, user: Key<User>) -> sqlx::Result<Vec<Self>> {
+        sqlx::query_as("SELECT teams.* FROM teams LEFT JOIN team_members ON team_members.team = teams.id WHERE team_members.user = $1")
             .bind(user)
-            .execute(pool)
-            .await?;
-
-        Ok(())
-    }
-
-    pub async fn remove_member(&self, pool: &SqlitePool, user: Key<User>) -> sqlx::Result<()> {
-        sqlx::query("DELETE FROM team_members WHERE team = $1 AND user = $2")
-            .bind(self.id)
-            .bind(user)
-            .execute(pool)
-            .await?;
-
-        Ok(())
-    }
-
-    pub async fn is_member(&self, pool: &SqlitePool, user: Key<User>) -> sqlx::Result<bool> {
-        let result = sqlx::query("SELECT 1 FROM team_members WHERE team = $1 AND user = $2")
-            .bind(self.id)
-            .bind(user)
-            .fetch_optional(pool)
-            .await?;
-
-        Ok(result.is_some())
+            .fetch_all(pool)
+            .await
     }
 }
 

@@ -12,7 +12,11 @@ use crate::{
         templates::{authorized_context, render_template},
     },
     env::Env,
-    model::{team::Team, types::Key, upload::Upload},
+    model::{
+        team::Team,
+        types::Key,
+        upload::{Upload, UploadStats},
+    },
 };
 
 #[poem::handler]
@@ -43,12 +47,9 @@ pub async fn get_list(
         return Err(poem::Error::from_status(StatusCode::FORBIDDEN));
     }
 
-    let total = Upload::count_for_team(&env.pool, team_id)
+    let stats = UploadStats::get_for_team(&env.pool, team_id)
         .await
-        .map_err(|err| {
-            tracing::error!(%team_id, ?err, "Unable to get upload count for team");
-            InternalServerError(err)
-        })?;
+        .map_err(InternalServerError)?;
 
     let uploads = Upload::get_for_team(&env.pool, team.id, query.order, query.asc, 0, 50)
         .await
@@ -60,9 +61,12 @@ pub async fn get_list(
     render_template(
         "uploads/list.html",
         context! {
-            total,
+            team,
+            stats,
             uploads,
             query,
+            page => 0,
+            limit => team.limit,
             ..authorized_context(&env, &user)
         },
     )
