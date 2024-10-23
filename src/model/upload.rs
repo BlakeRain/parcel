@@ -57,38 +57,7 @@ impl UploadOrder {
     }
 }
 
-pub enum UploadOwner {
-    User(Key<User>),
-    Team(Key<Team>),
-}
-
-impl UploadOwner {
-    pub fn get_user_id(&self) -> Option<Key<User>> {
-        match self {
-            Self::User(user) => Some(*user),
-            Self::Team(_) => None,
-        }
-    }
-
-    pub fn get_team_id(&self) -> Option<Key<Team>> {
-        match self {
-            Self::User(_) => None,
-            Self::Team(team) => Some(*team),
-        }
-    }
-}
-
 impl Upload {
-    pub fn get_owner(&self) -> UploadOwner {
-        match self.owner_user {
-            Some(user) => UploadOwner::User(user),
-            None => match self.owner_team {
-                Some(team) => UploadOwner::Team(team),
-                None => unreachable!(),
-            },
-        }
-    }
-
     pub async fn create(&self, pool: &SqlitePool) -> sqlx::Result<()> {
         sqlx::query(
             "INSERT INTO uploads (id, slug, filename, size, public,
@@ -224,20 +193,6 @@ impl Upload {
         .bind(owner)
         .fetch_all(pool)
         .await
-    }
-
-    pub async fn count_for_user(pool: &SqlitePool, owner: Key<User>) -> sqlx::Result<u32> {
-        sqlx::query_scalar("SELECT COUNT(*) FROM uploads WHERE owner_user = $1")
-            .bind(owner)
-            .fetch_one(pool)
-            .await
-    }
-
-    pub async fn count_for_team(pool: &SqlitePool, owner: Key<Team>) -> sqlx::Result<u32> {
-        sqlx::query_scalar("SELECT COUNT(*) FROM uploads WHERE owner_team = $1")
-            .bind(owner)
-            .fetch_one(pool)
-            .await
     }
 
     pub async fn get_by_slug(pool: &SqlitePool, slug: &str) -> sqlx::Result<Option<Self>> {
@@ -376,6 +331,20 @@ impl Upload {
             .bind(owner)
             .fetch_all(pool)
             .await
+    }
+
+    pub async fn is_owner(&self, pool: &SqlitePool, user: &User) -> sqlx::Result<bool> {
+        // If this upload is owned by a user, and we are passed that user.
+        if matches!(self.owner_user, Some(owner) if owner == user.id) {
+            return Ok(true);
+        }
+
+        // If this upload is owned by a team, check the user is a member of that team.
+        if let Some(owner) = self.owner_team {
+            return user.is_member_of(pool, owner).await;
+        }
+
+        Ok(false)
     }
 }
 

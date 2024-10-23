@@ -69,7 +69,11 @@ pub async fn get_download(
     };
 
     let owner = if let Some(SessionUser(user)) = &user {
-        user.admin || upload.uploaded_by == user.id
+        user.admin
+            || upload.is_owner(&env.pool, user).await.map_err(|err| {
+                tracing::error!(%user.id, ?err, "Unable to check if user is owner of an upload");
+                InternalServerError(err)
+            })?
     } else {
         false
     };
@@ -142,8 +146,12 @@ pub async fn post_download(
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
-    let owner = if let Some(user) = &user {
-        user.admin || upload.uploaded_by == user.id
+    let owner = if let Some(SessionUser(user)) = &user {
+        user.admin
+            || upload.is_owner(&env.pool, user).await.map_err(|err| {
+                tracing::error!(%user.id, ?err, "Unable to check if user is owner of an upload");
+                InternalServerError(err)
+            })?
     } else {
         false
     };

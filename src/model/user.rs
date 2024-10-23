@@ -170,11 +170,17 @@ impl User {
             .await
     }
 
-    pub async fn delete(pool: &SqlitePool, id: Key<User>) -> sqlx::Result<()> {
-        sqlx::query("DELETE FROM users WHERE id = $1")
-            .bind(id)
+    pub async fn delete(&self, pool: &SqlitePool) -> sqlx::Result<()> {
+        sqlx::query("DELETE FROM team_members WHERE user = $1")
+            .bind(self.id)
             .execute(pool)
             .await?;
+
+        sqlx::query("DELETE FROM users WHERE id = $1")
+            .bind(self.id)
+            .execute(pool)
+            .await?;
+
         Ok(())
     }
 

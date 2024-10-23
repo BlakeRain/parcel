@@ -18,6 +18,7 @@ use crate::{
     model::{
         team::{Team, TeamList},
         types::Key,
+        upload::Upload,
     },
 };
 
@@ -137,6 +138,7 @@ pub struct EditTeamForm {
 #[handler]
 pub async fn post_team(
     env: Data<&Env>,
+    SessionAdmin(_): SessionAdmin,
     verifier: &CsrfVerifier,
     Path(team_id): Path<Key<Team>>,
     Form(EditTeamForm {
@@ -172,4 +174,42 @@ pub async fn post_team(
     tracing::info!(team = %team.id, ?team.name, "Updated team");
 
     Ok(Redirect::see_other("/admin/teams").into_response())
+}
+
+#[handler]
+pub async fn delete_team(
+    env: Data<&Env>,
+    SessionAdmin(_): SessionAdmin,
+    Path(team_id): Path<Key<Team>>,
+) -> poem::Result<Redirect> {
+    let Some(team) = Team::get(&env.pool, team_id).await.map_err(|err| {
+        tracing::error!(%team_id, ?err, "Failed to get team by ID");
+        InternalServerError(err)
+    })?
+    else {
+        tracing::error!(%team_id, "Team does not exist");
+        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
+    };
+
+    let upload_slugs = Upload::delete_for_team(&env.pool, team_id)
+        .await
+        .map_err(|err| {
+            tracing::error!(?err, %team_id, "Failed to delete team uploads");
+            InternalServerError(err)
+        })?;
+
+    for slug in upload_slugs {
+        let path = env.cache_dir.join(&slug);
+        tracing::info!(?path, owner = %team_id, "Deleting cached upload");
+        if let Err(err) = tokio::fs::remove_file(&path).await {
+            tracing::error!(?path, ?err, %team_id, "Failed to delete cached upload");
+        }
+    }
+
+    team.delete(&env.pool).await.map_err(|err| {
+        tracing::error!(%team_id, ?err, "Failed to delete team");
+        InternalServerError(err)
+    })?;
+
+    Ok(Redirect::see_other("/admin/teams"))
 }

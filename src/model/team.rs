@@ -63,6 +63,20 @@ impl Team {
             .fetch_all(pool)
             .await
     }
+
+    pub async fn delete(&self, pool: &SqlitePool) -> sqlx::Result<()> {
+        sqlx::query("DELETE FROM team_members WHERE team = $1")
+            .bind(self.id)
+            .execute(pool)
+            .await?;
+
+        sqlx::query("DELETE FROM teams WHERE id = $1")
+            .bind(self.id)
+            .execute(pool)
+            .await?;
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, FromRow, Serialize)]

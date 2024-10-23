@@ -35,7 +35,12 @@ pub async fn get_edit(
         return render_404("Unrecognized upload ID");
     };
 
-    if !user.admin && upload.uploaded_by != user.id {
+    let can_modify = user.admin || upload.is_owner(&env.pool, &user).await.map_err(|err| {
+        tracing::error!(%upload.id, %user.id, ?err, "Unable to check if user is owner of an upload");
+        InternalServerError(err)
+    })?;
+
+    if !can_modify {
         tracing::error!(
             %user.id,
             %upload.id,
@@ -85,7 +90,12 @@ pub async fn post_check_slug(
         return render_404("Unrecognized upload ID");
     };
 
-    if !user.admin && upload.uploaded_by != user.id {
+    let can_modify = user.admin || upload.is_owner(&env.pool, &user).await.map_err(|err| {
+        tracing::error!(%upload.id, %user.id, ?err, "Unable to check if user is owner of an upload");
+        InternalServerError(err)
+    })?;
+
+    if !can_modify {
         tracing::error!(
             %user.id,
             %upload.id,
@@ -156,7 +166,12 @@ pub async fn post_edit(
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
-    if !user.admin && upload.uploaded_by != user.id {
+    let can_modify = user.admin || upload.is_owner(&env.pool, &user).await.map_err(|err| {
+        tracing::error!(%upload.id, %user.id, ?err, "Unable to check if user is owner of an upload");
+        InternalServerError(err)
+    })?;
+
+    if !can_modify {
         tracing::error!(
             %user.id,
             %upload.id,

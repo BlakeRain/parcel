@@ -80,7 +80,12 @@ pub async fn post_delete(
             return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
         };
 
-        if !user.admin && upload.uploaded_by != user.id {
+        let can_delete = user.admin || upload.is_owner(&env.pool, &user).await.map_err(|err| {
+            tracing::error!(%upload.id, %user.id, ?err, "Unable to check if user is owner of an upload");
+            InternalServerError(err)
+        })?;
+
+        if !can_delete {
             tracing::error!(
                 %user.id,
                 %upload.id,

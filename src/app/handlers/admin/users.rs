@@ -286,10 +286,14 @@ pub async fn delete_user(
     SessionAdmin(_): SessionAdmin,
     Path(user_id): Path<Key<User>>,
 ) -> poem::Result<Redirect> {
-    User::delete(&env.pool, user_id).await.map_err(|err| {
-        tracing::error!(err = ?err, user_id = %user_id, "Failed to delete user");
+    let Some(mut user) = User::get(&env.pool, user_id).await.map_err(|err| {
+        tracing::error!(err = ?err, user_id = %user_id, "Failed to get user");
         InternalServerError(err)
-    })?;
+    })?
+    else {
+        tracing::error!(user_id = %user_id, "Unrecognized user ID");
+        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
+    };
 
     let upload_slugs = Upload::delete_for_user(&env.pool, user_id)
         .await
@@ -305,6 +309,11 @@ pub async fn delete_user(
             tracing::error!(path = ?path, err = ?err, owner = %user_id, "Failed to delete cached upload");
         }
     }
+
+    user.delete(&env.pool).await.map_err(|err| {
+        tracing::error!(err = ?err, user_id = %user_id, "Failed to delete user");
+        InternalServerError(err)
+    })?;
 
     tracing::info!(user_id = %user_id, "Deleted user");
     Ok(Redirect::see_other("/admin/users"))

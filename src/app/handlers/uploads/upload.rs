@@ -28,7 +28,11 @@ async fn render_upload(
     upload: Upload,
 ) -> poem::Result<Html<String>> {
     let owner = if let Some(user) = &user {
-        user.admin || upload.uploaded_by == user.id
+        user.admin
+            || upload.is_owner(&env.pool, user).await.map_err(|err| {
+                tracing::error!(%user.id, ?err, "Unable to check if user is owner of an upload");
+                InternalServerError(err)
+            })?
     } else {
         false
     };
@@ -159,7 +163,12 @@ pub async fn delete_upload(
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
-    if !user.admin && upload.uploaded_by != user.id {
+    let can_delete = user.admin || upload.is_owner(&env.pool, &user).await.map_err(|err| {
+        tracing::error!(%upload.id, %user.id, ?err, "Unable to check if user is owner of an upload");
+        InternalServerError(err)
+    })?;
+
+    if !can_delete {
         tracing::error!(
             user = %user.id,
             upload = %upload.id,
@@ -180,20 +189,9 @@ pub async fn delete_upload(
         tracing::error!(?path, ?err, %upload.id, "Failed to delete cached upload");
     }
 
-    let remaining = Upload::count_for_user(&env.pool, user.id)
-        .await
-        .map_err(|err| {
-            tracing::error!(%user.id, ?err, "Failed to count remaining uploads for user");
-            InternalServerError(err)
-        })?;
-
-    Ok(Html(if remaining == 0 {
-        "<tr><td colspan=\"9\" class=\"text-center italic\">No more uploads</td></tr>"
-    } else {
-        ""
-    })
-    .with_header("HX-Trigger", "parcelUploadDeleted")
-    .into_response())
+    Ok(Html("")
+        .with_header("HX-Trigger", "parcelUploadDeleted")
+        .into_response())
 }
 
 #[derive(Debug, Deserialize)]
@@ -218,7 +216,12 @@ pub async fn get_share(
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
-    if !user.admin && upload.uploaded_by != user.id {
+    let can_modify = user.admin || upload.is_owner(&env.pool, &user).await.map_err(|err| {
+        tracing::error!(%upload.id, %user.id, ?err, "Unable to check if user is owner of an upload");
+        InternalServerError(err)
+    })?;
+
+    if !can_modify {
         tracing::error!(
             %user.id,
             %upload.id,
