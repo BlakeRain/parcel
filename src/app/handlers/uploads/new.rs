@@ -17,26 +17,54 @@ use crate::{
         templates::{authorized_context, render_template},
     },
     env::Env,
-    model::{types::Key, upload::Upload},
+    model::{team::Team, types::Key, upload::Upload},
 };
 
 #[derive(Debug, Deserialize)]
 pub struct NewQuery {
     #[serde(default)]
     immediate: bool,
+    #[serde(default)]
+    team: Option<Key<Team>>,
 }
 
 #[handler]
-pub fn get_new(
+pub async fn get_new(
     env: Data<&Env>,
     csrf_token: &CsrfToken,
     SessionUser(user): SessionUser,
-    Query(NewQuery { immediate }): Query<NewQuery>,
+    Query(NewQuery { immediate, team }): Query<NewQuery>,
 ) -> poem::Result<Html<String>> {
+    let team = if let Some(team_id) = team {
+        let Some(team) = Team::get(&env.pool, team_id).await.map_err(|err| {
+            tracing::error!(%team_id, ?err, "Unable to get team by ID");
+            InternalServerError(err)
+        })?
+        else {
+            tracing::error!(%team_id, "Team not found");
+            return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
+        };
+
+        let is_member = user.is_member_of(&env.pool, team.id).await.map_err(|err| {
+            tracing::error!(%user.id, %team.id, "Unable to check if user is member of team");
+            InternalServerError(err)
+        })?;
+
+        if !is_member {
+            tracing::error!(%user.id, %team.id, "User is not a member of team");
+            return Err(poem::Error::from_status(StatusCode::FORBIDDEN));
+        }
+
+        Some(team)
+    } else {
+        None
+    };
+
     render_template(
         "uploads/new.html",
         context! {
             immediate,
+            team,
             csrf_token => csrf_token.0,
             upload_js => javascript!("scripts/components/upload.ts"),
             ..authorized_context(&env, &user)
@@ -60,6 +88,7 @@ pub async fn post_new(
     let mut seen_csrf = false;
     let mut uploads = Vec::new();
     let mut failures = Vec::new();
+    let mut team = None;
 
     while let Ok(Some(field)) = form.next_field().await {
         if field.name() == Some("csrf_token") {
@@ -69,6 +98,45 @@ pub async fn post_new(
             }
 
             seen_csrf = true;
+        } else if field.name() == Some("team") {
+            if team.is_some() {
+                tracing::error!("Multiple team fields in upload form");
+                return Err(poem::Error::from_status(StatusCode::BAD_REQUEST));
+            }
+
+            let team_id = field.text().await.map_err(|err| {
+                tracing::error!(?err, "Unable to read team field");
+                InternalServerError(err)
+            })?;
+
+            let team_id = uuid::Uuid::parse_str(&team_id).map_err(|err| {
+                tracing::error!(?err, "Unable to parse team ID");
+                poem::Error::from_status(StatusCode::BAD_REQUEST)
+            })?;
+
+            team = Team::get(&env.pool, team_id.into()).await.map_err(|err| {
+                tracing::error!(?err, "Unable to get team");
+                InternalServerError(err)
+            })?;
+
+            match team {
+                None => {
+                    tracing::error!(team_id = ?team_id, "Team not found");
+                    return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
+                }
+
+                Some(ref team) => {
+                    let is_member = user.is_member_of(&env.pool, team.id).await.map_err(|err| {
+                        tracing::error!(?err, "Unable to check if user is member of team");
+                        InternalServerError(err)
+                    })?;
+
+                    if !is_member {
+                        tracing::error!(team_id = ?team.id, "User is not a member of team");
+                        return Err(poem::Error::from_status(StatusCode::FORBIDDEN));
+                    }
+                }
+            }
         } else if field.name() == Some("file") {
             let slug = nanoid::nanoid!();
             let filename = field
@@ -112,8 +180,11 @@ pub async fn post_new(
                 expiry_date: None,
                 password: None,
                 custom_slug: None,
-                owner_user: Some(user.id),
-                owner_team: None,
+                owner_user: match team.as_ref() {
+                    Some(_) => None,
+                    None => Some(user.id),
+                },
+                owner_team: team.as_ref().map(|team| team.id),
                 uploaded_by: user.id,
                 uploaded_at: OffsetDateTime::now_utc(),
                 remote_addr: ip.as_ref().map(ToString::to_string),

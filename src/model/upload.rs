@@ -57,7 +57,38 @@ impl UploadOrder {
     }
 }
 
+pub enum UploadOwner {
+    User(Key<User>),
+    Team(Key<Team>),
+}
+
+impl UploadOwner {
+    pub fn get_user_id(&self) -> Option<Key<User>> {
+        match self {
+            Self::User(user) => Some(*user),
+            Self::Team(_) => None,
+        }
+    }
+
+    pub fn get_team_id(&self) -> Option<Key<Team>> {
+        match self {
+            Self::User(_) => None,
+            Self::Team(team) => Some(*team),
+        }
+    }
+}
+
 impl Upload {
+    pub fn get_owner(&self) -> UploadOwner {
+        match self.owner_user {
+            Some(user) => UploadOwner::User(user),
+            None => match self.owner_team {
+                Some(team) => UploadOwner::Team(team),
+                None => unreachable!(),
+            },
+        }
+    }
+
     pub async fn create(&self, pool: &SqlitePool) -> sqlx::Result<()> {
         sqlx::query(
             "INSERT INTO uploads (id, slug, filename, size, public,

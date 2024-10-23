@@ -41,7 +41,7 @@ pub async fn get_team(
             query,
             team,
             teams,
-            index_js => javascript!("scripts/index.ts"),
+            index_js => javascript!("scripts/index.ts", format = "esm"),
             ..authorized_context(&env, &user)
         },
     )

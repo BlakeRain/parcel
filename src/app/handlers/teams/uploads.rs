@@ -100,17 +100,7 @@ pub async fn get_page(
         return Err(poem::Error::from_status(StatusCode::FORBIDDEN));
     }
 
-    let total = Upload::count_for_team(&env.pool, team_id)
-        .await
-        .map_err(|err| {
-            tracing::error!(%team_id, ?err, "Unable to get upload count for team");
-            InternalServerError(err)
-        })?;
-
-    let last_page = total / 50;
-    let page = page.min(last_page);
-    let offset = page * 50;
-    let uploads = Upload::get_for_team(&env.pool, team.id, query.order, query.asc, offset, 50)
+    let uploads = Upload::get_for_team(&env.pool, team.id, query.order, query.asc, 50 * page, 50)
         .await
         .map_err(|err| {
             tracing::error!(%team.id, ?err, "Unable to get uploads for team");
@@ -121,7 +111,6 @@ pub async fn get_page(
         "uploads/page.html",
         context! {
             page,
-            last_page,
             uploads,
             query,
             team,

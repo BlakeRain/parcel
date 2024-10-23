@@ -13,11 +13,16 @@ import { FileInfo } from "./upload/files";
 function startUpload(
   modal: ParcelModal,
   csrf_token: string,
+  team: string | null,
   files: FileInfo[],
   dispatch: (action: StateAction) => void,
 ) {
   const form = new FormData();
   form.append("csrf_token", csrf_token);
+
+  if (team) {
+    form.append("team", team);
+  }
 
   for (let file of files) {
     form.append("file", file.file);
@@ -53,7 +58,10 @@ function startUpload(
   dispatch({ type: "upload", upload });
 }
 
-const UploadButtons: FunctionComponent<{ csrf_token: string }> = (props) => {
+const UploadButtons: FunctionComponent<{
+  csrf_token: string;
+  team?: string;
+}> = (props) => {
   const { state, dispatch } = useState();
 
   const onCancelClick = (event: MouseEvent) => {
@@ -74,7 +82,13 @@ const UploadButtons: FunctionComponent<{ csrf_token: string }> = (props) => {
       throw new Error("Could not find parent modal");
     }
 
-    startUpload(modal, props.csrf_token, state.files, dispatch);
+    startUpload(
+      modal,
+      props.csrf_token,
+      props.team || null,
+      state.files,
+      dispatch,
+    );
   };
 
   return html`
@@ -127,7 +141,9 @@ const CompleteButtons: FunctionComponent = () => {
   `;
 };
 
-const ErrorButtons: FunctionComponent<{ csrf_token: string }> = (props) => {
+const ErrorButtons: FunctionComponent<{ csrf_token: string; team?: string }> = (
+  props,
+) => {
   const { state, dispatch } = useState();
 
   const onCancelClick = (event: MouseEvent) => {
@@ -148,7 +164,13 @@ const ErrorButtons: FunctionComponent<{ csrf_token: string }> = (props) => {
       throw new Error("Could not find parent modal");
     }
 
-    startUpload(modal, props.csrf_token, state.files, dispatch);
+    startUpload(
+      modal,
+      props.csrf_token,
+      props.team || null,
+      state.files,
+      dispatch,
+    );
   };
 
   return html`
@@ -194,7 +216,10 @@ const UploadBody = () => {
   `;
 };
 
-const UploadFormInner: FunctionComponent<{ csrf_token: string }> = (props) => {
+const UploadFormInner: FunctionComponent<{
+  csrf_token: string;
+  team?: string;
+}> = (props) => {
   const eventRecv = useRef<HTMLElement>(null);
   const { state, dispatch } = useState();
 
@@ -247,7 +272,9 @@ const UploadFormInner: FunctionComponent<{ csrf_token: string }> = (props) => {
   `;
 };
 
-const UploadForm: FunctionComponent<{ csrf_token: string }> = (props) => {
+const UploadForm: FunctionComponent<{ csrf_token: string; team?: string }> = (
+  props,
+) => {
   return html`
       <${ProvideState}>
         <${UploadFormInner} ...${props} />
@@ -255,4 +282,4 @@ const UploadForm: FunctionComponent<{ csrf_token: string }> = (props) => {
   `;
 };
 
-register(UploadForm, "parcel-upload-form", ["csrf_token"]);
+register(UploadForm, "parcel-upload-form", ["csrf_token", "team"]);

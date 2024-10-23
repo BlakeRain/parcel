@@ -33,7 +33,7 @@
         <button
           type="button"
           class="button"
-          hx-get="/uploads/new"
+          hx-get="/uploads/new{% if team %}?team={{ team.id }}{% endif %}"
           hx-trigger="click"
           hx-target="body"
           hx-swap="beforeend">
@@ -94,7 +94,7 @@
   </div>
 </form>
 
-{% if total > 0 %}
+{% if stats.total > 0 %}
   <script>
     (function() {
       document.getElementById("uploads_group").addEventListener("changed", (event) => {

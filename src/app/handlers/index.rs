@@ -34,7 +34,7 @@ pub async fn get_index(
         minijinja::context! {
             query,
             teams,
-            index_js => javascript!("scripts/index.ts"),
+            index_js => javascript!("scripts/index.ts", format = "esm"),
             ..authorized_context(&env, &user)
         },
     )

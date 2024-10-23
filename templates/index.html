@@ -33,5 +33,8 @@
 {% endblock %}
 
 {% block scripts %}
-  <script type="module" src="/static/scripts/bundles/{{ index_js | safe }}{% if build.profile != "debug" %}.min{% endif %}.js"></script>
+  <script type="module">
+    import { setupIndex } from "/static/scripts/bundles/{{ index_js | safe }}{% if build.profile != "debug" %}.min{% endif %}.js";
+    setupIndex({% if team %}"{{ team.id }}"{% endif %});
+  </script>
 {% endblock %}
