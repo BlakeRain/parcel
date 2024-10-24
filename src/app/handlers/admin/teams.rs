@@ -41,7 +41,7 @@ pub async fn get_teams(
             ..authorized_context(&env, &admin)
         },
     )?
-    .with_header("HX-Trigger", "closeModal")
+    .with_header("HX-Trigger", "closeModals")
     .into_response())
 }
 
