@@ -1,11 +1,14 @@
 CREATE TABLE teams (
   id TEXT NOT NULL PRIMARY KEY,
   name TEXT NOT NULL,
+  slug TEXT NOT NULL,
   "limit" BIGINT,
   enabled BOOLEAN NOT NULL,
   created_at TIMESTAMP NOT NULL,
   created_by TEXT NOT NULL REFERENCES users (id)
 );
+
+CREATE UNIQUE INDEX teams_slug_uindex ON teams (slug);
 
 CREATE TABLE team_members (
   team TEXT NOT NULL REFERENCES teams (id),

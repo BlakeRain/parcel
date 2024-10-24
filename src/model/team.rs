@@ -1,5 +1,5 @@
 use serde::Serialize;
-use sqlx::{FromRow, SqlitePool};
+use sqlx::{FromRow, QueryBuilder, SqlitePool};
 use time::OffsetDateTime;
 
 use super::{types::Key, user::User};
@@ -8,6 +8,7 @@ use super::{types::Key, user::User};
 pub struct Team {
     pub id: Key<Team>,
     pub name: String,
+    pub slug: String,
     pub limit: Option<i64>,
     pub enabled: bool,
     pub created_at: OffsetDateTime,
@@ -16,9 +17,10 @@ pub struct Team {
 
 impl Team {
     pub async fn create(&self, pool: &SqlitePool) -> sqlx::Result<()> {
-        sqlx::query("INSERT INTO teams (id, name,\"limit\", enabled, created_at, created_by) VALUES ($1, $2, $3, $4, $5, $6)")
+        sqlx::query("INSERT INTO teams (id, name, slug, \"limit\", enabled, created_at, created_by) VALUES ($1, $2, $3, $4, $5, $6, $7)")
             .bind(self.id)
             .bind(&self.name)
+            .bind(&self.slug)
             .bind(self.limit)
             .bind(self.enabled)
             .bind(self.created_at)
@@ -32,18 +34,23 @@ impl Team {
         &mut self,
         pool: &SqlitePool,
         name: &str,
+        slug: &str,
         limit: Option<i64>,
         enabled: bool,
     ) -> sqlx::Result<()> {
-        sqlx::query("UPDATE teams SET name = $1, \"limit\" = $2, enabled = $3 WHERE id = $4")
-            .bind(name)
-            .bind(limit)
-            .bind(enabled)
-            .bind(self.id)
-            .execute(pool)
-            .await?;
+        sqlx::query(
+            "UPDATE teams SET name = $1, slug = $2, \"limit\" = $3, enabled = $4 WHERE id = $5",
+        )
+        .bind(name)
+        .bind(slug)
+        .bind(limit)
+        .bind(enabled)
+        .bind(self.id)
+        .execute(pool)
+        .await?;
 
         self.name = name.to_string();
+        self.slug = slug.to_string();
         self.limit = limit;
         self.enabled = enabled;
 
@@ -76,6 +83,24 @@ impl Team {
             .await?;
 
         Ok(())
+    }
+
+    pub async fn slug_exists(
+        pool: &SqlitePool,
+        existing: Option<Key<Team>>,
+        slug: &str,
+    ) -> sqlx::Result<bool> {
+        let mut query = QueryBuilder::new("SELECT EXISTS (SELECT 1 FROM teams WHERE slug = ");
+        query.push_bind(slug);
+
+        if let Some(existing) = existing {
+            query.push(" AND id != ");
+            query.push_bind(existing);
+        }
+
+        query.push(")");
+
+        query.build_query_scalar().fetch_one(pool).await
     }
 }
 

@@ -6,16 +6,22 @@
     hx-select="#teams-list-container"
     hx-swap="outerHTML">
     <input type="hidden" name="token" value="{{ token }}">
-    <label for="name">Team name</label>
-    <input
-      type="text"
-      class="field"
-      name="name"
-      id="name"
-      placeholder="Team Name"
-      value="{{ team.name }}"
-      required>
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-2 mt-4">
+      <div>
+        <label for="name">Team name</label>
+        <input
+          type="text"
+          class="field"
+          name="name"
+          id="name"
+          placeholder="Team Name"
+          value="{{ team.name }}"
+          required>
+      </div>
+      <div id="edit-team-slug-container">
+        <label for="slug">URL slug</label>
+        {% include "admin/teams/slug.html" %}
+      </div>
       <div>
         <div class="checkbox">
           <input
@@ -51,6 +57,7 @@
     </div>
     <div class="buttons reverse end mt-4">
       <button
+        id="edit-team-save-button"
         type="submit"
         class="button"
         onclick="event.target.closest('parcel-modal').closeModal();">
@@ -64,9 +71,41 @@
       </button>
     </div>
     <script type="text/javascript">
-      document.querySelector("input[name='limit_check']").addEventListener("change", (event) => {
-        event.target.form.querySelector("input[name='limit']").disabled = !event.target.checked;
-      });
+      (function() {
+        const state = {
+          name: "{{ team.name }}",
+          slug: "{{ team.slug }}",
+          valid: true
+        };
+
+        function updateFormState() {
+          const valid = state.name.length > 0 && state.slug.length > 0 && state.valid;
+          document.querySelector("#edit-team-save-button").disabled = !valid;
+        }
+
+        htmx.on("#edit-team-slug-container", "htmx:afterSwap", (event) => {
+          const slug = event.target.querySelector("input[name='slug']");
+          state.slug = slug.value;
+          state.valid = slug.getAttribute("data-valid") === "true";
+          updateFormState();
+        });
+
+        document.querySelector("input[name='name']").addEventListener("input", (event) => {
+          state.name = event.target.value;
+          updateFormState();
+        });
+
+        document.querySelector("input[name='name']").addEventListener("change", (event) => {
+          state.name = event.target.value;
+          updateFormState();
+        });
+
+        document.querySelector("input[name='limit_check']").addEventListener("change", (event) => {
+          event.target.form.querySelector("input[name='limit']").disabled = !event.target.checked;
+        });
+
+        updateFormState();
+      })();
     </script>
   </form>
 </parcel-modal>
