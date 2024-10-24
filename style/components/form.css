@@ -46,6 +46,11 @@
       @apply bg-gray-100 border-gray-200 text-gray-500;
       @apply dark:bg-gray-800 dark:border-gray-700 dark:text-gray-500;
     }
+
+    &:invalid {
+      @apply border-red-500;
+      @apply dark:border-red-400;
+    }
   }
 
   select.field {
