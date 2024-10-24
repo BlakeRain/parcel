@@ -48,7 +48,7 @@ pub fn get_new(
     token: &CsrfToken,
 ) -> poem::Result<Html<String>> {
     render_template(
-        "admin/teams/new.html",
+        "admin/teams/form.html",
         context! {
             token => token.0,
             ..authorized_context(&env, &admin)
@@ -177,7 +177,7 @@ pub async fn get_team(
     };
 
     render_template(
-        "admin/teams/new.html",
+        "admin/teams/form.html",
         context! {
             token => token.0,
             team,
