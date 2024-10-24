@@ -4,10 +4,12 @@ use poem::{
     handler,
     http::{header::LOCATION, HeaderMap, HeaderValue, StatusCode},
     session::Session,
-    web::{CsrfToken, CsrfVerifier, Data, Form, Html},
+    web::{CsrfToken, CsrfVerifier, Data, Form, Html, Redirect},
+    IntoResponse, Response,
 };
 use serde::Deserialize;
 use time::OffsetDateTime;
+use validator::Validate;
 
 use crate::{
     app::templates::{default_context, render_template},
@@ -16,6 +18,7 @@ use crate::{
         types::Key,
         user::{hash_password, requires_setup, User},
     },
+    utils::validate_slug,
 };
 
 #[handler]
@@ -47,10 +50,12 @@ pub async fn get_setup(
     Ok((StatusCode::OK, HeaderMap::new(), body))
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
 pub struct SetupForm {
     token: String,
+    #[validate(length(min = 3), custom(function = "validate_slug"))]
     username: String,
+    #[validate(length(min = 8))]
     password: String,
 }
 
@@ -59,12 +64,8 @@ pub async fn post_setup(
     env: Data<&Env>,
     verifier: &CsrfVerifier,
     session: &Session,
-    Form(SetupForm {
-        token,
-        username,
-        password,
-    }): Form<SetupForm>,
-) -> poem::Result<(StatusCode, HeaderMap, Html<String>)> {
+    Form(form): Form<SetupForm>,
+) -> poem::Result<Response> {
     let required = requires_setup(&env.pool)
         .await
         .map_err(InternalServerError)?;
@@ -72,21 +73,38 @@ pub async fn post_setup(
     if !required {
         tracing::error!("Setup form submitted, but setup was already completed");
 
-        let body = render_template(
+        return Ok(render_template(
             "admin/setup.html",
             context! {
-                error => true,
+                error => "Setup is no longer required",
                 ..default_context(&env)
             },
-        )?;
-
-        return Ok((StatusCode::OK, HeaderMap::new(), body));
+        )?
+        .into_response());
     }
 
-    if !verifier.is_valid(&token) {
+    if !verifier.is_valid(&form.token) {
         tracing::error!("CSRF token in setup form was invalid");
         return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
     }
+
+    if let Err(err) = form.validate() {
+        tracing::error!(error = ?err, "Validation error in setup form");
+
+        return Ok(render_template(
+            "admin/setup.html",
+            context! {
+                error => "There was an error in your submission",
+                errors => err,
+                ..default_context(&env)
+            },
+        )?
+        .into_response());
+    }
+
+    let SetupForm {
+        username, password, ..
+    } = form;
 
     let name = username.clone();
     let admin = User {
@@ -110,9 +128,5 @@ pub async fn post_setup(
     tracing::info!(admin = ?admin, "Created initial administrator");
     session.set("user_id", admin.id);
 
-    Ok((
-        StatusCode::SEE_OTHER,
-        HeaderMap::from_iter([(LOCATION, HeaderValue::from_static("/admin"))]),
-        Html("Goto <a href=\"/admin\">administration</a>".to_string()),
-    ))
+    Ok(Redirect::see_other("/admin").into_response())
 }

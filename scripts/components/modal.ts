@@ -1,8 +1,19 @@
+const MODALS: { [key: number]: ParcelModal } = {};
+let NEXT_MODAL_ID = 0;
+
 export class ParcelModal extends HTMLElement {
+  private modal_id: number;
   private closing: boolean = false;
   private withHtmx: boolean = false;
   private withImmediate: boolean = false;
   private underlayDismiss: boolean = true;
+
+  constructor() {
+    super();
+    this.modal_id = NEXT_MODAL_ID;
+    NEXT_MODAL_ID++;
+    MODALS[this.modal_id] = this;
+  }
 
   connectedCallback() {
     this.withHtmx = this.getAttribute("with-htmx") !== null;
@@ -55,6 +66,8 @@ export class ParcelModal extends HTMLElement {
     } else {
       this.parentNode.removeChild(this);
     }
+
+    MODALS[this.modal_id] = null;
   }
 
   closeModal() {
@@ -69,4 +82,13 @@ export class ParcelModal extends HTMLElement {
 
 export function register() {
   customElements.define("parcel-modal", ParcelModal);
+
+  document.body.addEventListener("closeModal", (event: CustomEvent) => {
+    console.log("Closing all modals");
+    for (const modal of Object.values(MODALS)) {
+      if (modal) {
+        modal.closeModal();
+      }
+    }
+  });
 }

@@ -1,5 +1,7 @@
+{% from "utils/errors.html" import validation_errors %}
 <parcel-modal class="hidden" with-htmx>
   <form
+    id="team-form"
     class="form"
     hx-post="/admin/teams/{% if team %}{{ team.id }}{% else %}new{% endif %}"
     hx-target="#teams-list-container"
@@ -21,8 +23,10 @@
           class="field"
           name="name"
           id="name"
+          minlength="1"
+          maxlength="100"
           placeholder="Team Name"
-          value="{% if team %}{{ team.name }}{% endif %}"
+          value="{% if team %}{{ team.name }}{% elif name %}{{ name }}{% endif %}"
           required>
         <p class="text-xs text-gray-500 dark:text-gray-300 m-1">
           This is the name of the team that is displayed in the interface.
@@ -38,7 +42,7 @@
             type="checkbox"
             name="enabled"
             id="enabled"
-            {% if not team or team.enabled %}checked{% endif %}>
+            {% if not team or team.enabled or enabled %}checked{% endif %}>
           <label for="enabled">Team is enabled</label>
         </div>
       </div>
@@ -48,7 +52,7 @@
             type="checkbox"
             name="limit_check"
             id="limit_check"
-            {% if team and team.limit %}checked{% endif %}>
+            {% if not team or (team and team.limit) or limit %}checked{% endif %}>
           <label for="limit_check">Team has an upload limit</label>
         </div>
         <input
@@ -59,23 +63,30 @@
           min="0"
           {% if team and team.limit %}
             value="{{ (team.limit / 1048576) | int }}"
+          {% elif limit %}
+            value="{{ (limit / 1048576) | int }}"
           {% else %}
             value="1024"
             {% if not team %}disabled{% endif %}
           {% endif %}>
       </div>
     </div>
+    {% if errors %}
+      {{ validation_errors(errors, dict(name="Team name", slug="URL slug"), class="mt-4") }}
+    {% endif %}
     <div class="buttons reverse end mt-4">
       <button
         id="team-save-button"
         type="submit"
         class="button"
-        onclick="event.target.closest('parcel-modal').closeModal();">
+        data-loading-disable>
+        <span
+          class="{% if team %}icon-check{% else %}icon-plus{% endif %}"
+          data-loading-class="icon-loader-circle animate-spin"
+          data-loading-class-remove="{% if team %}icon-check{% else %}icon-plus{% endif %}"></span>
         {% if team %}
-          <span class="icon-check"></span>
           Save changes
         {% else %}
-          <span class="icon-plus"></span>
           Add team
         {% endif %}
       </button>
@@ -85,42 +96,5 @@
         Cancel
       </button>
     </div>
-    <script type="text/javascript">
-      (function() {
-        const state = {
-          name: "",
-          slug: "",
-          valid: false
-        };
-
-        function updateFormState() {
-          const valid = state.name.length > 0 && state.slug.length > 0 && state.valid;
-          document.querySelector("#team-save-button").disabled = !valid;
-        }
-
-        htmx.on("#team-slug-container", "htmx:afterSwap", (event) => {
-          const slug = event.target.querySelector("input[name='slug']");
-          state.slug = slug.value;
-          state.valid = slug.getAttribute("data-valid") === "true";
-          updateFormState();
-        });
-
-        document.querySelector("input[name='name']").addEventListener("input", (event) => {
-          state.name = event.target.value;
-          updateFormState();
-        });
-
-        document.querySelector("input[name='name']").addEventListener("change", (event) => {
-          state.name = event.target.value;
-          updateFormState();
-        });
-
-        document.querySelector("input[name='limit_check']").addEventListener("change", (event) => {
-          event.target.form.querySelector("input[name='limit']").disabled = !event.target.checked;
-        });
-
-        updateFormState();
-      })();
-    </script>
   </form>
 </parcel-modal>

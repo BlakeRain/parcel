@@ -15,6 +15,7 @@
       To set up your installation, you need to create the username and password for the
       first administrator user. You can add more administrators or normal users later.
     </p>
+    {% if error %}<div class="text-danger">{{ error }}</div>{% endif %}
     <form id="setup-form" action="/admin/setup" method="POST" class="form gap-2">
       <input type="hidden" name="token" value="{{ token }}" />
       <label for="username">Administrator Username</label>
@@ -33,6 +34,7 @@
         class="field"
         name="password"
         type="password"
+        minlength="8"
         placeholder="Administrator Password"
         required />
       <input

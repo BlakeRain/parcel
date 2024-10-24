@@ -8,6 +8,7 @@ use poem::{
 };
 use serde::Deserialize;
 use time::OffsetDateTime;
+use validator::{Validate, ValidateArgs, ValidationError, ValidationErrors};
 
 use crate::{
     app::{
@@ -20,25 +21,28 @@ use crate::{
         types::Key,
         upload::Upload,
     },
+    utils::ValidationErrorsExt,
 };
 
 #[handler]
 pub async fn get_teams(
     env: Data<&Env>,
     SessionAdmin(admin): SessionAdmin,
-) -> poem::Result<Html<String>> {
+) -> poem::Result<Response> {
     let teams = TeamList::get(&env.pool).await.map_err(|err| {
         tracing::error!(?err, "Failed to get list of teams");
         InternalServerError(err)
     })?;
 
-    render_template(
+    Ok(render_template(
         "admin/teams.html",
         context! {
             teams,
             ..authorized_context(&env, &admin)
         },
-    )
+    )?
+    .with_header("HX-Trigger", "closeModal")
+    .into_response())
 }
 
 #[handler]
@@ -112,10 +116,25 @@ pub async fn post_check_slug(
     render_template("admin/teams/slug.html", context! { exists, team, slug })
 }
 
-#[derive(Debug, Deserialize)]
+async fn validate_slug(slug: &str, env: &Env) -> Result<(), ValidationError> {
+    crate::utils::validate_slug(slug)?;
+    if Team::slug_exists(&env.pool, None, slug)
+        .await
+        .unwrap_or_default()
+    {
+        return Err(ValidationError::new("duplicate_slug")
+            .with_message("A team with this URL slug already exists".into()));
+    }
+
+    Ok(())
+}
+
+#[derive(Debug, Deserialize, Validate)]
 pub struct NewTeamForm {
     pub token: String,
+    #[validate(length(min = 1, max = 100))]
     pub name: String,
+    #[validate(length(min = 3, max = 100))]
     pub slug: String,
     pub enabled: Option<String>,
     pub limit: Option<i64>,
@@ -124,20 +143,51 @@ pub struct NewTeamForm {
 #[handler]
 pub async fn post_new(
     env: Data<&Env>,
+    next_token: &CsrfToken,
     verifier: &CsrfVerifier,
     SessionAdmin(admin): SessionAdmin,
-    Form(NewTeamForm {
-        token,
+    Form(form): Form<NewTeamForm>,
+) -> poem::Result<Response> {
+    if !verifier.is_valid(&form.token) {
+        tracing::error!("Invalid CSRF token in new team form");
+        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+    }
+
+    let mut errors = ValidationErrors::new();
+
+    if let Err(first_errors) = form.validate() {
+        errors.merge(first_errors);
+    }
+
+    if let Err(slug_error) = validate_slug(&form.slug, &env).await {
+        errors.add("slug", slug_error);
+    }
+
+    if !errors.is_empty() {
+        return Ok(render_template(
+            "admin/teams/form.html",
+            context! {
+                errors,
+                token => next_token.0,
+                name => &form.name,
+                slug => &form.slug,
+                enabled => form.enabled.as_deref() == Some("on"),
+                limit => form.limit,
+                ..authorized_context(&env, &admin)
+            },
+        )?
+        .with_header("HX-Retarget", "#team-form")
+        .with_header("HX-Reselect", "#team-form")
+        .into_response());
+    }
+
+    let NewTeamForm {
         name,
         slug,
         enabled,
         limit,
-    }): Form<NewTeamForm>,
-) -> poem::Result<impl IntoResponse> {
-    if !verifier.is_valid(&token) {
-        tracing::error!("Invalid CSRF token in new team form");
-        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
-    }
+        ..
+    } = form;
 
     let enabled = enabled.as_deref() == Some("on");
     let team = Team {
@@ -157,7 +207,7 @@ pub async fn post_new(
 
     tracing::info!(team = %team.id, ?team.name, "Created new team");
 
-    Ok(Redirect::see_other("/admin/teams"))
+    Ok(Redirect::see_other("/admin/teams").into_response())
 }
 
 #[handler]

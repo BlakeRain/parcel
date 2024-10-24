@@ -1,0 +1,36 @@
+{% macro describe_error(error) -%}
+  {% if error.message -%}
+    {{ error.message }}
+  {%- else -%}
+    {%- if error.code == "length" -%}
+      {% if error.params.min is number and error.params.max is number -%}
+        The field must be between {{ error.params.min }} and {{ error.params.max }} characters in length.
+      {%- elif error.params.min is number -%}
+        The field must be at least {{ error.params.min }} characters in length.
+      {%- elif error.params.max is number -%}
+        The field must be no more than {{ error.params.max }} characters in length.
+      {%- elif error.params.length is number -%}
+        The field must be exactly {{ error.params.length }} characters in length.
+      {%- else -%}
+        The length of the field is invalid.
+      {%- endif -%}
+    {%- endif -%}
+  {%- endif -%}
+{%- endmacro -%}
+{%- macro validation_errors(errors, field_names, class) -%}
+<div class="text-danger flex flex-col gap-2 rounded-md border border-red-500 bg-red-500/25 p-2 {{ class }}">
+  <div class="font-semibold tracking-wide">
+    <span class="icon-triangle-alert"></span> There were some errors in the your submission.
+  </div>
+  {%- for field_name, errors in errors | dictsort %}
+    <div>
+      In the <span class="italic">{% if field_names %}{{ field_names[field_name] }}{% else %}{{ field_name }}{% endif %}</span> field:
+      <ul class="list-disc pl-8">
+        {% for error in errors %}
+        <li>{{ describe_error(error) }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endfor -%}
+</div>
+{%- endmacro -%}
