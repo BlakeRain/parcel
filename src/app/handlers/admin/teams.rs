@@ -8,7 +8,7 @@ use poem::{
 };
 use serde::Deserialize;
 use time::OffsetDateTime;
-use validator::{Validate, ValidateArgs, ValidationError, ValidationErrors};
+use validator::{Validate, ValidationError, ValidationErrors};
 
 use crate::{
     app::{
@@ -83,7 +83,10 @@ pub async fn post_check_new_slug(
         .await
         .map_err(InternalServerError)?;
 
-    render_template("admin/teams/slug.html", context! { exists, slug })
+    render_template(
+        "admin/teams/slug.html",
+        context! { exists, form => context! { slug } },
+    )
 }
 
 #[handler]
@@ -113,7 +116,10 @@ pub async fn post_check_slug(
         .await
         .map_err(InternalServerError)?;
 
-    render_template("admin/teams/slug.html", context! { exists, team, slug })
+    render_template(
+        "admin/teams/slug.html",
+        context! { exists, team, form => context! { slug } },
+    )
 }
 
 async fn validate_slug(slug: &str, env: &Env) -> Result<(), ValidationError> {
@@ -169,10 +175,12 @@ pub async fn post_new(
             context! {
                 errors,
                 token => next_token.0,
-                name => &form.name,
-                slug => &form.slug,
-                enabled => form.enabled.as_deref() == Some("on"),
-                limit => form.limit,
+                form => context !{
+                    name => &form.name,
+                    slug => &form.slug,
+                    enabled => form.enabled.as_deref() == Some("on"),
+                    limit => form.limit,
+                },
                 ..authorized_context(&env, &admin)
             },
         )?
@@ -236,10 +244,12 @@ pub async fn get_team(
     )
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
 pub struct EditTeamForm {
     pub token: String,
+    #[validate(length(min = 1, max = 100))]
     pub name: String,
+    #[validate(length(min = 3, max = 100))]
     pub slug: String,
     pub enabled: Option<String>,
     pub limit: Option<i64>,
@@ -248,18 +258,13 @@ pub struct EditTeamForm {
 #[handler]
 pub async fn post_team(
     env: Data<&Env>,
-    SessionAdmin(_): SessionAdmin,
+    SessionAdmin(admin): SessionAdmin,
+    next_token: &CsrfToken,
     verifier: &CsrfVerifier,
     Path(team_id): Path<Key<Team>>,
-    Form(EditTeamForm {
-        token,
-        name,
-        slug,
-        enabled,
-        limit,
-    }): Form<EditTeamForm>,
+    Form(form): Form<EditTeamForm>,
 ) -> poem::Result<Response> {
-    if !verifier.is_valid(&token) {
+    if !verifier.is_valid(&form.token) {
         tracing::error!("Invalid CSRF token in edit team form");
         return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
     }
@@ -272,6 +277,44 @@ pub async fn post_team(
         tracing::error!(%team_id, "Unrecognized team ID");
         return Ok(render_404("Unrecognized team ID")?.into_response());
     };
+
+    let mut errors = ValidationErrors::new();
+    if let Err(first_errors) = form.validate() {
+        errors.merge(first_errors);
+    }
+
+    if let Err(slug_error) = validate_slug(&form.slug, &env).await {
+        errors.add("slug", slug_error);
+    }
+
+    if !errors.is_empty() {
+        return Ok(render_template(
+            "admin/teams/form.html",
+            context! {
+                errors,
+                team,
+                token => next_token.0,
+                form => context !{
+                    name => &form.name,
+                    slug => &form.slug,
+                    enabled => form.enabled.as_deref() == Some("on"),
+                    limit => form.limit,
+                },
+                ..authorized_context(&env, &admin)
+            },
+        )?
+        .with_header("HX-Retarget", "#team-form")
+        .with_header("HX-Reselect", "#team-form")
+        .into_response());
+    }
+
+    let EditTeamForm {
+        name,
+        slug,
+        enabled,
+        limit,
+        ..
+    } = form;
 
     let enabled = enabled.as_deref() == Some("on");
     let limit = limit.map(|limit| limit * 1024 * 1024);

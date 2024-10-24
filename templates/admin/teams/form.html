@@ -26,7 +26,7 @@
           minlength="1"
           maxlength="100"
           placeholder="Team Name"
-          value="{% if team %}{{ team.name }}{% elif name %}{{ name }}{% endif %}"
+          value="{% if form %}{{ form.name }}{% elif team %}{{ team.name }}{% endif %}"
           required>
         <p class="text-xs text-gray-500 dark:text-gray-300 m-1">
           This is the name of the team that is displayed in the interface.
@@ -42,17 +42,18 @@
             type="checkbox"
             name="enabled"
             id="enabled"
-            {% if not team or team.enabled or enabled %}checked{% endif %}>
+            {% if (not form and not team) or (form and form.enabled) or (team and team.enabled) %}checked{% endif %}>
           <label for="enabled">Team is enabled</label>
         </div>
       </div>
+      {% set has_limit = (not form and not team) or (form and form.limit is number) or (team and team.limit is number) %}
       <div class="flex flex-col justify-end">
         <div class="checkbox">
           <input
             type="checkbox"
             name="limit_check"
             id="limit_check"
-            {% if not team or (team and team.limit) or limit %}checked{% endif %}>
+            {% if has_limit %}checked{% endif %}>
           <label for="limit_check">Team has an upload limit</label>
         </div>
         <input
@@ -61,13 +62,13 @@
           name="limit"
           id="limit"
           min="0"
-          {% if team and team.limit %}
+          {% if form and form.limit is number %}
+            value="{{ form.limit }}"
+          {% elif team and team.limit is number %}
             value="{{ (team.limit / 1048576) | int }}"
-          {% elif limit %}
-            value="{{ (limit / 1048576) | int }}"
           {% else %}
             value="1024"
-            {% if not team %}disabled{% endif %}
+            {% if not has_limit %}disabled{% endif %}
           {% endif %}>
       </div>
     </div>
@@ -97,4 +98,13 @@
       </button>
     </div>
   </form>
+  <script type="text/javascript">
+    (function() {
+      console.log("Here");
+      document.getElementById("limit_check").addEventListener("change", function(event) {
+        console.log("limit-check.checked", event.target.checked);
+        document.getElementById("limit").disabled = !event.target.checked;
+      });
+    })();
+  </script>
 </parcel-modal>

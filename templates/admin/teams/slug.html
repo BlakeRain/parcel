@@ -9,8 +9,8 @@
     {% else %}
       hx-post="/admin/teams/new/slug"
     {% endif %}
-    {% if slug is string %}
-      value="{{ slug }}"
+    {% if form %}
+      value="{{ form.slug }}"
     {% elif team %}
       value="{{ team.slug }}"
     {% endif %}
