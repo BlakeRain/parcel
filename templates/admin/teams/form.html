@@ -6,6 +6,13 @@
     hx-select="#teams-list-container"
     hx-swap="outerHTML">
     <input type="hidden" name="token" value="{{ token }}" />
+    <h1 class="text-2xl font-bold">
+      {% if team %}
+        Edit team ({{ team.name }})
+      {% else %}
+        Add new team
+      {% endif %}
+    </h1>
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-2 mt-4">
       <div>
         <label for="name">Team name</label>
@@ -17,6 +24,9 @@
           placeholder="Team Name"
           value="{% if team %}{{ team.name }}{% endif %}"
           required>
+        <p class="text-xs text-gray-500 dark:text-gray-300 m-1">
+          This is the name of the team that is displayed in the interface.
+        </p>
       </div>
       <div id="team-slug-container">
         <label for="slug">URL slug</label>

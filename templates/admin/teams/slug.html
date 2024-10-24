@@ -17,7 +17,13 @@
       value="{{ team.slug }}"
     {% endif %}
       data-valid="{% if exists %}false{% else %}true{% endif %}"
+      placeholder="url-slug"
+      pattern="[\w\-]{3,}"
       required>
+  <p class="text-xs text-gray-500 dark:text-gray-300 mt-1">
+    This is the URL slug that is used to access the team's page. This must be at least three
+    characters in length, and can only include letters, numbers, hyphens, and underscores.
+  </p>
   {% if exists %}
     <div class="h-4 text-danger">A team with this custom slug already exists.</div>
   {% else %}
