@@ -237,9 +237,7 @@ const ParcelSelect: FunctionComponent<{
       onclick=${onOuterClick}
     >
       <${ParcelSelectInfo} placeholder=${props.placeholder} />
-      ${state.open
-        ? html`<${ParcelSelectDropdown} name=${props.name} />`
-        : null}
+      <${ParcelSelectDropdown} name=${props.name} />
     </div>
   `;
 };
