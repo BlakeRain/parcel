@@ -5,16 +5,16 @@
     id="custom_slug"
     name="custom_slug"
     hx-post="/uploads/{{ upload.id }}/edit/slug"
-    {% if exists %}
-      value=""
-    {% elif custom_slug is string %}
+    {% if custom_slug is string %}
       value="{{ custom_slug }}"
+    {% elif form and form.custom_slug is string %}
+      value="{{ form.custom_slug }}"
     {% elif upload and upload.custom_slug is string %}
       value="{{ upload.custom_slug }}"
     {% else %}
       disabled
-      {% endif %}
-      required>
+    {% endif %}
+    required>
   {% if exists %}
     <div class="h-4 text-danger">An upload with this custom slug already exists.</div>
   {% else %}

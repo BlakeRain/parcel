@@ -9,6 +9,7 @@ use poem::{
 use serde::Deserialize;
 use serde_json::json;
 use time::Date;
+use validator::{Validate, ValidationError, ValidationErrors};
 
 use crate::{
     app::{
@@ -17,6 +18,7 @@ use crate::{
     },
     env::Env,
     model::{types::Key, upload::Upload, user::hash_password},
+    utils::ValidationErrorsExt,
 };
 
 #[handler]
@@ -55,7 +57,6 @@ pub async fn get_edit(
         context! {
             token => token.0,
             now => time::OffsetDateTime::now_utc(),
-            has_password => upload.password.is_some(),
             upload,
             ..authorized_context(&env, &user)
         },
@@ -106,9 +107,18 @@ pub async fn post_check_slug(
     }
 
     let custom_slug = custom_slug.trim().to_string();
-    let exists = Upload::custom_slug_exists(&env.pool, user.id, Some(id), &custom_slug)
-        .await
-        .map_err(InternalServerError)?;
+    let exists = if let Some(owner_user) = upload.owner_user {
+        Upload::custom_slug_exists(&env.pool, owner_user, Some(id), &custom_slug).await
+    } else if let Some(owner_team) = upload.owner_team {
+        Upload::custom_team_slug_exists(&env.pool, owner_team, Some(id), &custom_slug).await
+    } else {
+        tracing::error!("Upload has no owner");
+        return Err(poem::Error::from_status(StatusCode::INTERNAL_SERVER_ERROR));
+    }
+    .map_err(|err| {
+        tracing::error!(upload = %id, ?err, "Unable to check if custom slug exists");
+        InternalServerError(err)
+    })?;
 
     render_template(
         "uploads/edit/slug.html",
@@ -122,37 +132,32 @@ pub async fn post_check_slug(
 
 time::serde::format_description!(iso8601_date, Date, "[year]-[month]-[day]");
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
 pub struct UploadEditForm {
     token: String,
+    #[validate(length(min = 1, max = 255))]
     filename: String,
     public: Option<String>,
     limit: Option<i64>,
     #[serde(default, with = "iso8601_date::option")]
     expiry_date: Option<Date>,
     has_password: Option<String>,
+    change_password: Option<String>,
     password: Option<String>,
+    #[validate(length(min = 3, max = 100))]
     custom_slug: Option<String>,
 }
 
 #[handler]
 pub async fn post_edit(
     env: Data<&Env>,
+    next_token: &CsrfToken,
     verifier: &CsrfVerifier,
     SessionUser(user): SessionUser,
     Path(id): Path<Key<Upload>>,
-    Form(UploadEditForm {
-        token,
-        filename,
-        public,
-        limit,
-        expiry_date,
-        has_password,
-        password,
-        custom_slug,
-    }): Form<UploadEditForm>,
+    Form(form): Form<UploadEditForm>,
 ) -> poem::Result<Response> {
-    if !verifier.is_valid(&token) {
+    if !verifier.is_valid(&form.token) {
         tracing::error!("CSRF token is invalid in upload edit");
         return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
     }
@@ -180,6 +185,75 @@ pub async fn post_edit(
 
         return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
     }
+
+    let mut errors = ValidationErrors::new();
+
+    if let Err(form_errors) = form.validate() {
+        errors.merge(form_errors);
+    }
+
+    if let Some(ref custom_slug) = form.custom_slug {
+        if upload.custom_slug.as_ref() != Some(custom_slug) {
+            let exists = if let Some(owner_user) = upload.owner_user {
+                Upload::custom_slug_exists(&env.pool, owner_user, Some(id), custom_slug).await
+            } else if let Some(owner_team) = upload.owner_team {
+                Upload::custom_team_slug_exists(&env.pool, owner_team, Some(id), custom_slug).await
+            } else {
+                tracing::error!("Upload has no owner");
+                return Err(poem::Error::from_status(StatusCode::INTERNAL_SERVER_ERROR));
+            }
+            .map_err(|err| {
+                tracing::error!(upload = %id, ?err, "Unable to check if custom slug exists");
+                InternalServerError(err)
+            })?;
+
+            if exists {
+                errors.add(
+                    "custom_slug",
+                    ValidationError::new("duplicate_slug")
+                        .with_message("An upload with this custom slug already exists".into()),
+                );
+            }
+        }
+    }
+
+    if !errors.is_empty() {
+        return Ok(render_template(
+            "uploads/edit.html",
+            context! {
+                errors,
+                token => next_token.0,
+                now => time::OffsetDateTime::now_utc(),
+                has_password => upload.password.is_some(),
+                form => context!{
+                    filename => &form.filename,
+                    public => form.public.as_deref() == Some("on"),
+                    limit => form.limit,
+                    expiry_date => form.expiry_date,
+                    has_password => form.has_password.as_deref() == Some("on"),
+                    change_password => form.change_password.as_deref() == Some("on"),
+                    password => &form.password,
+                    custom_slug => &form.custom_slug,
+                },
+                upload,
+                ..authorized_context(&env, &user)
+            },
+        )?
+        .with_header("HX-Retarget", "#upload-form")
+        .with_header("HX-Reselect", "#upload-form")
+        .into_response());
+    }
+
+    let UploadEditForm {
+        filename,
+        public,
+        limit,
+        expiry_date,
+        has_password,
+        password,
+        custom_slug,
+        ..
+    } = form;
 
     let public = public.as_deref() == Some("on");
 

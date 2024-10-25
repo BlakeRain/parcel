@@ -1,5 +1,7 @@
+{% from "utils/errors.html" import validation_errors %}
 <parcel-modal class="hidden" with-htmx hx-target="this" hx-swap="outerHTML">
   <form
+    id="upload-form"
     class="form"
     hx-post="/uploads/{{ upload.id }}/edit">
     <input type="hidden" name="token" value="{{ token }}" />
@@ -9,7 +11,7 @@
       type="text"
       id="filename"
       name="filename"
-      value="{{ upload.filename }}"
+      value="{% if form %}{{ form.filename }}{% else %}{{ upload.filename }}{% endif %}"
       autofocus
       required />
     <div class="checkbox">
@@ -17,17 +19,19 @@
         type="checkbox"
         name="public"
         id="public"
-        {% if upload.public %}checked{% endif %} />
+        {% if (form and form.public) or upload.public %}checked{% endif %}>
       <label for="public">Download is publicly accessible (no need to sign in to download)</label>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
       <div>
+        {% set has_limit = (form and form.limit is number) or (upload.limit is number) %}
         <div class="checkbox">
           <input
             type="checkbox"
             name="limit_check"
             id="limit_check"
-            {% if upload.limit is number %}checked{% endif %} />
+            onchange="document.getElementById('limit').disabled = !this.checked;"
+            {% if has_limit %}checked{% endif %}>
           <label for="limit_check">Limit downloads</label>
         </div>
         <input
@@ -36,16 +40,24 @@
           min="0"
           id="limit"
           name="limit"
-          value="{% if upload.limit is number %}{{ upload.limit }}{% else %}0{% endif %}"
-          {% if upload.limit is not number %}disabled{% endif %} />
+          {% if form and form.limit %}
+            value="{{ form.limit }}"
+          {% elif upload.limit is number %}
+            value="{{ upload.limit }}"
+          {% else %}
+            value="0"
+          {% endif %}
+          {% if not has_limit %}disabled{% endif %}>
       </div>
       <div>
+        {% set has_expiry_date = (form and form.expiry_date) or upload.expiry_date %}
         <div class="checkbox">
           <input
             type="checkbox"
             name="expiry_check"
             id="expiry_check"
-            {% if upload.expiry_date %}checked{% endif %} />
+            onchange="document.getElementById('expiry_date').disabled = !this.checked;"
+            {% if has_expiry_date %}checked{% endif %}>
           <label for="expiry_check">Expiry date</label>
         </div>
         <input
@@ -53,27 +65,37 @@
           type="date"
           id="expiry_date"
           name="expiry_date"
-          {% if upload.expiry_date %}
+          {% if form and form.expiry_date %}
+            value="{{ form.expiry_date | date(format="[year]-[month]-[day]") }}"
+          {% elif upload.expiry_date %}
             value="{{ upload.expiry_date | date(format="[year]-[month]-[day]") }}"
           {% else %}
             value="{{ now | datetime(format="[year]-[month]-[day]") }}"
           {% endif %}
-          {% if not upload.expiry_date %}disabled{% endif %} />
+          {% if not has_expiry_date %}disabled{% endif %}>
       </div>
       <div>
+        {% set has_password = (form and form.password is string) or (upload.password is string) %}
         <div class="checkbox">
           <input
             type="checkbox"
             name="has_password"
             id="has_password"
-            {% if has_password %}checked{% endif %} />
+            {% if has_password %}
+              onchange="const password = document.getElementById('password');
+                password.disabled = !(password.required = this.checked);"
+              checked
+            {% else %}
+              onchange="document.getElementById('change_password').disabled = !this.checked;"
+            {% endif %}>
           <label for="has_password">Password protect download</label>
         </div>
         {% if has_password %}
           <div class="checkbox">
             <input
               type="checkbox"
-              id="change_password" />
+              id="change_password"
+              onchange="document.getElementById('password').disabled = !this.checked;">
             <label for="change_password">Change password</label>
           </div>
         {% endif %}
@@ -83,7 +105,7 @@
           id="password"
           name="password"
           placeholder="••••••"
-          disabled />
+          disabled>
       </div>
       <div>
         <div class="checkbox">
@@ -91,12 +113,16 @@
             type="checkbox"
             name="has_custom_slug"
             id="has_custom_slug"
-            {% if upload.custom_slug is string %}checked{% endif %} />
+            onchange="document.getElementById('custom_slug').disabled = !this.checked;"
+            {% if (form and form.custom_slug is string) or (upload.custom_slug is string) %}checked{% endif %}>
           <label for="has_custom_slug">File has a custom slug</label>
         </div>
         {% include "uploads/edit/slug.html" %}
       </div>
     </div>
+    {% if errors %}
+      {{ validation_errors(errors, class="mt-4") }}
+    {% endif %}
     <div class="buttons reverse end mt-2">
       <button
         type="submit"
@@ -109,53 +135,5 @@
         Cancel
       </button>
     </div>
-    <script type="text/javascript">
-      (function() {
-        const has_password = {{ has_password | tojson | safe }};
-
-        function limitCheckChange(event) {
-          document.getElementById("limit").disabled = !event.target.checked;
-        }
-
-        function expiryCheckChange(event) {
-          document.getElementById("expiry_date").disabled = !event.target.checked;
-        }
-
-        function hasPasswordChange(event) {
-          const password = document.getElementById("password");
-
-          if (!has_password) {
-            if (event.target.checked) {
-              password.disabled = false;
-              password.required = true;
-            } else {
-              password.disabled = true;
-              password.required = false;
-            }
-          } else {
-            const change_password = document.getElementById("change_password");
-            change_password.disabled = !event.target.checked;
-          }
-        }
-
-        function changePasswordChange(event) {
-          document.getElementById("password").disabled = !event.target.checked;
-        }
-
-        function hasCustomSlugChange(event) {
-          document.getElementById("custom_slug").disabled = !event.target.checked;
-        }
-
-        document.getElementById("limit_check").addEventListener("change", limitCheckChange);
-        document.getElementById("expiry_check").addEventListener("change", expiryCheckChange);
-        document.getElementById("has_password").addEventListener("change", hasPasswordChange);
-
-        if (has_password) {
-          document.getElementById("change_password").addEventListener("change", changePasswordChange);
-        }
-
-        document.getElementById("has_custom_slug").addEventListener("change", hasCustomSlugChange);
-      })();
-    </script>
   </form>
 </parcel-modal>

@@ -155,46 +155,6 @@ impl Upload {
             .await
     }
 
-    pub async fn get_for_user(
-        pool: &SqlitePool,
-        owner: Key<User>,
-        order: UploadOrder,
-        asc: bool,
-        offset: u32,
-        limit: u32,
-    ) -> sqlx::Result<Vec<Self>> {
-        sqlx::query_as(&format!(
-            "SELECT * FROM uploads WHERE owner_user = $1 ORDER BY {} {} LIMIT {} OFFSET {}",
-            order.get_order_field(),
-            if asc { "ASC" } else { "DESC" },
-            limit,
-            offset,
-        ))
-        .bind(owner)
-        .fetch_all(pool)
-        .await
-    }
-
-    pub async fn get_for_team(
-        pool: &SqlitePool,
-        owner: Key<Team>,
-        order: UploadOrder,
-        asc: bool,
-        offset: u32,
-        limit: u32,
-    ) -> sqlx::Result<Vec<Self>> {
-        sqlx::query_as(&format!(
-            "SELECT * FROM uploads WHERE owner_team = $1 ORDER BY {} {} LIMIT {} OFFSET {}",
-            order.get_order_field(),
-            if asc { "ASC" } else { "DESC" },
-            limit,
-            offset
-        ))
-        .bind(owner)
-        .fetch_all(pool)
-        .await
-    }
-
     pub async fn get_by_slug(pool: &SqlitePool, slug: &str) -> sqlx::Result<Option<Self>> {
         sqlx::query_as("SELECT * FROM uploads WHERE slug = ?")
             .bind(slug)
@@ -204,26 +164,19 @@ impl Upload {
 
     pub async fn get_by_custom_slug(
         pool: &SqlitePool,
-        owner: Key<User>,
+        owner: &str,
         custom_slug: &str,
     ) -> sqlx::Result<Option<Self>> {
-        sqlx::query_as("SELECT * FROM uploads WHERE owner_user = $1 AND custom_slug = $2")
-            .bind(owner)
-            .bind(custom_slug)
-            .fetch_optional(pool)
-            .await
-    }
-
-    pub async fn get_by_custom_team_slug(
-        pool: &SqlitePool,
-        owner: Key<Team>,
-        custom_slug: &str,
-    ) -> sqlx::Result<Option<Self>> {
-        sqlx::query_as("SELECT * FROM uploads WHERE owner_team = $1 AND custom_slug = $2")
-            .bind(owner)
-            .bind(custom_slug)
-            .fetch_optional(pool)
-            .await
+        sqlx::query_as(
+            "SELECT uploads.* FROM uploads \
+            LEFT JOIN users ON uploads.owner_user = users.id \
+            LEFT JOIN teams ON uploads.owner_team = teams.id \
+            WHERE (users.username = $1 OR teams.slug = $1) AND uploads.custom_slug = $2",
+        )
+        .bind(owner)
+        .bind(custom_slug)
+        .fetch_optional(pool)
+        .await
     }
 
     pub async fn custom_slug_exists(
@@ -402,7 +355,7 @@ pub struct UploadList {
     pub downloads: i64,
     pub limit: Option<i64>,
     pub remaining: Option<i64>,
-    pub expiry_date: Option<i64>,
+    pub expiry_date: Option<Date>,
     pub custom_slug: Option<String>,
     pub owner_slug: String,
     pub uploaded_by_id: Key<User>,
