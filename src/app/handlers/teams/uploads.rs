@@ -15,7 +15,7 @@ use crate::{
     model::{
         team::Team,
         types::Key,
-        upload::{Upload, UploadList, UploadStats},
+        upload::{UploadList, UploadStats},
     },
 };
 
