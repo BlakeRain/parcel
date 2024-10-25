@@ -38,8 +38,9 @@
     }
   }
 
+  /* for small displays we just show the checkbox, filename, public flag, and dropdown */
   .uploads-table {
-    grid-template-columns: 3rem 1fr /*10rem*/ /*8rem*/ /*7rem*/ /*12rem*/ 5rem /*11rem*/ 4rem;
+    grid-template-columns: 3rem 1fr /*10rem*/ /*8rem*/ /*7rem*/ /*12rem*/ 5rem /*11rem*/ /*8rem*/ 4rem;
 
     > .uploads-table-header, > .uploads-table-row, > .uploads-table-sentinel {
       @apply col-span-4;
@@ -50,15 +51,16 @@
         @apply flex;
       }
 
-      &:nth-child(1), &:nth-child(7), &:nth-child(9) {
+      &:nth-child(1), &:nth-child(7), &:nth-child(10) {
         @apply block;
       }
     }
   }
 
+  /* at the next breakpoint we include the size of the upload */
   @media screen(md) {
     .uploads-table {
-      grid-template-columns: 3rem 1fr 10rem /*8rem*/ /*7rem*/ /*12rem*/ 5rem /*11rem*/ 4rem;
+      grid-template-columns: 3rem 1fr 10rem /*8rem*/ /*7rem*/ /*12rem*/ 5rem /*11rem*/ /*8rem*/ 4rem;
 
       > .uploads-table-header, > .uploads-table-row, > .uploads-table-sentinel {
         @apply col-span-5;
@@ -72,9 +74,10 @@
     }
   }
 
+  /* for larger screens we include the remaining uploads and the expiration date */
   @media screen(lg) {
     .uploads-table {
-      grid-template-columns: 3rem 1fr 10rem /*8rem*/ 7rem 12rem 5rem /*11rem*/ 4rem;
+      grid-template-columns: 3rem 1fr 10rem /*8rem*/ 7rem 12rem 5rem /*11rem*/ /*8rem*/ 4rem;
 
       > .uploads-table-header, > .uploads-table-row, > .uploads-table-sentinel {
         @apply col-span-7;
@@ -88,9 +91,10 @@
     }
   }
 
+  /* for even larger screens we include the number of downloads and when it was uploaded */
   @media screen(xl) {
     .uploads-table {
-      grid-template-columns: 3rem 1fr 10rem 8rem 7rem 12rem 5rem 11rem 4rem;
+      grid-template-columns: 3rem 1fr 10rem 8rem 7rem 12rem 5rem 11rem /*8rem*/ 4rem;
 
       > .uploads-table-header, > .uploads-table-row, > .uploads-table-sentinel {
         @apply col-span-9;
@@ -98,6 +102,24 @@
 
       > .uploads-table-header > div, > .uploads-table-row > div {
         &:nth-child(4), &:nth-child(8) {
+          @apply block;
+        }
+      }
+    }
+  }
+
+  /* for the largest screen size (1536px) we also include the uploader name, but only if this is
+   * a listing for a team. */
+  @media screen(2xl) {
+    .uploads-table.for-team {
+      grid-template-columns: 3rem 1fr 10rem 8rem 7rem 12rem 5rem 11rem 8rem 4rem;
+
+      > .uploads-table-header, > .uploads-table-row, > .uploads-table-sentinel {
+        @apply col-span-10;
+      }
+
+      > .uploads-table-header > div, > .uploads-table-row > div {
+        &:nth-child(9) {
           @apply block;
         }
       }

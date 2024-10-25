@@ -1,5 +1,6 @@
 use esbuild_bundle::javascript;
 use poem::{
+    error::InternalServerError,
     handler,
     web::{Data, Html, Path, Query},
 };
@@ -10,7 +11,7 @@ use crate::{
         templates::{authorized_context, render_template},
     },
     env::Env,
-    model::{team::Team, types::Key},
+    model::team::Team,
 };
 
 use super::uploads::ListQuery;
@@ -21,18 +22,22 @@ pub mod uploads;
 pub async fn get_team(
     env: Data<&Env>,
     SessionUser(user): SessionUser,
-    Path(id): Path<Key<Team>>,
+    Path(slug): Path<String>,
     Query(query): Query<ListQuery>,
 ) -> poem::Result<Html<String>> {
     let teams = Team::get_for_user(&env.pool, user.id)
         .await
         .map_err(|err| {
             tracing::error!(%user.id, ?err, "Unable to get teams for user");
-            poem::error::InternalServerError(err)
+            InternalServerError(err)
         })?;
 
-    let Some(team) = teams.iter().find(|team| team.id == id) else {
-        return Err(poem::Error::from_status(poem::http::StatusCode::NOT_FOUND));
+    let team = match teams.iter().find(|team| team.slug == slug) {
+        Some(team) => team,
+        None => {
+            tracing::error!(?slug, "Team with this URL slug does not exist");
+            return Err(poem::Error::from_status(poem::http::StatusCode::NOT_FOUND));
+        }
     };
 
     render_template(

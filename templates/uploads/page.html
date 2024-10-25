@@ -14,8 +14,8 @@
     </div>
 
     <div class="flex flex-row gap-1">
-      {% if not team and upload.custom_slug %}
-        {% set upload_url = "/uploads/" + (auth.username | urlencode) + "/" + (upload.custom_slug | urlencode) %}
+      {% if upload.custom_slug %}
+        {% set upload_url = "/uploads/" + (upload.owner_slug | urlencode) + "/" + (upload.custom_slug | urlencode) %}
       {% else %}
         {% set upload_url = "/uploads/" + (upload.slug | urlencode) %}
       {% endif %}
@@ -72,6 +72,12 @@
       <parcel-datetime value="{{ upload.uploaded_at | datetime }}">
         {{ upload.uploaded_at | datetime }}
       </parcel-datetime>
+    </div>
+
+    <div class="text-left text-nowrap">
+      {% if team %}
+        {{ upload.uploaded_by_name }}
+      {% endif %}
     </div>
 
     <div>

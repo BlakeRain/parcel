@@ -391,3 +391,89 @@ impl UploadStats {
         .await
     }
 }
+
+#[derive(Debug, FromRow, Serialize)]
+pub struct UploadList {
+    pub id: Key<Upload>,
+    pub slug: String,
+    pub filename: String,
+    pub size: i64,
+    pub public: bool,
+    pub downloads: i64,
+    pub limit: Option<i64>,
+    pub remaining: Option<i64>,
+    pub expiry_date: Option<i64>,
+    pub custom_slug: Option<String>,
+    pub owner_slug: String,
+    pub uploaded_by_id: Key<User>,
+    pub uploaded_by_name: String,
+    pub uploaded_at: OffsetDateTime,
+}
+
+impl UploadList {
+    pub async fn get_for_user(
+        pool: &SqlitePool,
+        user: Key<User>,
+        order: UploadOrder,
+        asc: bool,
+        offset: u32,
+        limit: u32,
+    ) -> sqlx::Result<Vec<Self>> {
+        sqlx::query_as(&format!(
+            "SELECT uploads.id, uploads.slug, uploads.filename, \
+                uploads.size, uploads.public, uploads.downloads, \
+                uploads.\"limit\", uploads.remaining, uploads.expiry_date, \
+                uploads.custom_slug, \
+                COALESCE(teams.slug, users.username) AS owner_slug, \
+                uploads.uploaded_by AS uploaded_by_id, \
+                uploader.name AS uploaded_by_name, \
+                uploads.uploaded_at \
+                FROM uploads \
+                LEFT JOIN teams ON uploads.owner_team = teams.id \
+                LEFT JOIN users ON uploads.owner_user = users.id \
+                LEFT JOIN users AS uploader ON uploads.uploaded_by = uploader.id \
+                WHERE uploads.owner_user = $1 \
+                ORDER BY {} {} LIMIT {} OFFSET {}",
+            order.get_order_field(),
+            if asc { "ASC" } else { "DESC" },
+            limit,
+            offset
+        ))
+        .bind(user)
+        .fetch_all(pool)
+        .await
+    }
+
+    pub async fn get_for_team(
+        pool: &SqlitePool,
+        team: Key<Team>,
+        order: UploadOrder,
+        asc: bool,
+        offset: u32,
+        limit: u32,
+    ) -> sqlx::Result<Vec<Self>> {
+        sqlx::query_as(&format!(
+            "SELECT uploads.id, uploads.slug, uploads.filename, \
+                uploads.size, uploads.public, uploads.downloads, \
+                uploads.\"limit\", uploads.remaining, uploads.expiry_date, \
+                uploads.custom_slug, \
+                COALESCE(teams.slug, users.username) AS owner_slug, \
+                uploads.uploaded_by AS uploaded_by_id, \
+                uploader.name AS uploaded_by_name, \
+                uploads.uploaded_at \
+                FROM uploads \
+                LEFT JOIN teams ON uploads.owner_team = teams.id \
+                LEFT JOIN users ON uploads.owner_user = users.id \
+                LEFT JOIN users AS uploader ON uploads.uploaded_by = uploader.id \
+                WHERE uploads.owner_team = $1 \
+                ORDER BY {} {} LIMIT {} OFFSET {}",
+            order.get_order_field(),
+            if asc { "ASC" } else { "DESC" },
+            limit,
+            offset
+        ))
+        .bind(team)
+        .fetch_all(pool)
+        .await
+    }
+}

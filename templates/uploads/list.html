@@ -47,7 +47,7 @@
         You have not uploaded any files yet.
       </div>
     {% else %}
-      <div class="uploads-table">
+    <div class="uploads-table {% if team %}for-team{% endif %}">
         <div class="uploads-table-header">
           <div class="text-center">
             <parcel-checkbox-group id="uploads_group" name="uploads">
@@ -86,6 +86,7 @@
           {{ sort_heading(query, "expiry_date", "left", "Expires") }}
           <div class="text-nowrap">Public</div>
           {{ sort_heading(query, "uploaded_at", "left", "Uploaded") }}
+          <div class="text-nowrap">Uploaded by</div>
           <div></div>
         </div>
         {% include "uploads/page.html" %}

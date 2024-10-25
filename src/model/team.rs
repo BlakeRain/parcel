@@ -71,6 +71,13 @@ impl Team {
             .await
     }
 
+    pub async fn get_by_slug(pool: &SqlitePool, slug: &str) -> sqlx::Result<Option<Self>> {
+        sqlx::query_as("SELECT * FROM teams WHERE slug = $1")
+            .bind(slug)
+            .fetch_optional(pool)
+            .await
+    }
+
     pub async fn delete(&self, pool: &SqlitePool) -> sqlx::Result<()> {
         sqlx::query("DELETE FROM team_members WHERE team = $1")
             .bind(self.id)

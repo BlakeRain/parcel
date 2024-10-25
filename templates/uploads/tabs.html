@@ -4,8 +4,8 @@
     Your Uploads
   </a>
   {% for tab in teams %}
-    <a href="/teams/{{ tab.id }}" class="tab{% if team and tab.id == team.id %} active{% endif %}">
-      <span class="icon-users"></span>
+    <a href="/teams/{{ tab.slug }}" class="tab{% if team and tab.id == team.id %} active{% endif %}">
+      <span class="hidden md:inline-block icon-users"></span>
       {{ tab.name }}
     </a>
   {% endfor %}

@@ -16,7 +16,7 @@ use crate::{
     env::Env,
     model::{
         types::Key,
-        upload::{Upload, UploadOrder, UploadStats},
+        upload::{Upload, UploadList, UploadOrder, UploadStats},
     },
 };
 
@@ -38,7 +38,7 @@ pub async fn get_list(
         .await
         .map_err(InternalServerError)?;
 
-    let uploads = Upload::get_for_user(&env.pool, user.id, query.order, query.asc, 0, 50)
+    let uploads = UploadList::get_for_user(&env.pool, user.id, query.order, query.asc, 0, 50)
         .await
         .map_err(|err| {
             tracing::error!(%user.id, ?err, "Unable to get uploads for user");
@@ -117,12 +117,13 @@ pub async fn get_page(
     Path(page): Path<u32>,
     Query(query): Query<ListQuery>,
 ) -> poem::Result<Html<String>> {
-    let uploads = Upload::get_for_user(&env.pool, user.id, query.order, query.asc, 50 * page, 50)
-        .await
-        .map_err(|err| {
-            tracing::error!(%user.id, ?err, "Unable to get uploads for user");
-            InternalServerError(err)
-        })?;
+    let uploads =
+        UploadList::get_for_user(&env.pool, user.id, query.order, query.asc, 50 * page, 50)
+            .await
+            .map_err(|err| {
+                tracing::error!(%user.id, ?err, "Unable to get uploads for user");
+                InternalServerError(err)
+            })?;
 
     render_template(
         "uploads/page.html",
