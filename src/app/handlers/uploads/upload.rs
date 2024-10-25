@@ -16,7 +16,7 @@ use crate::{
         templates::{authorized_context, default_context, render_template},
     },
     env::Env,
-    model::{types::Key, upload::Upload, user::User},
+    model::{team::Team, types::Key, upload::Upload, user::User},
     utils::SessionExt,
 };
 
@@ -60,6 +60,21 @@ async fn render_upload(
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
+    let team = if let Some(team_id) = upload.owner_team {
+        let Some(team) = Team::get(&env.pool, team_id).await.map_err(|err| {
+            tracing::error!(?err, team_id = %team_id, "Unable to get team by ID");
+            InternalServerError(err)
+        })?
+        else {
+            tracing::error!(team_id = %team_id, "Unable to find team with given ID");
+            return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
+        };
+
+        Some(team)
+    } else {
+        None
+    };
+
     let exhausted = if let Some(remaining) = upload.remaining {
         remaining < 1
     } else {
@@ -81,6 +96,7 @@ async fn render_upload(
             expired,
             upload,
             uploader,
+            team,
             owner,
             can_download,
             has_password => upload.password.is_some(),

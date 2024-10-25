@@ -26,8 +26,8 @@
 
           <div>
             Uploaded {{ upload.uploaded_at | datetime_offset }}
-            by {{ uploader.name }}
-            {% if owner %}
+            by {% if team %}{{ team.name }}{% else %}{{ uploader.name }}{% endif %}
+            {% if owner and not team %}
               (your upload)
             {% endif %}
           </div>
