@@ -75,44 +75,52 @@
                 {% endif %}
               </td>
               <td class="text-right">
-                {% if user.id != auth.id %}
-                  <a
-                    href="#"
-                    title="{% if user.enabled %}Disable{% else %}Enable{% endif %} user"
-                    hx-post="/admin/users/{{ user.id }}/{% if user.enabled %}disable{% else %}enable{% endif %}"
-                    hx-trigger="click"
-                    hx-target="#user-list-container"
-                    hx-select="#user-list-container"
-                    hx-swap="outerHTML">
-                    {% if user.enabled %}
-                      <span class="icon-lock"></span>
-                    {% else %}
-                      <span class="icon-lock-open"></span>
+                <parcel-dropdown>
+                  <div class="flex flex-col my-2 text-left dark:text-neutral-100">
+                    <a
+                      href="#"
+                      class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
+                      title="Edit user"
+                      hx-get="/admin/users/{{ user.id }}"
+                      hx-target="body"
+                      hx-swap="beforeend">
+                      <span class="icon-pencil"></span>
+                      Edit user &hellip;
+                    </a>
+                    {% if user.id != auth.id %}
+                      <a
+                        href="#"
+                        class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
+                        title="{% if user.enabled %}Disable{% else %}Enable{% endif %} user"
+                        hx-post="/admin/users/{{ user.id }}/{% if user.enabled %}disable{% else %}enable{% endif %}"
+                        hx-trigger="click"
+                        hx-target="#user-list-container"
+                        hx-select="#user-list-container"
+                        hx-swap="outerHTML">
+                        {% if user.enabled %}
+                          <span class="icon-lock"></span>
+                          Disable user
+                        {% else %}
+                          <span class="icon-lock-open"></span>
+                          Enable user
+                        {% endif %}
+                      </a>
+                      <a
+                        href="#"
+                        class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
+                        title="Delete user"
+                        hx-delete="/admin/users/{{ user.id }}"
+                        hx-trigger="click"
+                        hx-target="#user-list-container"
+                        hx-select="#user-list-container"
+                        hx-swap="outerHTML"
+                        hx-confirm="Are you sure you want to delete this user?">
+                        <span class="icon-trash"></span>
+                        Delete user
+                      </a>
                     {% endif %}
-                  </a>
-                {% endif %}
-                <a
-                  href="#"
-                  title="Edit user"
-                  hx-get="/admin/users/{{ user.id }}"
-                  hx-target="body"
-                  hx-swap="beforeend">
-                  <span class="icon-pencil"></span>
-                </a>
-                {% if user.id != auth.id %}
-                  <a
-                    href="#"
-                    class="text-danger"
-                    title="Delete user"
-                    hx-delete="/admin/users/{{ user.id }}"
-                    hx-trigger="click"
-                    hx-target="#user-list-container"
-                    hx-select="#user-list-container"
-                    hx-swap="outerHTML"
-                    hx-confirm="Are you sure you want to delete this user?">
-                    <span class="icon-trash"></span>
-                  </a>
-                {% endif %}
+                  </div>
+                </parcel-dropdown>
               </td>
             </tr>
           {% endfor %}
