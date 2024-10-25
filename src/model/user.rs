@@ -6,7 +6,7 @@ use pbkdf2::{
 };
 use rand_core::OsRng;
 use serde::Serialize;
-use sqlx::{FromRow, SqlitePool};
+use sqlx::{FromRow, QueryBuilder, SqlitePool};
 use time::OffsetDateTime;
 
 use super::{team::Team, types::Key};
@@ -246,6 +246,24 @@ impl User {
             .execute(pool)
             .await?;
         Ok(())
+    }
+
+    pub async fn username_exists(
+        pool: &SqlitePool,
+        existing: Option<Key<User>>,
+        slug: &str,
+    ) -> sqlx::Result<bool> {
+        let mut query = QueryBuilder::new("SELECT EXISTS (SELECT 1 FROM users WHERE username = ");
+        query.push_bind(slug);
+
+        if let Some(existing) = existing {
+            query.push(" AND id != ");
+            query.push_bind(existing);
+        }
+
+        query.push(")");
+
+        query.build_query_scalar().fetch_one(pool).await
     }
 }
 

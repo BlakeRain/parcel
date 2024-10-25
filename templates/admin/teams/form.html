@@ -53,6 +53,7 @@
             type="checkbox"
             name="limit_check"
             id="limit_check"
+            onchange="document.getElementById('limit').disabled = !this.checked;"
             {% if has_limit %}checked{% endif %}>
           <label for="limit_check">Team has an upload limit</label>
         </div>
@@ -100,9 +101,7 @@
   </form>
   <script type="text/javascript">
     (function() {
-      console.log("Here");
       document.getElementById("limit_check").addEventListener("change", function(event) {
-        console.log("limit-check.checked", event.target.checked);
         document.getElementById("limit").disabled = !event.target.checked;
       });
     })();

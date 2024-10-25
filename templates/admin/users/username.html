@@ -1,0 +1,30 @@
+<div id="user-username-field" hx-target="this" hx-disinherit="hx-select" hx-swap="outerHTML" class="mt-2">
+  <input
+    class="field"
+    type="text"
+    id="username"
+    name="username"
+    {% if user %}
+      hx-post="/admin/users/{{ user.id }}/username"
+    {% else %}
+      hx-post="/admin/users/new/username"
+    {% endif %}
+    {% if form %}
+      value="{{ form.username }}"
+    {% elif user %}
+      value="{{ user.username }}"
+    {% endif %}
+    placeholder="user-name"
+    minlength=3
+    maxlength=100
+    pattern="[\w\-]{3,}"
+    required>
+  <p class="text-xs text-gray-500 dark:text-gray-300 m-1">
+    This username must be unique and is used to sign in to the system. Usernames must be at
+    least three characters in length, and only contain letters, numbers, hyphens, and
+    underscores.
+  </p>
+  {% if exists %}
+    <div class="h-4 text-danger">A user with this username already exists.</div>
+  {% endif %}
+</div>

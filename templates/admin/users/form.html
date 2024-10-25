@@ -1,0 +1,153 @@
+{% from "utils/errors.html" import validation_errors %}
+<parcel-modal class="hidden" with-htmx>
+  <form
+    id="user-form"
+    class="form"
+    hx-post="/admin/users/{% if user %}{{ user.id }}{% else %}new{% endif %}"
+    hx-target="#user-list-container"
+    hx-select="#user-list-container"
+    hx-swap="outerHTML">
+    <input type="hidden" name="token" value="{{ token }}" />
+    <h1 class="text-2xl font-bold">
+      {% if user %}
+        Edit user ({{ user.username }})
+      {% else %}
+        Add new user
+      {% endif %}
+    </h1>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-2 mt-4">
+      <div class="user-username-container">
+        <label for="username">Username</label>
+        {% include "admin/users/username.html" %}
+      </div>
+      <div>
+        <label for="name">Display name</label>
+        <input
+          type="text"
+          class="field"
+          name="name"
+          id="name"
+          placheolder="Display Name"
+          minlength="1"
+          maxlength="100"
+          required
+          {% if form %}
+            value="{{ form.name }}"
+          {% elif user %}
+            value="{{ user.name }}"
+          {% endif %}>
+        <p class="text-xs text-gray-500 dark:text-gray-300 m-1">
+          This is the name that is displayed in the interface.
+        </p>
+      </div>
+      {% if not user %}
+        <div class="lg:col-span-2">
+          <label for="password">Password</label>
+          <input
+            type="password"
+            class="field"
+            name="password"
+            id="password"
+            placeholder="Password"
+            minlength="8"
+            required>
+          <p class="text-xs text-gray-500 dark:text-gray-300 m-1">
+            Passwords must be at least eight characters in length.
+          </p>
+        </div>
+      {% endif %}
+
+      <div>
+        <div class="checkbox">
+          <input
+            type="checkbox"
+            name="enabled"
+            id="enabled"
+            {% if (user and user.id == auth.id) %}disabled title="You cannot disable your own account"{% endif %}
+            {% if (not form and not user) or (form and form.enabled) or (user and user.enabled) %}checked{% endif %}>
+          <label for="enabled">User account is enabled</label>
+        </div>
+        <div class="checkbox">
+          <input
+            type="checkbox"
+            name="admin"
+            id="admin"
+            {% if (form and form.admin) or (user and user.admin) %}checked{% endif %}>
+          <label for="admin">User is an administrator</label>
+        </div>
+        <div>
+          <label>Teams</label>
+          <script type="text/json" id="teams-data">{{ teams | tojson }}</script>
+          {% if form or user %}
+            <script type="text/json" id="membership-data">
+              {% if form %}{{ form.teams | tojson }}{% elif user %}{{ membership | tojson }}{% endif %}
+            </script>
+          {% endif %}
+          <parcel-select
+            name="teams"
+            id="teams"
+            options="#teams-data"
+            {% if form or user %}values="#membership-data"{% endif %}
+            class="mt-2" />
+        </div>
+      </div>
+
+      <div class="lg:flex lg:flex-col lg:justify-end">
+        {% set has_limit = (not form and not team) or (form and form.limit is number) or (team and team.limit is number) %}
+        <div class="checkbox">
+          <input
+            type="checkbox"
+            name="limit_check"
+            id="limit_check"
+            onchange="document.getElementById('limit').disabled = !this.checked"
+            {% if has_limit %}checked{% endif %}>
+          <label for="limit_check">User has an upload limit</label>
+        </div>
+        <label>Upload limit in megabytes</label>
+        <input
+          type="number"
+          class="field"
+          name="limit"
+          id="limit"
+          {% if form and form.limit %}
+            value="{{ form.limit }}"
+          {% elif user and user.limit %}
+            value="{{ (user.limit / 1048576) | int }}"
+          {% else %}
+            value="1024"
+            {% if not has_limit %}disabled{% endif %}
+          {% endif %}
+          min="0"
+          required>
+      </div>
+    </div>
+
+    {% if errors %}
+      {{ validation_errors(errors, class="mt-4") }}
+    {% endif %}
+
+    <div class="buttons reverse end mt-4">
+      <button
+        id="save-user-button"
+        type="submit"
+        class="button"
+        data-loading-disable>
+        <span
+          class="{% if user %}icon-check{% else %}icon-plus{% endif %}"
+          data-loading-class="icon-loader-circle animate-spin"
+          data-loading-class-remove="{% if user %}icon-check{% else %}icon-plus{% endif %}"></span>
+        {% if user %}
+          Save changes
+        {% else %}
+          Add user
+        {% endif %}
+      </button>
+
+      <button
+        class="button hollow"
+        onclick="event.preventDefault(); event.target.closest('parcel-modal').closeModal();">
+        Cancel
+      </button>
+    </div>
+  </form>
+</parcel-modal>
