@@ -339,6 +339,7 @@ pub async fn post_user(
                 errors,
                 teams,
                 user,
+                membership,
                 token => next_token.0,
                 form => context! {
                     username => &form.username,
