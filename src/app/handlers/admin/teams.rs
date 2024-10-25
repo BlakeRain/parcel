@@ -122,19 +122,6 @@ pub async fn post_check_slug(
     )
 }
 
-async fn validate_slug(slug: &str, env: &Env) -> Result<(), ValidationError> {
-    crate::utils::validate_slug(slug)?;
-    if Team::slug_exists(&env.pool, None, slug)
-        .await
-        .unwrap_or_default()
-    {
-        return Err(ValidationError::new("duplicate_slug")
-            .with_message("A team with this URL slug already exists".into()));
-    }
-
-    Ok(())
-}
-
 #[derive(Debug, Deserialize, Validate)]
 pub struct NewTeamForm {
     pub token: String,
@@ -165,8 +152,19 @@ pub async fn post_new(
         errors.merge(first_errors);
     }
 
-    if let Err(slug_error) = validate_slug(&form.slug, &env).await {
+    if let Err(slug_error) = crate::utils::validate_slug(&form.slug) {
         errors.add("slug", slug_error);
+    }
+
+    if Team::slug_exists(&env.pool, None, &form.slug)
+        .await
+        .map_err(InternalServerError)?
+    {
+        errors.add(
+            "slug",
+            ValidationError::new("duplicate_slug")
+                .with_message("A team with this URL slug already exists".into()),
+        );
     }
 
     if !errors.is_empty() {
@@ -283,8 +281,15 @@ pub async fn post_team(
         errors.merge(first_errors);
     }
 
-    if let Err(slug_error) = validate_slug(&form.slug, &env).await {
-        errors.add("slug", slug_error);
+    if Team::slug_exists(&env.pool, Some(team_id), &form.slug)
+        .await
+        .map_err(InternalServerError)?
+    {
+        errors.add(
+            "slug",
+            ValidationError::new("duplicate_slug")
+                .with_message("A team with this URL slug already exists".into()),
+        );
     }
 
     if !errors.is_empty() {
