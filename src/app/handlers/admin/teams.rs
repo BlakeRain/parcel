@@ -20,6 +20,7 @@ use crate::{
         team::{Team, TeamList},
         types::Key,
         upload::Upload,
+        user::User,
     },
     utils::ValidationErrorsExt,
 };
@@ -79,9 +80,22 @@ pub async fn post_check_new_slug(
     }
 
     let slug = slug.trim().to_string();
-    let exists = Team::slug_exists(&env.pool, None, &slug)
+
+    let team_exists = Team::slug_exists(&env.pool, None, &slug)
         .await
         .map_err(InternalServerError)?;
+
+    let user_exists = User::username_exists(&env.pool, None, &slug)
+        .await
+        .map_err(InternalServerError)?;
+
+    let exists = if team_exists {
+        Some("team")
+    } else if user_exists {
+        Some("user")
+    } else {
+        None
+    };
 
     render_template(
         "admin/teams/slug.html",
@@ -112,9 +126,22 @@ pub async fn post_check_slug(
     };
 
     let slug = slug.trim().to_string();
-    let exists = Team::slug_exists(&env.pool, Some(team_id), &slug)
+
+    let team_exists = Team::slug_exists(&env.pool, Some(team_id), &slug)
         .await
         .map_err(InternalServerError)?;
+
+    let user_exists = User::username_exists(&env.pool, None, &slug)
+        .await
+        .map_err(InternalServerError)?;
+
+    let exists = if team_exists {
+        Some("team")
+    } else if user_exists {
+        Some("user")
+    } else {
+        None
+    };
 
     render_template(
         "admin/teams/slug.html",
@@ -164,6 +191,17 @@ pub async fn post_new(
             "slug",
             ValidationError::new("duplicate_slug")
                 .with_message("A team with this URL slug already exists".into()),
+        );
+    }
+
+    if User::username_exists(&env.pool, None, &form.slug)
+        .await
+        .map_err(InternalServerError)?
+    {
+        errors.add(
+            "slug",
+            ValidationError::new("duplicate_username")
+                .with_message("A user with this username already exists".into()),
         );
     }
 
@@ -289,6 +327,17 @@ pub async fn post_team(
             "slug",
             ValidationError::new("duplicate_slug")
                 .with_message("A team with this URL slug already exists".into()),
+        );
+    }
+
+    if User::username_exists(&env.pool, None, &form.slug)
+        .await
+        .map_err(InternalServerError)?
+    {
+        errors.add(
+            "slug",
+            ValidationError::new("duplicate_username")
+                .with_message("A user with this username already exists".into()),
         );
     }
 

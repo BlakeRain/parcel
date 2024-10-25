@@ -107,6 +107,17 @@ pub async fn post_new(
         errors.add("username", slug_error);
     }
 
+    if Team::slug_exists(&env.pool, None, &form.username)
+        .await
+        .map_err(InternalServerError)?
+    {
+        errors.add(
+            "username",
+            ValidationError::new("duplicate_slug")
+                .with_message("A team with this URL slug already exists".into()),
+        );
+    }
+
     if User::username_exists(&env.pool, None, &form.username)
         .await
         .map_err(InternalServerError)?
@@ -213,9 +224,22 @@ pub async fn post_new_username(
     }
 
     let username = username.trim().to_string();
-    let exists = User::username_exists(&env.pool, None, &username)
+
+    let user_exists = User::username_exists(&env.pool, None, &username)
         .await
         .map_err(InternalServerError)?;
+
+    let team_exists = Team::slug_exists(&env.pool, None, &username)
+        .await
+        .map_err(InternalServerError)?;
+
+    let exists = if user_exists {
+        Some("user")
+    } else if team_exists {
+        Some("team")
+    } else {
+        None
+    };
 
     render_template(
         "admin/users/username.html",
@@ -308,6 +332,17 @@ pub async fn post_user(
     if form.username != user.username {
         if let Err(slug_error) = crate::utils::validate_slug(&form.username) {
             errors.add("username", slug_error);
+        }
+
+        if Team::slug_exists(&env.pool, None, &form.username)
+            .await
+            .map_err(InternalServerError)?
+        {
+            errors.add(
+                "username",
+                ValidationError::new("duplicate_slug")
+                    .with_message("A team with this URL slug already exists".into()),
+            );
         }
 
         if User::username_exists(&env.pool, Some(user_id), &form.username)
@@ -481,9 +516,22 @@ pub async fn post_check_username(
     };
 
     let username = username.trim().to_string();
-    let exists = User::username_exists(&env.pool, Some(user_id), &username)
+
+    let user_exists = User::username_exists(&env.pool, Some(user_id), &username)
         .await
         .map_err(InternalServerError)?;
+
+    let team_exists = Team::slug_exists(&env.pool, None, &username)
+        .await
+        .map_err(InternalServerError)?;
+
+    let exists = if user_exists {
+        Some("user")
+    } else if team_exists {
+        Some("team")
+    } else {
+        None
+    };
 
     render_template(
         "admin/users/username.html",
