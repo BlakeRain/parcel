@@ -1,81 +1,63 @@
 <parcel-modal class="hidden" with-htmx hx-target="this" hx-swap="outerHTML">
-  {% if complete %}
-    <h1 class="text-2xl font-bold">Transfer Complete</h1>
-    <p class="text-success">
-      The upload has been successfully
-      {% if action == 'Copy' %}copied{% else %}moved{% endif %}
-      to the team
-      <span class="italic">{{ team.name }}</span>.
-    </p>
-    <div class="buttons end mt-2">
+  <h1 class="text-2xl font-bold">Transfer Upload</h1>
+  <p>
+    Here you can copy or move an upload to another team.
+  </p>
+  <form
+    id="transfer-form"
+    class="form"
+    hx-post="/uploads/{{ upload.id }}/transfer">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-2">
+      <div>
+        <label for="action">Pick which action to take:</label>
+        <select
+          name="action"
+          class="field mt-2"
+          onchange="document.getElementById('transfer-button-label').innerText = this.value"
+          required>
+          <option value="Copy" selected>Copy</option>
+          <option value="Move">Move</option>
+        </select>
+      </div>
+      <div>
+        <label for="team">Pick which team to transfer to:</label>
+        <select
+          name="team"
+          class="field mt-2"
+          required>
+          <option value="" selected disabled>Select a team</option>
+          {% for team in teams %}
+            <option
+              {% if team.id in teams_with_slugs %}disabled{% endif %}
+              value="{{ team.id }}">
+              {{ team.name }}
+              {% if team.id in teams_with_slugs %}
+                (matching custom slug exists)
+              {% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="buttons reverse end mt-2">
+      <button
+        type="submit"
+        class="button"
+        data-loading-disable>
+        <span
+          class="icon-copy"
+          data-loading-class="icon-loader-circle animate-spin"
+          data-loading-class-remove="icon-copy"></span>
+        <span id="transfer-button-label">Copy</span>
+      </button>
       <button
         type="button"
-        class="button"
-        onclick="event.preventDefault(); event.target.closest('parcel-modal').closeModal();">
-        Close
+        class="button hollow"
+        onclick="event.preventDefault(); event.target.closest('parcel-modal').closeModal();"
+        data-loading-disable>
+        Cancel
       </button>
     </div>
-  {% else %}
-    <h1 class="text-2xl font-bold">Transfer Upload</h1>
-    <p>
-      Here you can copy or move an upload to another team.
-    </p>
-    <form
-      id="transfer-form"
-      class="form"
-      hx-post="/uploads/{{ upload.id }}/transfer">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-2">
-        <div>
-          <label for="action">Pick which action to take:</label>
-          <select
-            name="action"
-            class="field mt-2"
-            onchange="document.getElementById('transfer-button-label').innerText = this.value"
-            required>
-            <option value="Copy" selected>Copy</option>
-            <option value="Move">Move</option>
-          </select>
-        </div>
-        <div>
-          <label for="team">Pick which team to transfer to:</label>
-          <select
-            name="team"
-            class="field mt-2"
-            required>
-            <option value="" selected disabled>Select a team</option>
-            {% for team in teams %}
-              <option
-                {% if team.id in teams_with_slugs %}disabled{% endif %}
-                value="{{ team.id }}">
-                {{ team.name }}
-                {% if team.id in teams_with_slugs %}
-                  (matching custom slug exists)
-                {% endif %}
-              </option>
-            {% endfor %}
-          </select>
-        </div>
-      </div>
-      <div class="buttons reverse end mt-2">
-        <button
-          type="submit"
-          class="button"
-          data-loading-disable>
-          <span
-            class="icon-copy"
-            data-loading-class="icon-loader-circle animate-spin"
-            data-loading-class-remove="icon-copy"></span>
-          <span id="transfer-button-label">Copy</span>
-        </button>
-        <button
-          type="button"
-          class="button hollow"
-          onclick="event.preventDefault(); event.target.closest('parcel-modal').closeModal();"
-          data-loading-disable>
-          Cancel
-        </button>
-      </div>
-    </form>
-  {% endif %}
+  </form>
 </parcel-modal>

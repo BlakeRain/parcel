@@ -4,6 +4,7 @@ use poem::{
     handler,
     http::StatusCode,
     web::{CsrfToken, CsrfVerifier, Data, Form, Html, Path},
+    IntoResponse, Response,
 };
 use serde::{Deserialize, Serialize};
 
@@ -77,7 +78,7 @@ pub async fn post_transfer(
     csrf_verifier: &CsrfVerifier,
     Path(upload_id): Path<Key<Upload>>,
     Form(form): Form<TransferForm>,
-) -> poem::Result<Html<String>> {
+) -> poem::Result<Response> {
     let upload = get_upload_by_id(&env, upload_id).await?;
     check_owns_upload(&env, &user, &upload).await?;
 
@@ -160,15 +161,5 @@ pub async fn post_transfer(
         InternalServerError(err)
     })?;
 
-    render_template(
-        "uploads/transfer.html",
-        context! {
-            upload,
-            new_upload,
-            team,
-            complete => true,
-            action => form.action,
-            ..authorized_context(&env, &user)
-        },
-    )
+    Ok(Html("").with_header("HX-Refresh", "true").into_response())
 }
