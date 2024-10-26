@@ -82,9 +82,10 @@ INSERT INTO users (
   new_users.admin,
   new_users."limit",
   new_users.created_at,
-  new_users.created_by
+  creator.id as created_by
   FROM new_users
-  JOIN new_user_uuids ON new_users.id = new_user_uuids.id;
+  JOIN new_user_uuids ON new_users.id = new_user_uuids.id
+  JOIN new_user_uuids AS creator ON new_users.created_by = creator.id;
 
 -- Now we can create the new uploads table.
 CREATE TABLE uploads (
