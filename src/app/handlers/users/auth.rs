@@ -128,7 +128,7 @@ pub fn get_signin_totp(
     token: &CsrfToken,
     session: &Session,
 ) -> poem::Result<Response> {
-    if session.get::<i32>("_authenticating").is_none() {
+    if session.get::<Key<User>>("_authenticating").is_none() {
         tracing::error!("User not authenticating");
         session.set("error", "You need to sign in first");
         return Ok(Redirect::see_other("/user/signin").into_response());
