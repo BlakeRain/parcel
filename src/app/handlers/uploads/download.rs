@@ -79,13 +79,7 @@ pub async fn get_download(
     };
 
     if !upload.public && !owner {
-        let uid = user.as_ref().map(|user| user.id);
-        tracing::error!(
-            user = ?uid,
-            %upload.id,
-            "User tried to access private upload without permission"
-        );
-
+        tracing::error!(%upload.id, "Attempt to access private upload without permission");
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     }
 
@@ -158,6 +152,23 @@ pub async fn post_download(
 
     if owner {
         return Ok(Redirect::see_other(format!("/uploads/{slug}/download")).into_response());
+    } else if !upload.public {
+        tracing::error!(%upload.id, "Attempt to access private upload without permission");
+        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
+    } else {
+        if let Some(remaining) = upload.remaining {
+            if remaining < 1 {
+                tracing::error!(upload = ?upload, "Download limit was reached");
+                return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
+            }
+        }
+
+        if let Some(expiry) = upload.expiry_date {
+            if expiry < OffsetDateTime::now_utc().date() {
+                tracing::error!(%upload.id, "Upload has expired");
+                return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
+            }
+        }
     }
 
     let Some(ref hash) = upload.password else {
