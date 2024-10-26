@@ -14,7 +14,8 @@ use validator::{Validate, ValidationError, ValidationErrors};
 use crate::{
     app::{
         extractors::user::SessionUser,
-        templates::{authorized_context, render_404, render_template},
+        handlers::utils::{check_owns_upload, get_upload_by_id},
+        templates::{authorized_context, render_template},
     },
     env::Env,
     model::{types::Key, upload::Upload, user::hash_password},
@@ -28,29 +29,8 @@ pub async fn get_edit(
     SessionUser(user): SessionUser,
     Path(id): Path<Key<Upload>>,
 ) -> poem::Result<Html<String>> {
-    let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
-        tracing::error!(?err, %id, "Unable to get upload by ID");
-        InternalServerError(err)
-    })?
-    else {
-        tracing::error!("Unrecognized upload ID '{id}'");
-        return render_404("Unrecognized upload ID");
-    };
-
-    let can_modify = user.admin || upload.is_owner(&env.pool, &user).await.map_err(|err| {
-        tracing::error!(%upload.id, %user.id, ?err, "Unable to check if user is owner of an upload");
-        InternalServerError(err)
-    })?;
-
-    if !can_modify {
-        tracing::error!(
-            %user.id,
-            %upload.id,
-            "User tried to edit upload without permission"
-        );
-
-        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
-    }
+    let upload = get_upload_by_id(&env, id).await?;
+    check_owns_upload(&env, &user, &upload).await?;
 
     render_template(
         "uploads/edit.html",
@@ -82,29 +62,8 @@ pub async fn post_check_slug(
         return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
     }
 
-    let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
-        tracing::error!(?err, %id, "Unable to get upload by ID");
-        InternalServerError(err)
-    })?
-    else {
-        tracing::error!("Unrecognized upload ID '{id}'");
-        return render_404("Unrecognized upload ID");
-    };
-
-    let can_modify = user.admin || upload.is_owner(&env.pool, &user).await.map_err(|err| {
-        tracing::error!(%upload.id, %user.id, ?err, "Unable to check if user is owner of an upload");
-        InternalServerError(err)
-    })?;
-
-    if !can_modify {
-        tracing::error!(
-            %user.id,
-            %upload.id,
-            "User tried to edit upload without permission"
-        );
-
-        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
-    }
+    let mut upload = get_upload_by_id(&env, id).await?;
+    check_owns_upload(&env, &user, &upload).await?;
 
     let custom_slug = custom_slug.trim().to_string();
     let exists = if let Some(owner_user) = upload.owner_user {
@@ -162,32 +121,10 @@ pub async fn post_edit(
         return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
     }
 
-    let Some(mut upload) = Upload::get(&env.pool, id).await.map_err(|err| {
-        tracing::error!(?err, %id, "Unable to get upload by ID");
-        InternalServerError(err)
-    })?
-    else {
-        tracing::error!("Unrecognized upload ID '{id}'");
-        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
-    };
-
-    let can_modify = user.admin || upload.is_owner(&env.pool, &user).await.map_err(|err| {
-        tracing::error!(%upload.id, %user.id, ?err, "Unable to check if user is owner of an upload");
-        InternalServerError(err)
-    })?;
-
-    if !can_modify {
-        tracing::error!(
-            %user.id,
-            %upload.id,
-            "User tried to edit upload without permission"
-        );
-
-        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
-    }
+    let mut upload = get_upload_by_id(&env, id).await?;
+    check_owns_upload(&env, &user, &upload).await?;
 
     let mut errors = ValidationErrors::new();
-
     if let Err(form_errors) = form.validate() {
         errors.merge(form_errors);
     }

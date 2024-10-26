@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     app::{
         extractors::user::SessionUser,
+        handlers::utils::{check_owns_upload, get_upload_by_id},
         templates::{authorized_context, render_template},
     },
     env::Env,
@@ -23,25 +24,8 @@ pub async fn get_transfer(
     csrf_token: &CsrfToken,
     Path(upload_id): Path<Key<Upload>>,
 ) -> poem::Result<Html<String>> {
-    let Some(upload) = Upload::get(&env.pool, upload_id).await.map_err(|err| {
-        tracing::error!(%user.id, %upload_id, %err, "Failed to get upload");
-        InternalServerError(err)
-    })?
-    else {
-        tracing::error!(%user.id, %upload_id, "Upload not found");
-        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
-    };
-
-    // Make sure that the user can access this upload.
-    let is_owner = upload.is_owner(&env.pool, &user).await.map_err(|err| {
-        tracing::error!(%user.id, %upload_id, %err, "Failed to check if user is owner");
-        InternalServerError(err)
-    })?;
-
-    if !is_owner {
-        tracing::error!(%user.id, %upload_id, "User is not the owner");
-        return Err(poem::Error::from_status(StatusCode::FORBIDDEN));
-    }
+    let upload = get_upload_by_id(&env, upload_id).await?;
+    check_owns_upload(&env, &user, &upload).await?;
 
     // Get the teams for the user.
     let teams = Team::get_for_user(&env.pool, user.id)
@@ -94,28 +78,11 @@ pub async fn post_transfer(
     Path(upload_id): Path<Key<Upload>>,
     Form(form): Form<TransferForm>,
 ) -> poem::Result<Html<String>> {
-    let Some(upload) = Upload::get(&env.pool, upload_id).await.map_err(|err| {
-        tracing::error!(%user.id, %upload_id, %err, "Failed to get upload");
-        InternalServerError(err)
-    })?
-    else {
-        tracing::error!(%user.id, %upload_id, "Upload not found");
-        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
-    };
+    let upload = get_upload_by_id(&env, upload_id).await?;
+    check_owns_upload(&env, &user, &upload).await?;
 
     if !csrf_verifier.is_valid(&form.csrf_token) {
         tracing::error!(%user.id, %upload_id, "CSRF token verification failed");
-        return Err(poem::Error::from_status(StatusCode::FORBIDDEN));
-    }
-
-    // Make sure that the user can access this upload.
-    let is_owner = upload.is_owner(&env.pool, &user).await.map_err(|err| {
-        tracing::error!(%user.id, %upload_id, %err, "Failed to check if user is owner");
-        InternalServerError(err)
-    })?;
-
-    if !is_owner {
-        tracing::error!(%user.id, %upload_id, "User is not the owner");
         return Err(poem::Error::from_status(StatusCode::FORBIDDEN));
     }
 

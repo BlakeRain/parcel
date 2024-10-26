@@ -13,7 +13,7 @@ use serde::Deserialize;
 use time::OffsetDateTime;
 
 use crate::{
-    app::extractors::user::SessionUser,
+    app::{extractors::user::SessionUser, handlers::utils::get_upload_by_slug},
     env::Env,
     model::{upload::Upload, user::verify_password},
 };
@@ -59,14 +59,7 @@ pub async fn get_download(
     user: Option<SessionUser>,
     Path(slug): Path<String>,
 ) -> poem::Result<Response> {
-    let Some(mut upload) = Upload::get_by_slug(&env.pool, &slug).await.map_err(|err| {
-        tracing::error!(?err, ?slug, "Unable to get upload by slug");
-        InternalServerError(err)
-    })?
-    else {
-        tracing::error!(?slug, "Unable to find upload with given ID");
-        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
-    };
+    let mut upload = get_upload_by_slug(&env, &slug).await?;
 
     let owner = if let Some(SessionUser(user)) = &user {
         user.admin
@@ -131,15 +124,7 @@ pub async fn post_download(
         return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
     }
 
-    let Some(mut upload) = Upload::get_by_slug(&env.pool, &slug).await.map_err(|err| {
-        tracing::error!(?err, ?slug, "Unable to get upload by slug");
-        InternalServerError(err)
-    })?
-    else {
-        tracing::error!(?slug, "Unable to find upload with given ID");
-        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
-    };
-
+    let mut upload = get_upload_by_slug(&env, &slug).await?;
     let owner = if let Some(SessionUser(user)) = &user {
         user.admin
             || upload.is_owner(&env.pool, user).await.map_err(|err| {

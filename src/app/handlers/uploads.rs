@@ -1,7 +1,6 @@
 use poem::{
     error::InternalServerError,
     handler,
-    http::StatusCode,
     web::{Data, Html, Path, Query},
     IntoResponse, Response,
 };
@@ -9,7 +8,10 @@ use serde::Deserialize;
 use serde_json::json;
 
 use crate::{
-    app::{extractors::user::SessionUser, templates::render_404},
+    app::{
+        extractors::user::SessionUser,
+        handlers::utils::{check_owns_upload, get_upload_by_id},
+    },
     env::Env,
     model::{types::Key, upload::Upload},
 };
@@ -40,29 +42,8 @@ pub async fn post_public(
     Path(id): Path<Key<Upload>>,
     Query(MakePublicQuery { public }): Query<MakePublicQuery>,
 ) -> poem::Result<Response> {
-    let Some(mut upload) = Upload::get(&env.pool, id).await.map_err(|err| {
-        tracing::error!(?err, %id, "Unable to get upload by ID");
-        InternalServerError(err)
-    })?
-    else {
-        tracing::error!("Unrecognized upload ID '{id}'");
-        return render_404("Unrecognized upload ID").map(IntoResponse::into_response);
-    };
-
-    let can_modify = user.admin || upload.is_owner(&env.pool, &user).await.map_err(|err| {
-        tracing::error!(%upload.id, %user.id, ?err, "Unable to check if user is owner of an upload");
-        InternalServerError(err)
-    })?;
-
-    if !can_modify {
-        tracing::error!(
-            %user.id,
-            %upload.id,
-            "User tried to edit upload without permission"
-        );
-
-        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
-    }
+    let mut upload = get_upload_by_id(&env, id).await?;
+    check_owns_upload(&env, &user, &upload).await?;
 
     tracing::info!(%upload.id, public, "Setting upload public state");
     upload
@@ -87,28 +68,8 @@ pub async fn post_reset(
     SessionUser(user): SessionUser,
     Path(id): Path<Key<Upload>>,
 ) -> poem::Result<Response> {
-    let Some(mut upload) = Upload::get(&env.pool, id).await.map_err(|err| {
-        tracing::error!(?err, %id, "Unable to get upload by ID");
-        InternalServerError(err)
-    })?
-    else {
-        tracing::error!("Unrecognized upload ID '{id}'");
-        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
-    };
-
-    let can_modify = user.admin || upload.is_owner(&env.pool, &user).await.map_err(|err| {
-        tracing::error!(%upload.id, %user.id, ?err, "Unable to check if user is owner of an upload");
-        InternalServerError(err)
-    })?;
-
-    if !can_modify {
-        tracing::error!(
-            %user.id,
-            %upload.id,
-            "User tried to reset upload without permission"
-        );
-        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
-    }
+    let mut upload = get_upload_by_id(&env, id).await?;
+    check_owns_upload(&env, &user, &upload).await?;
 
     tracing::info!(%upload.id, "Resetting upload download stats");
     upload

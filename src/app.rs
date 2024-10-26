@@ -24,6 +24,7 @@ mod handlers {
     pub mod teams;
     pub mod uploads;
     pub mod users;
+    pub mod utils;
 }
 
 pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> impl IntoEndpoint {

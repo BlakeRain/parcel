@@ -13,6 +13,7 @@ use time::OffsetDateTime;
 use crate::{
     app::{
         extractors::user::SessionUser,
+        handlers::utils::{check_owns_upload, get_upload_by_id, get_upload_by_slug},
         templates::{authorized_context, default_context, render_template},
     },
     env::Env,
@@ -119,15 +120,7 @@ pub async fn get_upload(
     csrf_token: &CsrfToken,
     Path(slug): Path<String>,
 ) -> poem::Result<Html<String>> {
-    let Some(upload) = Upload::get_by_slug(&env.pool, &slug).await.map_err(|err| {
-        tracing::error!(?err, ?slug, "Unable to get upload by slug");
-        InternalServerError(err)
-    })?
-    else {
-        tracing::error!(?slug, "Unable to find upload with given ID");
-        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
-    };
-
+    let upload = get_upload_by_slug(&env, &slug).await?;
     render_upload(env, user.as_deref(), session, csrf_token, upload).await
 }
 
@@ -163,29 +156,8 @@ pub async fn delete_upload(
     SessionUser(user): SessionUser,
     Path(id): Path<Key<Upload>>,
 ) -> poem::Result<poem::Response> {
-    let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
-        tracing::error!(?err, %id, "Unable to get upload by ID");
-        InternalServerError(err)
-    })?
-    else {
-        tracing::error!(%id, "Unable to find upload with given ID");
-        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
-    };
-
-    let can_delete = user.admin || upload.is_owner(&env.pool, &user).await.map_err(|err| {
-        tracing::error!(%upload.id, %user.id, ?err, "Unable to check if user is owner of an upload");
-        InternalServerError(err)
-    })?;
-
-    if !can_delete {
-        tracing::error!(
-            user = %user.id,
-            upload = %upload.id,
-            "User tried to delete upload without permission"
-        );
-
-        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
-    }
+    let upload = get_upload_by_id(&env, id).await?;
+    check_owns_upload(&env, &user, &upload).await?;
 
     upload.delete(&env.pool).await.map_err(|err| {
         tracing::error!(?err, %upload.id, "Unable to delete upload");
@@ -216,30 +188,8 @@ pub async fn get_share(
     Path(id): Path<Key<Upload>>,
     Query(GetShareQuery { immediate }): Query<GetShareQuery>,
 ) -> poem::Result<Html<String>> {
-    let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
-        tracing::error!(?err, %id, "Unable to get upload by ID");
-        InternalServerError(err)
-    })?
-    else {
-        tracing::error!(%id, "Unable to find upload with given ID");
-        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
-    };
-
-    let can_modify = user.admin || upload.is_owner(&env.pool, &user).await.map_err(|err| {
-        tracing::error!(%upload.id, %user.id, ?err, "Unable to check if user is owner of an upload");
-        InternalServerError(err)
-    })?;
-
-    if !can_modify {
-        tracing::error!(
-            %user.id,
-            %upload.id,
-            "User tried to share an upload without permission"
-        );
-
-        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
-    }
-
+    let upload = get_upload_by_id(&env, id).await?;
+    check_owns_upload(&env, &user, &upload).await?;
     render_template(
         "uploads/share.html",
         context! {
