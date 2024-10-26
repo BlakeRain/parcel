@@ -4,7 +4,7 @@ use time::{Date, OffsetDateTime};
 
 use super::{team::Team, types::Key, user::User};
 
-#[derive(Debug, FromRow, Serialize)]
+#[derive(Debug, Clone, FromRow, Serialize)]
 pub struct Upload {
     pub id: Key<Upload>,
     pub slug: String,
@@ -298,6 +298,24 @@ impl Upload {
         }
 
         Ok(false)
+    }
+
+    pub async fn find_teams_with_custom_slug_uploads(
+        pool: &SqlitePool,
+        user: Key<User>,
+        custom_slug: &str,
+    ) -> sqlx::Result<Vec<Key<Team>>> {
+        sqlx::query_scalar(
+            "SELECT teams.id \
+            FROM uploads \
+            LEFT JOIN teams ON teams.id = uploads.owner_team \
+            LEFT JOIN team_members ON team_members.team = teams.id \
+            WHERE team_members.user = $1 AND uploads.custom_slug = $2",
+        )
+        .bind(user)
+        .bind(custom_slug)
+        .fetch_all(pool)
+        .await
     }
 }
 

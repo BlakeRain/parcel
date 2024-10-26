@@ -34,6 +34,11 @@ pub async fn get_list(
     SessionUser(user): SessionUser,
     Query(query): Query<ListQuery>,
 ) -> poem::Result<Html<String>> {
+    let has_teams = user.has_teams(&env.pool).await.map_err(|err| {
+        tracing::error!(%user.id, ?err, "Unable to check if user has teams");
+        InternalServerError(err)
+    })?;
+
     let stats = UploadStats::get_for_user(&env.pool, user.id)
         .await
         .map_err(InternalServerError)?;
@@ -50,6 +55,7 @@ pub async fn get_list(
         context! {
             stats,
             uploads,
+            has_teams,
             query,
             page => 0,
             limit => user.limit,
@@ -117,6 +123,11 @@ pub async fn get_page(
     Path(page): Path<u32>,
     Query(query): Query<ListQuery>,
 ) -> poem::Result<Html<String>> {
+    let has_teams = user.has_teams(&env.pool).await.map_err(|err| {
+        tracing::error!(%user.id, ?err, "Unable to check if user has teams");
+        InternalServerError(err)
+    })?;
+
     let uploads =
         UploadList::get_for_user(&env.pool, user.id, query.order, query.asc, 50 * page, 50)
             .await
@@ -130,6 +141,7 @@ pub async fn get_page(
         context! {
             page,
             uploads,
+            has_teams,
             query,
             ..authorized_context(&env, &user)
         },

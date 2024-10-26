@@ -146,6 +146,19 @@
               Reset remaining
             </a>
           {% endif %}
+          {% if has_teams %}
+            <a
+              href="#"
+              class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
+              title="Copy or move to another team"
+              hx-get="/uploads/{{ upload.id }}/transfer"
+              hx-trigger="click"
+              hx-target="body"
+              hx-swap="beforeend">
+              <span class="icon-copy"></span>
+              Copy or move &hellip;
+            </a>
+          {% endif %}
           <a
             href="#"
             class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"

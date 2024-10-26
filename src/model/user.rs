@@ -209,6 +209,13 @@ impl User {
         Ok(())
     }
 
+    pub async fn has_teams(&self, pool: &SqlitePool) -> sqlx::Result<bool> {
+        sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM team_members WHERE user = $1)")
+            .bind(self.id)
+            .fetch_one(pool)
+            .await
+    }
+
     pub async fn get_teams(&self, pool: &SqlitePool) -> sqlx::Result<HashSet<Key<Team>>> {
         Ok(
             sqlx::query_scalar("SELECT team FROM team_members WHERE user = $1")
