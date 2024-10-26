@@ -25,6 +25,9 @@ ALTER TABLE uploads
 ALTER TABLE uploads
   ADD COLUMN owner_team TEXT REFERENCES teams (id);
 
+-- As we're adding the teams functionality, all the uploads will be owned by whoever uploaded them.
+UPDATE uploads SET owner_user = uploaded_by;
+
 -- Add a generated column that will contain either of the owner UUIDs.
 ALTER TABLE uploads
   ADD COLUMN owner TEXT NOT NULL GENERATED ALWAYS AS (
@@ -33,9 +36,6 @@ ALTER TABLE uploads
       ELSE owner_team
     END
   ) VIRTUAL;
-
--- As we're adding the teams functionality, all the uploads will be owned by whoever uploaded them.
-UPDATE uploads SET owner_user = uploaded_by;
 
 -- We drop the old unique index on uploads that made sure that slugs were unique, as that index was
 -- against the `uploaded_by` column, which is no longer used to uniquely identity the owner.
