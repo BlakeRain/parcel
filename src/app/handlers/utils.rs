@@ -2,7 +2,11 @@ use poem::{error::InternalServerError, http::StatusCode};
 
 use crate::{
     env::Env,
-    model::{types::Key, upload::Upload, user::User},
+    model::{
+        types::Key,
+        upload::{Upload, UploadPermission},
+        user::User,
+    },
 };
 
 pub async fn get_upload_by_id(env: &Env, id: Key<Upload>) -> poem::Result<Upload> {
@@ -31,15 +35,25 @@ pub async fn get_upload_by_slug(env: &Env, slug: &str) -> poem::Result<Upload> {
     Ok(upload)
 }
 
-pub async fn check_owns_upload(env: &Env, user: &User, upload: &Upload) -> poem::Result<()> {
-    let owner = user.admin || upload.is_owner(&env.pool, user).await.map_err(|err| {
-        tracing::error!(%upload.id, %user.id, ?err, "Unable to check if user is owner of an upload");
-        InternalServerError(err)
-    })?;
+pub async fn check_permission(
+    env: &Env,
+    upload: &Upload,
+    user: Option<&User>,
+    permission: UploadPermission,
+) -> poem::Result<()> {
+    let granted = upload
+        .can_access(&env.pool, user, permission)
+        .await
+        .map_err(|err| {
+            tracing::error!(?err, upload = %upload.id, "Error checking upload permission");
+            InternalServerError(err)
+        })?;
 
-    if !owner {
-        tracing::error!(%user.id, %upload.id, "User is not the owner");
-        return Err(poem::Error::from_status(StatusCode::FORBIDDEN));
+    if !granted {
+        let uid = user.map(|u| u.id);
+        tracing::error!(upload = %upload.id, ?permission, user = ?uid,
+            "User tried to access upload without permission");
+        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     }
 
     Ok(())

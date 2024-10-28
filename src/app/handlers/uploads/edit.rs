@@ -14,11 +14,15 @@ use validator::{Validate, ValidationError, ValidationErrors};
 use crate::{
     app::{
         extractors::user::SessionUser,
-        handlers::utils::{check_owns_upload, get_upload_by_id},
+        handlers::utils::{check_permission, get_upload_by_id},
         templates::{authorized_context, render_template},
     },
     env::Env,
-    model::{types::Key, upload::Upload, user::hash_password},
+    model::{
+        types::Key,
+        upload::{Upload, UploadPermission},
+        user::hash_password,
+    },
     utils::ValidationErrorsExt,
 };
 
@@ -30,7 +34,7 @@ pub async fn get_edit(
     Path(id): Path<Key<Upload>>,
 ) -> poem::Result<Html<String>> {
     let upload = get_upload_by_id(&env, id).await?;
-    check_owns_upload(&env, &user, &upload).await?;
+    check_permission(&env, &upload, Some(&user), UploadPermission::Edit).await?;
 
     render_template(
         "uploads/edit.html",
@@ -63,7 +67,7 @@ pub async fn post_check_slug(
     }
 
     let mut upload = get_upload_by_id(&env, id).await?;
-    check_owns_upload(&env, &user, &upload).await?;
+    check_permission(&env, &upload, Some(&user), UploadPermission::Edit).await?;
 
     let custom_slug = custom_slug.trim().to_string();
     let exists = if let Some(owner_user) = upload.owner_user {
@@ -122,7 +126,7 @@ pub async fn post_edit(
     }
 
     let mut upload = get_upload_by_id(&env, id).await?;
-    check_owns_upload(&env, &user, &upload).await?;
+    check_permission(&env, &upload, Some(&user), UploadPermission::Edit).await?;
 
     let mut errors = ValidationErrors::new();
     if let Err(form_errors) = form.validate() {

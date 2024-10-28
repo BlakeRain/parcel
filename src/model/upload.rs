@@ -57,6 +57,17 @@ impl UploadOrder {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum UploadPermission {
+    View,
+    Share,
+    Download { with_password: bool },
+    ResetDownloads,
+    Edit,
+    Transfer,
+    Delete,
+}
+
 impl Upload {
     pub async fn create(&self, pool: &SqlitePool) -> sqlx::Result<()> {
         sqlx::query(
@@ -225,8 +236,17 @@ impl Upload {
         query.build_query_scalar().fetch_one(pool).await
     }
 
-    pub async fn record_download(&mut self, pool: &SqlitePool, public: bool) -> sqlx::Result<()> {
+    pub async fn record_download(
+        &mut self,
+        pool: &SqlitePool,
+        user: Option<&User>,
+    ) -> sqlx::Result<()> {
         let mut query = QueryBuilder::new("UPDATE uploads SET downloads = downloads + 1");
+
+        let public = match user {
+            None => false,
+            Some(user) => self.is_owner(pool, user).await?,
+        };
 
         if public && self.remaining.is_some() {
             query.push(", remaining = MAX(0, remaining - 1)");
@@ -316,6 +336,75 @@ impl Upload {
         .bind(custom_slug)
         .fetch_all(pool)
         .await
+    }
+
+    pub async fn can_access(
+        &self,
+        pool: &SqlitePool,
+        user: Option<&User>,
+        permission: UploadPermission,
+    ) -> sqlx::Result<bool> {
+        if user.map(|user| user.admin).unwrap_or(false) {
+            return Ok(true);
+        }
+
+        match permission {
+            UploadPermission::View => {
+                if self.public {
+                    return Ok(true);
+                }
+
+                if let Some(user) = user {
+                    if self.is_owner(pool, user).await? {
+                        return Ok(true);
+                    }
+                }
+
+                Ok(false)
+            }
+
+            UploadPermission::Download { with_password } => {
+                if self.public {
+                    if let Some(remaining) = self.remaining {
+                        if remaining < 1 {
+                            return Ok(false);
+                        }
+                    }
+
+                    if let Some(expiry) = self.expiry_date {
+                        if expiry < OffsetDateTime::now_utc().date() {
+                            return Ok(false);
+                        }
+                    }
+
+                    if self.password.is_some() != with_password {
+                        return Ok(false);
+                    }
+
+                    return Ok(true);
+                }
+
+                if let Some(user) = user {
+                    if self.is_owner(pool, user).await? {
+                        return Ok(true);
+                    }
+                }
+
+                Ok(false)
+            }
+
+            UploadPermission::Share
+            | UploadPermission::Transfer
+            | UploadPermission::ResetDownloads
+            | UploadPermission::Edit
+            | UploadPermission::Delete => {
+                if let Some(user) = user {
+                    self.is_owner(pool, user).await
+                } else {
+                    Ok(false)
+                }
+            }
+        }
     }
 }
 

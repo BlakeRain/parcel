@@ -10,10 +10,13 @@ use serde_json::json;
 use crate::{
     app::{
         extractors::user::SessionUser,
-        handlers::utils::{check_owns_upload, get_upload_by_id},
+        handlers::utils::{check_permission, get_upload_by_id},
     },
     env::Env,
-    model::{types::Key, upload::Upload},
+    model::{
+        types::Key,
+        upload::{Upload, UploadPermission},
+    },
 };
 
 mod download;
@@ -43,7 +46,7 @@ pub async fn post_public(
     Query(MakePublicQuery { public }): Query<MakePublicQuery>,
 ) -> poem::Result<Response> {
     let mut upload = get_upload_by_id(&env, id).await?;
-    check_owns_upload(&env, &user, &upload).await?;
+    check_permission(&env, &upload, Some(&user), UploadPermission::Edit).await?;
 
     tracing::info!(%upload.id, public, "Setting upload public state");
     upload
@@ -69,7 +72,7 @@ pub async fn post_reset(
     Path(id): Path<Key<Upload>>,
 ) -> poem::Result<Response> {
     let mut upload = get_upload_by_id(&env, id).await?;
-    check_owns_upload(&env, &user, &upload).await?;
+    check_permission(&env, &upload, Some(&user), UploadPermission::ResetDownloads).await?;
 
     tracing::info!(%upload.id, "Resetting upload download stats");
     upload

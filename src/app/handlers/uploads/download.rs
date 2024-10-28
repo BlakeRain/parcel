@@ -10,15 +10,24 @@ use poem::{
     Body, IntoResponse, Response,
 };
 use serde::Deserialize;
-use time::OffsetDateTime;
 
 use crate::{
-    app::{extractors::user::SessionUser, handlers::utils::get_upload_by_slug},
+    app::{
+        extractors::user::SessionUser,
+        handlers::utils::{check_permission, get_upload_by_slug},
+    },
     env::Env,
-    model::{upload::Upload, user::verify_password},
+    model::{
+        upload::{Upload, UploadPermission},
+        user::{verify_password, User},
+    },
 };
 
-async fn send_download(env: &Env, owner: bool, mut upload: Upload) -> poem::Result<Response> {
+async fn send_download(
+    env: &Env,
+    mut upload: Upload,
+    user: Option<&User>,
+) -> poem::Result<Response> {
     let path = env.cache_dir.join(&upload.slug);
     tracing::info!(upload = %upload.id, path = ?path, "Opening file for upload");
     let file = tokio::fs::File::open(&path).await.map_err(|err| {
@@ -32,7 +41,7 @@ async fn send_download(env: &Env, owner: bool, mut upload: Upload) -> poem::Resu
     })?;
 
     upload
-        .record_download(&env.pool, !owner)
+        .record_download(&env.pool, user)
         .await
         .map_err(|err| {
             tracing::error!(%upload.id, ?err, ?upload.slug, "Unable to record download");
@@ -55,50 +64,21 @@ async fn send_download(env: &Env, owner: bool, mut upload: Upload) -> poem::Resu
 #[handler]
 pub async fn get_download(
     env: Data<&Env>,
-    session: &Session,
     user: Option<SessionUser>,
     Path(slug): Path<String>,
 ) -> poem::Result<Response> {
     let mut upload = get_upload_by_slug(&env, &slug).await?;
+    check_permission(
+        &env,
+        &upload,
+        user.as_deref(),
+        UploadPermission::Download {
+            with_password: false,
+        },
+    )
+    .await?;
 
-    let owner = if let Some(SessionUser(user)) = &user {
-        user.admin
-            || upload.is_owner(&env.pool, user).await.map_err(|err| {
-                tracing::error!(%user.id, ?err, "Unable to check if user is owner of an upload");
-                InternalServerError(err)
-            })?
-    } else {
-        false
-    };
-
-    if !upload.public && !owner {
-        tracing::error!(%upload.id, "Attempt to access private upload without permission");
-        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
-    }
-
-    if !owner {
-        if let Some(remaining) = upload.remaining {
-            if remaining < 1 {
-                tracing::error!(upload = ?upload, "Download limit was reached");
-                return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
-            }
-        }
-
-        if let Some(expiry) = upload.expiry_date {
-            if expiry < OffsetDateTime::now_utc().date() {
-                tracing::error!(%upload.id, "Upload has expired");
-                return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
-            }
-        }
-
-        if upload.password.is_some() {
-            tracing::error!(%upload.id, "Upload requires password");
-            session.set("download_error", "This upload requires a password");
-            return Ok(Redirect::see_other(format!("/uploads/{slug}")).into_response());
-        }
-    }
-
-    send_download(&env, owner, upload).await
+    send_download(&env, upload, user.as_deref()).await
 }
 
 #[derive(Debug, Deserialize)]
@@ -125,36 +105,15 @@ pub async fn post_download(
     }
 
     let mut upload = get_upload_by_slug(&env, &slug).await?;
-    let owner = if let Some(SessionUser(user)) = &user {
-        user.admin
-            || upload.is_owner(&env.pool, user).await.map_err(|err| {
-                tracing::error!(%user.id, ?err, "Unable to check if user is owner of an upload");
-                InternalServerError(err)
-            })?
-    } else {
-        false
-    };
-
-    if owner {
-        return Ok(Redirect::see_other(format!("/uploads/{slug}/download")).into_response());
-    } else if !upload.public {
-        tracing::error!(%upload.id, "Attempt to access private upload without permission");
-        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
-    } else {
-        if let Some(remaining) = upload.remaining {
-            if remaining < 1 {
-                tracing::error!(upload = ?upload, "Download limit was reached");
-                return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
-            }
-        }
-
-        if let Some(expiry) = upload.expiry_date {
-            if expiry < OffsetDateTime::now_utc().date() {
-                tracing::error!(%upload.id, "Upload has expired");
-                return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
-            }
-        }
-    }
+    check_permission(
+        &env,
+        &upload,
+        user.as_deref(),
+        UploadPermission::Download {
+            with_password: true,
+        },
+    )
+    .await?;
 
     let Some(ref hash) = upload.password else {
         return Ok(Redirect::see_other(format!("/uploads/{slug}/download")).into_response());
@@ -166,5 +125,5 @@ pub async fn post_download(
         return Ok(Redirect::see_other(format!("/uploads/{slug}")).into_response());
     }
 
-    send_download(&env, owner, upload).await
+    send_download(&env, upload, user.as_deref()).await
 }
