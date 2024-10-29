@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use esbuild_bundle::javascript;
 use minijinja::context;
@@ -6,7 +6,7 @@ use poem::{
     error::InternalServerError,
     handler,
     http::StatusCode,
-    web::{CsrfToken, CsrfVerifier, Data, Html, Json, Path, Redirect},
+    web::{CsrfToken, CsrfVerifier, Data, Html, Path, Redirect},
     IntoResponse, Response,
 };
 use serde::{Deserialize, Serialize};
@@ -20,7 +20,7 @@ use crate::{
     },
     env::Env,
     model::{
-        team::{Team, TeamMember, TeamPermission, TeamSelect},
+        team::{Team, TeamMember, TeamSelect},
         types::Key,
         upload::Upload,
         user::{hash_password, User},
