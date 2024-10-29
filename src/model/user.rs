@@ -9,10 +9,7 @@ use serde::Serialize;
 use sqlx::{FromRow, QueryBuilder, SqlitePool};
 use time::OffsetDateTime;
 
-use super::{
-    team::{Team, TeamPermission},
-    types::Key,
-};
+use super::{team::Team, types::Key};
 
 #[derive(Debug, FromRow, Serialize)]
 pub struct User {
@@ -298,5 +295,53 @@ impl UserStats {
         sqlx::query_as("SELECT COUNT(*) AS total, SUM(enabled) AS enabled FROM users")
             .fetch_one(pool)
             .await
+    }
+}
+
+#[derive(Debug, FromRow, Serialize)]
+pub struct UserList {
+    pub id: Key<User>,
+    pub username: String,
+    pub name: String,
+    pub enabled: bool,
+    pub has_totp: bool,
+    pub admin: bool,
+    pub limit: Option<i64>,
+    pub team_count: i64,
+    pub upload_total: i64,
+    pub created_at: OffsetDateTime,
+    pub created_by_name: Option<String>,
+}
+
+impl UserList {
+    pub async fn get(pool: &SqlitePool) -> sqlx::Result<Vec<UserList>> {
+        sqlx::query_as(
+            "WITH team_counts AS (
+                SELECT user, COUNT(*) AS team_count FROM team_members GROUP BY user
+            ), upload_counts AS (
+                SELECT uploaded_by AS user, \
+                       SUM(size) AS upload_total \
+                FROM uploads GROUP BY uploaded_by \
+            ) \
+            SELECT \
+                users.id as id, \
+                users.username as username, \
+                users.name as name, \
+                users.enabled as enabled, \
+                users.totp IS NOT NULL AS has_totp, \
+                users.admin as admin, \
+                users.\"limit\" as \"limit\", \
+                COALESCE(tc.team_count, 0) AS team_count, \
+                COALESCE(uc.upload_total, 0) AS upload_total, \
+                users.created_at as created_at, \
+                created_by.name AS created_by_name \
+            FROM users \
+            LEFT JOIN team_counts tc ON tc.user = users.id \
+            LEFT JOIN upload_counts uc ON uc.user = users.id \
+            LEFT JOIN users AS created_by ON created_by.id = users.created_by \
+            ORDER BY users.username",
+        )
+        .fetch_all(pool)
+        .await
     }
 }

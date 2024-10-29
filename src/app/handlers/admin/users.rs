@@ -23,7 +23,7 @@ use crate::{
         team::{Team, TeamMember, TeamSelect},
         types::Key,
         upload::Upload,
-        user::{hash_password, User},
+        user::{hash_password, User, UserList},
     },
     utils::ValidationErrorsExt,
 };
@@ -33,7 +33,7 @@ pub async fn get_users(
     env: Data<&Env>,
     SessionAdmin(admin): SessionAdmin,
 ) -> poem::Result<Response> {
-    let users = User::get_list(&env.pool).await.map_err(|err| {
+    let users = UserList::get(&env.pool).await.map_err(|err| {
         tracing::error!(err = ?err, "Failed to get list of users");
         InternalServerError(err)
     })?;
