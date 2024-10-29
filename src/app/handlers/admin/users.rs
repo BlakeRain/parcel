@@ -1,14 +1,15 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
+use esbuild_bundle::javascript;
 use minijinja::context;
 use poem::{
     error::InternalServerError,
     handler,
     http::StatusCode,
-    web::{CsrfToken, CsrfVerifier, Data, Html, Path, Redirect},
+    web::{CsrfToken, CsrfVerifier, Data, Html, Json, Path, Redirect},
     IntoResponse, Response,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use validator::{Validate, ValidationError, ValidationErrors};
 
@@ -19,7 +20,7 @@ use crate::{
     },
     env::Env,
     model::{
-        team::{Team, TeamSelect},
+        team::{Team, TeamMember, TeamPermission, TeamSelect},
         types::Key,
         upload::Upload,
         user::{hash_password, User},
@@ -41,6 +42,7 @@ pub async fn get_users(
         "admin/users.html",
         context! {
             users,
+            teams_js => javascript!("scripts/components/teams.ts"),
             ..authorized_context(&env, &admin)
         },
     )?
@@ -54,7 +56,7 @@ pub async fn get_new(
     SessionAdmin(admin): SessionAdmin,
     token: &CsrfToken,
 ) -> poem::Result<Html<String>> {
-    let teams = TeamSelect::get(&env.pool).await.map_err(|err| {
+    let teams = Team::get_list(&env.pool).await.map_err(|err| {
         tracing::error!(?err, "Failed to get team selection");
         InternalServerError(err)
     })?;
@@ -81,7 +83,22 @@ pub struct NewUserForm {
     admin: Option<String>,
     enabled: Option<String>,
     limit: Option<i64>,
-    teams: Option<HashSet<Key<Team>>>,
+    teams: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct TeamPermissionStruct {
+    edit: bool,
+    delete: bool,
+}
+
+impl From<TeamMember> for TeamPermissionStruct {
+    fn from(perm: TeamMember) -> Self {
+        Self {
+            edit: perm.can_edit,
+            delete: perm.can_delete,
+        }
+    }
 }
 
 #[handler]
@@ -148,7 +165,7 @@ pub async fn post_new(
                     admin => form.admin.as_deref() == Some("on"),
                     enabled => form.enabled.as_deref() == Some("on"),
                     limit => form.limit,
-                    teams => form.teams.unwrap_or_default(),
+                    teams => form.teams,
                 },
                 ..authorized_context(&env, &auth)
             },
@@ -171,7 +188,12 @@ pub async fn post_new(
 
     let admin = admin.as_deref() == Some("on");
     let enabled = enabled.as_deref() == Some("on");
-    let teams = teams.unwrap_or_default();
+
+    let teams: HashMap<Key<Team>, TeamPermissionStruct> =
+        serde_json::from_str(&teams).map_err(|err| {
+            tracing::error!(?err, "Failed to parse team permissions");
+            InternalServerError(err)
+        })?;
 
     let user = User {
         id: Key::new(),
@@ -193,13 +215,15 @@ pub async fn post_new(
 
     tracing::info!(user = %user.id, username = ?user.username, "Created new user");
 
-    for team in teams {
-        tracing::info!(team_id = %team, user_id = %user.id, "Adding user to team");
-        user.join_team(&env.pool, team).await.map_err(|err| {
-            tracing::error!(err = ?err, user_id = %user.id, team_id = %team,
+    for (team_id, permissions) in teams {
+        tracing::info!(%team_id, user_id = %user.id, "Adding user to team");
+        user.join_team(&env.pool, team_id, permissions.edit, permissions.delete)
+            .await
+            .map_err(|err| {
+                tracing::error!(err = ?err, user_id = %user.id, %team_id,
                             "Failed to add user to team");
-            InternalServerError(err)
-        })?;
+                InternalServerError(err)
+            })?;
     }
 
     Ok(Redirect::see_other("/admin/users").into_response())
@@ -265,15 +289,17 @@ pub async fn get_user(
         return render_404("Unrecognized user ID");
     };
 
-    let teams = TeamSelect::get(&env.pool).await.map_err(|err| {
+    let teams = Team::get_list(&env.pool).await.map_err(|err| {
         tracing::error!(?err, "Failed to get team selection");
         InternalServerError(err)
     })?;
 
-    let membership = user.get_teams(&env.pool).await.map_err(|err| {
-        tracing::error!(?err, user_id = %user_id, "Failed to get user's team membership");
-        InternalServerError(err)
-    })?;
+    let membership = TeamMember::get_for_user(&env.pool, user_id)
+        .await
+        .map_err(|err| {
+            tracing::error!(?err, user_id = %user_id, "Failed to get user's team membership");
+            InternalServerError(err)
+        })?;
 
     render_template(
         "admin/users/form.html",
@@ -297,7 +323,7 @@ pub struct EditUserForm {
     admin: Option<String>,
     enabled: Option<String>,
     limit: Option<i64>,
-    teams: Option<HashSet<Key<Team>>>,
+    teams: String,
 }
 
 #[handler]
@@ -382,7 +408,7 @@ pub async fn post_user(
                     admin => form.admin.as_deref() == Some("on"),
                     enabled => form.enabled.as_deref() == Some("on"),
                     limit => form.limit,
-                    teams => form.teams.unwrap_or_default(),
+                    teams => form.teams,
                 },
                 ..authorized_context(&env, &auth)
             },
@@ -405,7 +431,12 @@ pub async fn post_user(
     let admin = admin.as_deref() == Some("on");
     let enabled = enabled.as_deref() == Some("on");
     let limit = limit.map(|limit| limit * 1024 * 1024);
-    let teams = teams.unwrap_or_default();
+
+    let teams: HashMap<Key<Team>, TeamPermissionStruct> =
+        serde_json::from_str(&teams).map_err(|err| {
+            tracing::error!(?err, "Failed to parse team permissions");
+            InternalServerError(err)
+        })?;
 
     // Override the 'enabled' selection if the user being edited is the same as the admin
     let enabled = user.id == auth.id || enabled;
@@ -429,7 +460,7 @@ pub async fn post_user(
 
     // Now remove the user from any teams they are no longer a member of
     for team in membership.iter().copied() {
-        if !teams.contains(&team) {
+        if !teams.contains_key(&team) {
             tracing::info!(team_id = %team, user_id = %user_id, "Removing user from team");
             user.leave_team(&env.pool, team).await.map_err(|err| {
                 tracing::error!(err = ?err, user_id = %user_id, team_id = %team,
@@ -439,15 +470,17 @@ pub async fn post_user(
         }
     }
 
-    // And add the user to any new teams
-    for team in teams {
-        if !membership.contains(&team) {
-            tracing::info!(team_id = %team, user_id = %user_id, "Adding user to team");
-            user.join_team(&env.pool, team).await.map_err(|err| {
-                tracing::error!(err = ?err, user_id = %user_id, team_id = %team,
+    // Add the user to any new teams
+    for (team_id, permissions) in teams {
+        if !membership.contains(&team_id) {
+            tracing::info!(%team_id, user_id = %user_id, "Adding user to team");
+            user.join_team(&env.pool, team_id, permissions.edit, permissions.delete)
+                .await
+                .map_err(|err| {
+                    tracing::error!(err = ?err, user_id = %user_id, %team_id,
                                 "Failed to add user to team");
-                InternalServerError(err)
-            })?;
+                    InternalServerError(err)
+                })?;
         }
     }
 

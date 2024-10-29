@@ -2,21 +2,7 @@ import { createContext, FunctionComponent } from "preact";
 import { useContext, useEffect, useMemo, useReducer } from "preact/hooks";
 import { html } from "htm/preact";
 import { default as registerElement } from "preact-custom-element";
-
-function loadFromScript<T>(selector: string): T {
-  const element = document.querySelector<HTMLScriptElement>(selector);
-  if (!element || element.tagName !== "SCRIPT") {
-    throw new Error(
-      `Selector '${selector}' did not match any <script> elements`,
-    );
-  }
-
-  try {
-    return JSON.parse(element.textContent);
-  } catch (error) {
-    throw new Error(`Failed to parse JSON from <script> element: ${error}`);
-  }
-}
+import { loadFromScript } from "../utils";
 
 interface Option {
   value: string;

@@ -9,7 +9,10 @@ use serde::Serialize;
 use sqlx::{FromRow, QueryBuilder, SqlitePool};
 use time::OffsetDateTime;
 
-use super::{team::Team, types::Key};
+use super::{
+    team::{Team, TeamPermission},
+    types::Key,
+};
 
 #[derive(Debug, FromRow, Serialize)]
 pub struct User {
@@ -237,12 +240,22 @@ impl User {
         Ok(result.is_some())
     }
 
-    pub async fn join_team(&self, pool: &SqlitePool, team: Key<Team>) -> sqlx::Result<()> {
-        sqlx::query("INSERT INTO team_members (team, user) VALUES ($1, $2)")
-            .bind(team)
-            .bind(self.id)
-            .execute(pool)
-            .await?;
+    pub async fn join_team(
+        &self,
+        pool: &SqlitePool,
+        team: Key<Team>,
+        can_edit: bool,
+        can_delete: bool,
+    ) -> sqlx::Result<()> {
+        sqlx::query(
+            "INSERT INTO team_members (team, user, can_edit, can_delete) VALUES ($1, $2, $3, $4)",
+        )
+        .bind(team)
+        .bind(self.id)
+        .bind(can_edit)
+        .bind(can_delete)
+        .execute(pool)
+        .await?;
         Ok(())
     }
 

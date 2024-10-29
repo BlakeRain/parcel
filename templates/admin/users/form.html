@@ -76,19 +76,30 @@
           <label for="admin">User is an administrator</label>
         </div>
         <div>
-          <label>Teams</label>
-          <script type="text/json" id="teams-data">{{ teams | tojson }}</script>
+          <script type="text/json" id="teams-data">
+            [ {% for team in teams %}
+              {{ dict(id=team.id, name=team.name, enabled=team.enabled) | tojson }}
+              {%- if not loop.last -%},{%- endif -%}
+              {% endfor %} ]
+          </script>
           {% if form or user %}
             <script type="text/json" id="membership-data">
-              {% if form %}{{ form.teams | tojson }}{% elif user %}{{ membership | tojson }}{% endif %}
+              {% if form -%}
+                {{ form.teams | safe }}
+              {%- elif user -%}
+                {{ "{" }} {% for member in membership %}
+                  "{{ member.team }}":
+                    {{ dict(edit=member.can_edit, delete=member.can_delete) | tojson }}
+                  {%- if not loop.last -%},{%- endif -%}
+                {% endfor %} {{ "}" }}
+              {%- endif %}
             </script>
           {% endif %}
-          <parcel-select
+          <parcel-teams
             name="teams"
-            id="teams"
-            options="#teams-data"
-            {% if form or user %}values="#membership-data"{% endif %}
-            class="mt-2" />
+            teams="#teams-data"
+            {% if form or user %}membership="#membership-data"{% endif %}
+            class="mt-2"></parcel-teams>
         </div>
       </div>
 

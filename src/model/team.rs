@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, QueryBuilder, SqlitePool};
 use time::OffsetDateTime;
 
@@ -13,6 +13,12 @@ pub struct Team {
     pub enabled: bool,
     pub created_at: OffsetDateTime,
     pub created_by: Key<User>,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
+pub enum TeamPermission {
+    Edit,
+    Delete,
 }
 
 impl Team {
@@ -64,6 +70,12 @@ impl Team {
             .await
     }
 
+    pub async fn get_list(pool: &SqlitePool) -> sqlx::Result<Vec<Self>> {
+        sqlx::query_as("SELECT * FROM teams ORDER BY name ASC")
+            .fetch_all(pool)
+            .await
+    }
+
     pub async fn get_for_user(pool: &SqlitePool, user: Key<User>) -> sqlx::Result<Vec<Self>> {
         sqlx::query_as("SELECT teams.* FROM teams LEFT JOIN team_members ON team_members.team = teams.id WHERE team_members.user = $1")
             .bind(user)
@@ -101,6 +113,23 @@ impl Team {
         query.push(")");
 
         query.build_query_scalar().fetch_one(pool).await
+    }
+}
+
+#[derive(Debug, FromRow, Serialize)]
+pub struct TeamMember {
+    pub team: Key<Team>,
+    pub user: Key<User>,
+    pub can_edit: bool,
+    pub can_delete: bool,
+}
+
+impl TeamMember {
+    pub async fn get_for_user(pool: &SqlitePool, user: Key<User>) -> sqlx::Result<Vec<TeamMember>> {
+        sqlx::query_as("SELECT * FROM team_members WHERE user = $1")
+            .bind(user)
+            .fetch_all(pool)
+            .await
     }
 }
 
