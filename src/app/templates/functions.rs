@@ -207,7 +207,7 @@ fn filter_filesizeformat(value: usize, kwargs: Kwargs) -> Result<String, Error> 
     let format = if binary {
         humansize::BINARY
     } else {
-        humansize::WINDOWS
+        humansize::DECIMAL
     };
 
     Ok(humansize::format_size(value, format))
