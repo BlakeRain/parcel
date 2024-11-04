@@ -134,6 +134,13 @@
                         Delete user
                       </a>
                     {% endif %}
+                    <a
+                      href="/admin/users/{{ user.id }}/masquerade"
+                      class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
+                      title="Masquerade as this user">
+                      <span class="icon-venetian-mask"></span>
+                      Masquerade as user
+                    </a>
                   </div>
                 </parcel-dropdown>
               </td>

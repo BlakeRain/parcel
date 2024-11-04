@@ -6,6 +6,7 @@ use poem::{
     error::InternalServerError,
     handler,
     http::StatusCode,
+    session::Session,
     web::{CsrfToken, CsrfVerifier, Data, Html, Path, Redirect},
     IntoResponse, Response,
 };
@@ -25,7 +26,7 @@ use crate::{
         upload::Upload,
         user::{hash_password, User, UserList},
     },
-    utils::{SizeUnit, ValidationErrorsExt},
+    utils::{SessionExt, SizeUnit, ValidationErrorsExt},
 };
 
 #[handler]
@@ -628,4 +629,19 @@ pub async fn post_enable_user(
 
     tracing::info!(user_id = %user_id, "Enabled user");
     Ok(Redirect::see_other("/admin/users"))
+}
+
+#[handler]
+pub async fn get_masquerade(
+    Path(user_id): Path<Key<User>>,
+    SessionAdmin(admin): SessionAdmin,
+    session: &Session,
+) -> poem::Result<Redirect> {
+    let mut stack = session
+        .take::<Vec<Key<User>>>("masquerade_stack")
+        .unwrap_or_default();
+    stack.push(admin.id);
+    session.set("masquerade_stack", stack);
+    session.set("user_id", user_id);
+    Ok(Redirect::see_other("/"))
 }
