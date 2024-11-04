@@ -25,7 +25,7 @@ use crate::{
         upload::Upload,
         user::{hash_password, User, UserList},
     },
-    utils::ValidationErrorsExt,
+    utils::{SizeUnit, ValidationErrorsExt},
 };
 
 #[handler]
@@ -83,6 +83,7 @@ pub struct NewUserForm {
     admin: Option<String>,
     enabled: Option<String>,
     limit: Option<i64>,
+    limit_unit: Option<SizeUnit>,
     teams: String,
 }
 
@@ -165,6 +166,7 @@ pub async fn post_new(
                     admin => form.admin.as_deref() == Some("on"),
                     enabled => form.enabled.as_deref() == Some("on"),
                     limit => form.limit,
+                    limit_unit => form.limit_unit,
                     teams => form.teams,
                 },
                 ..authorized_context(&env, &auth)
@@ -182,6 +184,7 @@ pub async fn post_new(
         admin,
         enabled,
         limit,
+        limit_unit,
         teams,
         ..
     } = form;
@@ -195,6 +198,8 @@ pub async fn post_new(
             InternalServerError(err)
         })?;
 
+    let limit = limit.and_then(|limit| limit_unit.map(|unit| limit * unit.to_bytes()));
+
     let user = User {
         id: Key::new(),
         username,
@@ -203,7 +208,7 @@ pub async fn post_new(
         totp: None,
         enabled,
         admin,
-        limit: limit.map(|limit| limit * 1024 * 1024),
+        limit,
         created_at: OffsetDateTime::now_utc(),
         created_by: Some(auth.id),
     };
@@ -323,6 +328,7 @@ pub struct EditUserForm {
     admin: Option<String>,
     enabled: Option<String>,
     limit: Option<i64>,
+    limit_unit: Option<SizeUnit>,
     teams: String,
 }
 
@@ -408,6 +414,7 @@ pub async fn post_user(
                     admin => form.admin.as_deref() == Some("on"),
                     enabled => form.enabled.as_deref() == Some("on"),
                     limit => form.limit,
+                    limit_unit => form.limit_unit,
                     teams => form.teams,
                 },
                 ..authorized_context(&env, &auth)
@@ -424,13 +431,14 @@ pub async fn post_user(
         admin,
         enabled,
         limit,
+        limit_unit,
         teams,
         ..
     } = form;
 
     let admin = admin.as_deref() == Some("on");
     let enabled = enabled.as_deref() == Some("on");
-    let limit = limit.map(|limit| limit * 1024 * 1024);
+    let limit = limit.and_then(|limit| limit_unit.map(|unit| limit * unit.to_bytes()));
 
     let teams: HashMap<Key<Team>, TeamPermissionStruct> =
         serde_json::from_str(&teams).map_err(|err| {
