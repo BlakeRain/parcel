@@ -36,7 +36,7 @@ class Dropdown extends HTMLElement {
       this.dropdown = this.lastElementChild as HTMLDivElement;
     } else {
       this.dropdown = document.createElement("div");
-      this.dropdown.className = "dropdown-menu has-triangle triangle-tr";
+      this.dropdown.className = "dropdown-menu";
 
       while (this.firstChild) {
         this.dropdown.appendChild(this.firstChild);

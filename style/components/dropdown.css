@@ -16,9 +16,15 @@
     @apply rounded-lg shadow;
     @apply bg-neutral-200 text-neutral-800;
     @apply dark:bg-gray-700 dark:text-neutral-300;
+    @apply text-nowrap;
 
     &.open {
       @apply block;
+    }
+
+    &:before {
+      @apply content-[""] absolute w-0 h-0 -top-2 right-2 border-[0.5rem] border-transparent;
+      @apply border-t-0 border-b-neutral-200 dark:border-b-gray-700;
     }
   }
 }

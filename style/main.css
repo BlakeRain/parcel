@@ -13,7 +13,6 @@
 
 @import "utils/animation.css";
 @import "utils/icons.css";
-@import "utils/triangles.css";
 
 body.has-web-components .no-web-components {
   display: none;

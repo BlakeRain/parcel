@@ -43,21 +43,23 @@
                   <span class="icon-triangle-alert text-danger"></span>
                 {% endif %}
               </div>
-              <ul class="dismiss-visible invisible absolute top-full right-0 left-auto bg-slate-100
-                dark:bg-slate-800 border border-gray-400 dark:border-gray-700 rounded w-max z-50">
+              <ul class="dismiss-visible invisible absolute top-full right-0 left-auto bg-neutral-200
+                dark:bg-gray-700 rounded-lg shadow w-max z-50 before:absolute before:content-['']
+                before:w-0 before:h-0 before:-top-2 before:right-2 before:border-[0.5rem]
+                before:border-transparent before:border-t-0 before:border-b-neutral-200
+                dark:before:border-b-gray-700 py-2">
                 {% if auth.admin %}
                   <li>
-                    <a href="/admin" class="block px-4 py-4 text-neutral-800 dark:text-neutral-200
-                      hover:bg-slate-700/10 hover:text-neutral-800 dark:hover:text-neutral-200">
+                    <a href="/admin" class="block no-color px-4 py-2 hover:bg-gray-100
+                      dark:hover:bg-gray-600">
                       <span class="icon-cog"></span>
                       Administration
                     </a>
                   </li>
                 {% endif %}
                 <li>
-                  <a href="/user/settings" class="block px-4 py-4 text-neutral-800
-                    dark:text-neutral-200 hover:bg-slate-700/10 hover:text-neutral-800
-                    dark:hover:text-neutral-200">
+                  <a href="/user/settings" class="block no-color px-4 py-2 hover:bg-gray-100
+                    dark:hover:bg-gray-600">
                     <span class="icon-settings-2"></span>
                     Account Settings
                     {% if not auth.has_totp %}
@@ -66,9 +68,8 @@
                   </a>
                 </li>
                 <li>
-                  <a href="/user/signout" class="block px-4 py-4 text-neutral-800
-                    dark:text-neutral-200 hover:bg-slate-700/10 hover:text-neutral-800
-                    dark:hover:text-neutral-200">
+                  <a href="/user/signout" class="block no-color px-4 py-2 hover:bg-gray-100
+                    dark:hover:bg-gray-600">
                     <span class="icon-log-out"></span>
                     Sign Out
                   </a>
