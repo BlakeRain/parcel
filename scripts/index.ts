@@ -1,71 +1,71 @@
-class DropIndicator {
-  private element: HTMLElement;
-  private visible: boolean = false;
-  private start: EventTarget;
+interface DropIndicator {
+  __dropIndicator: {
+    visible: boolean;
+    start: EventTarget;
+  };
+}
 
-  constructor() {
-    this.element = document.getElementById("drop-indicator");
+function getDropIndicator(): HTMLElement & DropIndicator {
+  const element = document.getElementById("drop-indicator") as HTMLElement &
+    DropIndicator;
+  if (!element) {
+    throw new Error("Could not find drop indicator element");
+  }
 
-    this.element.addEventListener("animationend", () => {
-      if (this.element.classList.contains("closing")) {
-        this.element.classList.remove("closing");
-        this.element.classList.add("invisible");
-      } else if (this.element.classList.contains("opening")) {
-        this.element.classList.remove("opening");
+  if (!element.__dropIndicator) {
+    element.__dropIndicator = {
+      visible: false,
+      start: null,
+    };
+
+    element.addEventListener("animationend", () => {
+      if (element.classList.contains("closing")) {
+        element.classList.remove("closing");
+        element.classList.add("invisible");
+      } else if (element.classList.contains("opening")) {
+        element.classList.remove("opening");
       }
     });
   }
 
-  public onDragEnter(event: DragEvent) {
-    this.start = event.target;
-    event.preventDefault();
-    event.stopPropagation();
-    this.show();
-  }
-
-  public onDragLeave(event: DragEvent) {
-    if (this.start === event.target) {
-      event.preventDefault();
-      event.stopPropagation();
-      this.hide(true);
-    }
-  }
-
-  show() {
-    if (this.visible) {
-      return;
-    }
-
-    this.element.classList.remove("invisible");
-    this.element.classList.add("opening");
-    this.visible = true;
-  }
-
-  hide(animated: boolean) {
-    if (!this.visible) {
-      return;
-    }
-
-    if (animated) {
-      this.element.classList.add("closing");
-    } else {
-      this.element.classList.add("invisible");
-    }
-
-    this.visible = false;
-  }
+  return element;
 }
 
-let DROP_INDICATOR: DropIndicator = null;
-function getDropIndicator(): DropIndicator {
-  if (!DROP_INDICATOR) {
-    DROP_INDICATOR = new DropIndicator();
+function showDropIndicator(indicator: HTMLElement & DropIndicator) {
+  if (indicator.__dropIndicator.visible) {
+    return;
   }
 
-  return DROP_INDICATOR;
+  indicator.classList.remove("invisible");
+  indicator.classList.add("opening");
+  indicator.__dropIndicator.visible = true;
+}
+
+function hideDropIndicator(
+  indicator: HTMLElement & DropIndicator,
+  animated: boolean,
+) {
+  if (!indicator.__dropIndicator.visible) {
+    return;
+  }
+
+  if (animated) {
+    indicator.classList.add("closing");
+  } else {
+    indicator.classList.add("invisible");
+  }
+
+  indicator.__dropIndicator.visible = false;
 }
 
 function setupDropIndicator(team?: string) {
+  if (document["__dropIndicatorInstalled"]) {
+    console.log("Drop indicator already installed");
+    return;
+  }
+
+  console.log("Setting up drop indicator");
+
   // Always prevent the default action.
   document.body.addEventListener("dragover", (event: DragEvent) => {
     event.preventDefault();
@@ -78,7 +78,12 @@ function setupDropIndicator(team?: string) {
       return;
     }
 
-    getDropIndicator().onDragEnter(event);
+    event.preventDefault();
+    event.stopPropagation();
+
+    const indicator = getDropIndicator();
+    indicator.__dropIndicator.start = event.target;
+    showDropIndicator(indicator);
   });
 
   document.body.addEventListener("dragleave", (event: DragEvent) => {
@@ -88,7 +93,12 @@ function setupDropIndicator(team?: string) {
       return;
     }
 
-    getDropIndicator().onDragLeave(event);
+    const indicator = getDropIndicator();
+    if (indicator.__dropIndicator.start === event.target) {
+      event.preventDefault();
+      event.stopPropagation();
+      hideDropIndicator(indicator, true);
+    }
   });
 
   document.body.addEventListener("drop", (event: DragEvent) => {
@@ -102,7 +112,8 @@ function setupDropIndicator(team?: string) {
     event.preventDefault();
 
     // Hide the drop indicator, but don't animate.
-    getDropIndicator().hide(false);
+    const indicator = getDropIndicator();
+    hideDropIndicator(indicator, false);
 
     const files = [...event.dataTransfer.items]
       .filter((item) => item.kind === "file")
@@ -147,9 +158,18 @@ function setupDropIndicator(team?: string) {
         }, 100);
       });
   });
+
+  document["__dropIndicatorInstalled"] = true;
 }
 
-export function setupIndex(team?: string) {
+function setupParcelChangeEvent(team?: string) {
+  if (document["__parcelChangeEventInstalled"]) {
+    console.log("Parcel change event already installed");
+    return;
+  }
+
+  console.log("Setting up parcel change event");
+
   document.body.addEventListener(
     "parcelUploadChanged",
     (event: CustomEvent) => {
@@ -171,5 +191,10 @@ export function setupIndex(team?: string) {
     },
   );
 
+  document["__parcelChangeEventInstalled"] = true;
+}
+
+export function setupIndex(team?: string) {
+  setupParcelChangeEvent(team);
   setupDropIndicator(team);
 }

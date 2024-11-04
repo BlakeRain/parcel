@@ -70,6 +70,13 @@ impl Team {
             .await
     }
 
+    pub async fn get_by_slug(pool: &SqlitePool, slug: &str) -> sqlx::Result<Option<Self>> {
+        sqlx::query_as("SELECT * FROM teams WHERE slug = $1")
+            .bind(slug)
+            .fetch_optional(pool)
+            .await
+    }
+
     pub async fn get_list(pool: &SqlitePool) -> sqlx::Result<Vec<Self>> {
         sqlx::query_as("SELECT * FROM teams ORDER BY name ASC")
             .fetch_all(pool)
@@ -143,6 +150,30 @@ impl TeamStats {
         sqlx::query_as("SELECT COUNT(*) AS total FROM teams")
             .fetch_one(pool)
             .await
+    }
+}
+
+#[derive(Debug, FromRow, Serialize)]
+pub struct TeamTab {
+    pub id: Key<Team>,
+    pub name: String,
+    pub slug: String,
+    pub count: i64,
+}
+
+impl TeamTab {
+    pub async fn get_for_user(pool: &SqlitePool, user: Key<User>) -> sqlx::Result<Vec<Self>> {
+        sqlx::query_as(
+            "SELECT teams.id, teams.name, teams.slug, COUNT(uploads.id) AS count \
+            FROM teams \
+            LEFT JOIN uploads ON uploads.owner_team = teams.id \
+            LEFT JOIN team_members ON team_members.team = teams.id \
+            WHERE team_members.user = $1 \
+            GROUP BY teams.id",
+        )
+        .bind(user)
+        .fetch_all(pool)
+        .await
     }
 }
 

@@ -213,6 +213,19 @@ fn filter_filesizeformat(value: usize, kwargs: Kwargs) -> Result<String, Error> 
     Ok(humansize::format_size(value, format))
 }
 
+fn filter_script_bundle(name: String) -> Result<String, Error> {
+    // If we're create a release build, then we want to return the path to the bundle plus the
+    // '.min.js' extension; otherwise we want to just use the '.js' extension.
+    const EXTENSION: &str = if cfg!(debug_assertions) {
+        ".js"
+    } else {
+        ".min.js"
+    };
+    const PREFIX: &str = "/static/scripts/bundles/";
+
+    Ok(format!("{PREFIX}{name}{EXTENSION}"))
+}
+
 fn filter_nearest_unit(value: usize, kwargs: Kwargs) -> Result<String, Error> {
     // Given the size in bytes, return the nearest unit (MB, GB, etc.).
     static UNITS: &[&str] = &["B", "KB", "MB", "GB", "TB", "PB", "EB"];
@@ -276,6 +289,7 @@ pub(super) fn add_to_environment(environment: &mut Environment) {
     environment.add_filter("substr", filter_substr);
     environment.add_filter("filesizeformat", filter_filesizeformat);
     environment.add_filter("nearest_unit", filter_nearest_unit);
+    environment.add_filter("script_bundle", filter_script_bundle);
     environment.add_test("past", test_past);
     environment.add_test("future", test_future);
     environment.add_function("unit_multiplier", func_unit_multiplier);

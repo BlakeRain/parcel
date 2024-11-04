@@ -5,28 +5,33 @@ class ClipboardElement extends HTMLElement {
     return ["url", "value"];
   }
 
-  connectedCallback() {
-    let valueAttribute = this.getAttribute("value");
-    if (typeof valueAttribute !== "string") {
-      return;
+  getValue(): string {
+    let value = this.getAttribute("value");
+    if (typeof value !== "string") {
+      return null;
     }
 
-    const urlAttribute = this.getAttribute("url");
-    if (urlAttribute !== null) {
+    const url = this.getAttribute("url");
+    if (url) {
       const base = window.location.protocol + "//" + window.location.host;
 
-      if (!valueAttribute.startsWith("/")) {
-        valueAttribute = "/" + valueAttribute;
+      if (!value.startsWith("/")) {
+        value = "/" + value;
       }
 
-      valueAttribute = base + valueAttribute;
+      value = base + value;
     }
 
+    return value;
+  }
+
+  connectedCallback() {
     this.icon = this.attachIcon();
     this.icon.className = "cursor-pointer icon-clipboard-copy";
 
     this.icon.addEventListener("click", () => {
-      const blob = new Blob([valueAttribute], { type: "text/plain" });
+      const value = this.getValue();
+      const blob = new Blob([value], { type: "text/plain" });
       const data = [new ClipboardItem({ ["text/plain"]: blob })];
       navigator.clipboard.write(data);
 
