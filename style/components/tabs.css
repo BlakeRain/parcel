@@ -7,7 +7,7 @@
       @apply hover:bg-neutral-200 dark:hover:bg-gray-800/25;
 
       &:first-child {
-        @apply rounded-tl-none border-l-0;
+        @apply lg:rounded-tl-none lg:border-l-0;
       }
 
       &.active {
@@ -15,7 +15,7 @@
         @apply bg-neutral-100 dark:bg-gray-800;
 
         &:first-child {
-          @apply border-l-0;
+          @apply lg:border-l-0;
         }
 
         margin-bottom: -1px;
