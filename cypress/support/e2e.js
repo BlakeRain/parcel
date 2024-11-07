@@ -7,7 +7,8 @@ Cypress.Commands.add("resetDatabase", () => {
 });
 
 Cypress.Commands.add("initialUsers", () => {
-  cy.request("/debug/initial-users", users).then((response) => {
+  const body = Object.keys(users).map((key) => users[key]);
+  cy.request("POST", "/debug/initial-users", body).then((response) => {
     expect(response.status).to.eq(200);
   });
 });
