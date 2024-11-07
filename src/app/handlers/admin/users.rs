@@ -467,30 +467,26 @@ pub async fn post_user(
         InternalServerError(err)
     })?;
 
-    // Now remove the user from any teams they are no longer a member of
+    // Remove the user from all their team memberships.
     for team in membership.iter().copied() {
-        if !teams.contains_key(&team) {
-            tracing::info!(team_id = %team, user_id = %user_id, "Removing user from team");
-            user.leave_team(&env.pool, team).await.map_err(|err| {
-                tracing::error!(err = ?err, user_id = %user_id, team_id = %team,
-                                "Failed to remove user from team");
-                InternalServerError(err)
-            })?;
-        }
+        tracing::info!(team_id = %team, user_id = %user_id, "Removing user from team");
+        user.leave_team(&env.pool, team).await.map_err(|err| {
+            tracing::error!(err = ?err, user_id = %user_id, team_id = %team,
+                        "Failed to remove user from team");
+            InternalServerError(err)
+        })?;
     }
 
-    // Add the user to any new teams
+    // Add the user to the teams they were selected for.
     for (team_id, permissions) in teams {
-        if !membership.contains(&team_id) {
-            tracing::info!(%team_id, user_id = %user_id, "Adding user to team");
-            user.join_team(&env.pool, team_id, permissions.edit, permissions.delete)
-                .await
-                .map_err(|err| {
-                    tracing::error!(err = ?err, user_id = %user_id, %team_id,
+        tracing::info!(%team_id, user_id = %user_id, "Adding user to team");
+        user.join_team(&env.pool, team_id, permissions.edit, permissions.delete)
+            .await
+            .map_err(|err| {
+                tracing::error!(err = ?err, user_id = %user_id, %team_id,
                                 "Failed to add user to team");
-                    InternalServerError(err)
-                })?;
-        }
+                InternalServerError(err)
+            })?;
     }
 
     Ok(Redirect::see_other("/admin/users").into_response())

@@ -6,9 +6,17 @@
       @apply flex flex-row gap-1 rounded-t-lg bg-transparent cursor-pointer px-4 py-2;
       @apply hover:bg-neutral-200 dark:hover:bg-gray-800/25;
 
+      &:first-child {
+        @apply rounded-tl-none border-l-0;
+      }
+
       &.active {
         @apply border border-b-0 border-slate-400 dark:border-gray-700;
         @apply bg-neutral-100 dark:bg-gray-800;
+
+        &:first-child {
+          @apply border-l-0;
+        }
 
         margin-bottom: -1px;
         z-index: 1;

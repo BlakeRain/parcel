@@ -2,7 +2,11 @@ use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, QueryBuilder, SqlitePool};
 use time::{Date, OffsetDateTime};
 
-use super::{team::Team, types::Key, user::User};
+use super::{
+    team::{Team, TeamMember},
+    types::Key,
+    user::User,
+};
 
 #[derive(Debug, Clone, FromRow, Serialize)]
 pub struct Upload {
@@ -66,6 +70,11 @@ pub enum UploadPermission {
     Edit,
     Transfer,
     Delete,
+}
+
+pub enum UploadOwnership {
+    OwnedByUser,
+    OwnedByTeam(TeamMember),
 }
 
 impl Upload {
@@ -245,7 +254,7 @@ impl Upload {
 
         let public = match user {
             None => false,
-            Some(user) => self.is_owner(pool, user).await?,
+            Some(user) => self.is_owner(pool, user).await?.is_some(),
         };
 
         if public && self.remaining.is_some() {
@@ -306,18 +315,26 @@ impl Upload {
             .await
     }
 
-    pub async fn is_owner(&self, pool: &SqlitePool, user: &User) -> sqlx::Result<bool> {
+    pub async fn is_owner(
+        &self,
+        pool: &SqlitePool,
+        user: &User,
+    ) -> sqlx::Result<Option<UploadOwnership>> {
         // If this upload is owned by a user, and we are passed that user.
         if matches!(self.owner_user, Some(owner) if owner == user.id) {
-            return Ok(true);
+            return Ok(Some(UploadOwnership::OwnedByUser));
         }
 
         // If this upload is owned by a team, check the user is a member of that team.
         if let Some(owner) = self.owner_team {
-            return user.is_member_of(pool, owner).await;
+            if let Some(membership) =
+                TeamMember::get_for_user_and_team(pool, user.id, owner).await?
+            {
+                return Ok(Some(UploadOwnership::OwnedByTeam(membership)));
+            }
         }
 
-        Ok(false)
+        Ok(None)
     }
 
     pub async fn find_teams_with_custom_slug_uploads(
@@ -355,7 +372,7 @@ impl Upload {
                 }
 
                 if let Some(user) = user {
-                    if self.is_owner(pool, user).await? {
+                    if self.is_owner(pool, user).await?.is_some() {
                         return Ok(true);
                     }
                 }
@@ -385,7 +402,7 @@ impl Upload {
                 }
 
                 if let Some(user) = user {
-                    if self.is_owner(pool, user).await? {
+                    if self.is_owner(pool, user).await?.is_some() {
                         return Ok(true);
                     }
                 }
@@ -399,10 +416,21 @@ impl Upload {
             | UploadPermission::Edit
             | UploadPermission::Delete => {
                 if let Some(user) = user {
-                    self.is_owner(pool, user).await
-                } else {
-                    Ok(false)
+                    if let Some(ownership) = self.is_owner(pool, user).await? {
+                        return Ok(match ownership {
+                            UploadOwnership::OwnedByUser => true,
+                            UploadOwnership::OwnedByTeam(membership) => {
+                                if permission == UploadPermission::Delete {
+                                    membership.can_delete
+                                } else {
+                                    membership.can_edit
+                                }
+                            }
+                        });
+                    }
                 }
+
+                Ok(false)
             }
         }
     }

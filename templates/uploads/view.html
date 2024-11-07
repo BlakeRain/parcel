@@ -88,6 +88,7 @@
             type="button"
             class="button hollow"
             title="Edit upload settings"
+            {% if team and not membership.can_edit %}disabled{% endif %}
             hx-get="/uploads/{{ upload.id }}/edit"
             hx-trigger="click"
             hx-target="body"
@@ -99,6 +100,7 @@
             type="button"
             class="button hollow danger"
             title="Delete upload"
+            {% if team and not membership.can_delete %}disabled{% endif %}
             hx-delete="/uploads/{{ upload.id }}"
             hx-trigger="click"
             hx-swap="none"
@@ -114,6 +116,7 @@
             type="button"
             class="button hollow"
             title="Make upload {{ opposite }}"
+            {% if team and not membership.can_edit %}disabled{% endif %}
             hx-post="/uploads/{{ upload.id }}/public?public={{ not upload.public }}"
             hx-trigger="click"
             hx-swap="none">

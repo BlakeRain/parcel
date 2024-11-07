@@ -2,6 +2,7 @@ use esbuild_bundle::javascript;
 use poem::{
     error::InternalServerError,
     handler,
+    http::StatusCode,
     web::{Data, Html, Path, Query},
     IntoResponse, Response,
 };
@@ -13,7 +14,7 @@ use crate::{
     },
     env::Env,
     model::{
-        team::{Team, TeamTab},
+        team::{Team, TeamMember, TeamTab},
         upload::{UploadList, UploadStats},
     },
 };
@@ -38,15 +39,16 @@ pub async fn get_team(
         return Err(poem::Error::from_status(poem::http::StatusCode::NOT_FOUND));
     };
 
-    let is_member = user.is_member_of(&env.pool, team.id).await.map_err(|err| {
-        tracing::error!(%user.id, ?err, "Unable to check if user is a member of the team");
-        InternalServerError(err)
-    })?;
-
-    if !is_member {
-        tracing::error!(%user.id, ?team.id, "User is not a member of the team");
-        return Err(poem::Error::from_status(poem::http::StatusCode::FORBIDDEN));
-    }
+    let Some(membership) = TeamMember::get_for_user_and_team(&env.pool, user.id, team.id)
+        .await
+        .map_err(|err| {
+            tracing::error!(%user.id, %team.id, ?err, "Unable to get team membership");
+            InternalServerError(err)
+        })?
+    else {
+        tracing::error!(%user.id, %team.id, "User is not a member of team");
+        return Err(poem::Error::from_status(StatusCode::FORBIDDEN));
+    };
 
     let tabs = TeamTab::get_for_user(&env.pool, user.id)
         .await
@@ -72,6 +74,7 @@ pub async fn get_team(
             query,
             tabs,
             team,
+            membership,
             stats,
             uploads,
             page => 0,
@@ -98,15 +101,16 @@ pub async fn get_tab(
         return Err(poem::Error::from_status(poem::http::StatusCode::NOT_FOUND));
     };
 
-    let is_member = user.is_member_of(&env.pool, team.id).await.map_err(|err| {
-        tracing::error!(%user.id, ?err, "Unable to check if user is a member of the team");
-        InternalServerError(err)
-    })?;
-
-    if !is_member {
-        tracing::error!(%user.id, ?team.id, "User is not a member of the team");
-        return Err(poem::Error::from_status(poem::http::StatusCode::FORBIDDEN));
-    }
+    let Some(membership) = TeamMember::get_for_user_and_team(&env.pool, user.id, team.id)
+        .await
+        .map_err(|err| {
+            tracing::error!(%user.id, %team.id, ?err, "Unable to get team membership");
+            InternalServerError(err)
+        })?
+    else {
+        tracing::error!(%user.id, %team.id, "User is not a member of team");
+        return Err(poem::Error::from_status(StatusCode::FORBIDDEN));
+    };
 
     let tabs = TeamTab::get_for_user(&env.pool, user.id)
         .await
@@ -132,6 +136,7 @@ pub async fn get_tab(
             query,
             tabs,
             team,
+            membership,
             stats,
             uploads,
             page => 0,

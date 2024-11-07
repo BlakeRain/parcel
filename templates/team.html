@@ -1,9 +1,12 @@
 {% extends "base.html" %}
 {% block title %}{{ team.name }} Uploads{% endblock %}
 {% block content %}
-  <div class="grow container mx-auto flex flex-col p-4 lg:p-0 lg:mt-4">
+  <div class="grow flex flex-col p-4 lg:p-0 lg:mt-4">
+    <script type="text/json" id="team-identifier">[{{ team.id | tojson }}]</script>
+
     {# We can inline the tabs.html content here #}
     {% include "uploads/tabs.html" %}
+
     {# We can also inline the first page of the uploads list #}
     {% include "uploads/list.html" %}
   </div>
@@ -21,6 +24,6 @@
 {% block scripts %}
   <script type="module">
     import { setupIndex } from "{{ index_js | script_bundle | safe }}";
-    setupIndex({% if team %}"{{ team.id }}"{% endif %});
+    setupIndex();
   </script>
 {% endblock %}

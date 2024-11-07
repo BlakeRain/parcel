@@ -11,12 +11,13 @@ use serde::{Deserialize, Serialize};
 use crate::{
     app::{
         extractors::user::SessionUser,
+        handlers::utils::check_permission,
         templates::{authorized_context, render_template},
     },
     env::Env,
     model::{
         types::Key,
-        upload::{Upload, UploadList, UploadOrder, UploadStats},
+        upload::{Upload, UploadList, UploadOrder, UploadPermission, UploadStats},
     },
 };
 
@@ -86,20 +87,7 @@ pub async fn post_delete(
             return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
         };
 
-        let can_delete = user.admin || upload.is_owner(&env.pool, &user).await.map_err(|err| {
-            tracing::error!(%upload.id, %user.id, ?err, "Unable to check if user is owner of an upload");
-            InternalServerError(err)
-        })?;
-
-        if !can_delete {
-            tracing::error!(
-                %user.id,
-                %upload.id,
-                "User tried to delete upload without permission"
-            );
-
-            return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
-        }
+        check_permission(&env, &upload, Some(&user), UploadPermission::Delete).await?;
 
         upload.delete(&env.pool).await.map_err(|err| {
             tracing::error!(err = ?err, upload = ?upload, "Unable to delete upload");

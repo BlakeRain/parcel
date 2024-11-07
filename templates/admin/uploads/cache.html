@@ -15,37 +15,35 @@
         </button>
       </div>
     {% elif summary %}
-      <div class="table">
-        <table>
-          <thead>
-            <tr>
-              <th></th>
-              <th class="text-right">No. Files</th>
-              <th class="text-right">Total Size</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Valid cache files</td>
-              <td class="text-right">
-                {{ summary.validCount }}
-              </td>
-              <td class="text-right">
-                {{ summary.validTotal | filesizeformat }}
-              </td>
-            </tr>
-            <tr>
-              <td>Orphan cache files</td>
-              <td class="text-right">
-                {{ summary.invalidCount }}
-              </td>
-              <td class="text-right">
-                {{ summary.invalidTotal | filesizeformat }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th class="text-right">No. Files</th>
+            <th class="text-right">Total Size</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Valid cache files</td>
+            <td class="text-right">
+              {{ summary.validCount }}
+            </td>
+            <td class="text-right">
+              {{ summary.validTotal | filesizeformat }}
+            </td>
+          </tr>
+          <tr>
+            <td>Orphan cache files</td>
+            <td class="text-right">
+              {{ summary.invalidCount }}
+            </td>
+            <td class="text-right">
+              {{ summary.invalidTotal | filesizeformat }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
       {% if summary.invalidCount > 0 %}
         <p>
           If you wish, you can delete these orphan cache files by selecting

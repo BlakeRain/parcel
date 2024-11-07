@@ -73,6 +73,9 @@ function reduceState(state: State, action: StateAction): State {
       const team = permissions.get(action.id);
       if (team) {
         team[action.permission] = false;
+        if (action.permission === "edit") {
+          team.delete = false;
+        }
       }
       return { permissions };
     }
@@ -156,7 +159,7 @@ const TeamRow: FunctionComponent<{ team: Team }> = ({ team }) => {
     <input
       type="checkbox"
       style="margin: 0;"
-      disabled=${!permissions}
+      disabled=${!permissions || !permissions.edit}
       checked=${permissions?.delete}
       onChange=${(event: InputEvent) => {
         const target = event.target as HTMLInputElement;

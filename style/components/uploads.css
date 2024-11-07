@@ -12,6 +12,14 @@
 
       > div {
         @apply p-2 hidden overflow-hidden;
+
+        &:first-child {
+          @apply pl-8;
+        }
+
+        &:last-child {
+          @apply pr-8;
+        }
       }
     }
 
@@ -25,6 +33,14 @@
 
       > div {
         @apply p-2 hidden;
+
+        &:first-child {
+          @apply pl-8;
+        }
+
+        &:last-child {
+          @apply pr-8;
+        }
 
         /* We want to hide overflow on everything but the last child (which has our dropdown). */
         &:not(:last-child) {

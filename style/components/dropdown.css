@@ -18,6 +18,8 @@
     @apply dark:bg-gray-700 dark:text-neutral-300;
     @apply text-nowrap;
 
+    z-index: 3000;
+
     &.open {
       @apply block;
     }

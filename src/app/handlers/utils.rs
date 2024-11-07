@@ -53,7 +53,7 @@ pub async fn check_permission(
         let uid = user.map(|u| u.id);
         tracing::error!(upload = %upload.id, ?permission, user = ?uid,
             "User tried to access upload without permission");
-        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
+        return Err(poem::Error::from_status(StatusCode::FORBIDDEN));
     }
 
     Ok(())

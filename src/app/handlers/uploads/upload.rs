@@ -18,7 +18,7 @@ use crate::{
     },
     env::Env,
     model::{
-        team::Team,
+        team::{Team, TeamMember},
         types::Key,
         upload::{Upload, UploadPermission},
         user::User,
@@ -40,8 +40,21 @@ async fn render_upload(
             .is_owner(&env.pool, user)
             .await
             .map_err(InternalServerError)?
+            .is_some()
     } else {
         false
+    };
+
+    let membership = if let Some(user) = user {
+        if let Some(team_id) = upload.owner_team {
+            TeamMember::get_for_user_and_team(&env.pool, user.id, team_id)
+                .await
+                .map_err(InternalServerError)?
+        } else {
+            None
+        }
+    } else {
+        None
     };
 
     let Some(uploader) = User::get(&env.pool, upload.uploaded_by)
@@ -93,6 +106,7 @@ async fn render_upload(
             upload,
             uploader,
             team,
+            membership,
             owner,
             can_download,
             has_password => upload.password.is_some(),

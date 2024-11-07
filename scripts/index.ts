@@ -58,7 +58,38 @@ function hideDropIndicator(
   indicator.__dropIndicator.visible = false;
 }
 
-function setupDropIndicator(team?: string) {
+function getTeamIdentifier(): string | null {
+  const element = document.getElementById("team-identifier");
+  if (!element) {
+    console.error("Missing team identifier element");
+    return null;
+  }
+
+  if (element.tagName !== "SCRIPT") {
+    console.error("Team identifier element is not a script element");
+    return null;
+  }
+
+  let identifier: string = null;
+  try {
+    const value = JSON.parse(element.textContent);
+    if (!(value instanceof Array)) {
+      console.error("Team identifier value is not an array");
+      return null;
+    }
+
+    if (value.length === 1) {
+      identifier = value[0];
+    }
+  } catch (e) {
+    console.error("Failed to parse team identifier value:", e);
+    return null;
+  }
+
+  return identifier;
+}
+
+function setupDropIndicator() {
   if (document["__dropIndicatorInstalled"]) {
     console.log("Drop indicator already installed");
     return;
@@ -119,6 +150,8 @@ function setupDropIndicator(team?: string) {
       .filter((item) => item.kind === "file")
       .map((item) => item.getAsFile());
 
+    const team = getTeamIdentifier();
+
     // There is no form, present, so we need to load one. We can do that with HTMX. We tell the
     // upload form not to bother animating in.
     htmx
@@ -162,7 +195,7 @@ function setupDropIndicator(team?: string) {
   document["__dropIndicatorInstalled"] = true;
 }
 
-function setupParcelChangeEvent(team?: string) {
+function setupParcelChangeEvent() {
   if (document["__parcelChangeEventInstalled"]) {
     console.log("Parcel change event already installed");
     return;
@@ -173,6 +206,7 @@ function setupParcelChangeEvent(team?: string) {
   document.body.addEventListener(
     "parcelUploadChanged",
     (event: CustomEvent) => {
+      const team = getTeamIdentifier();
       const row = document.getElementById("upload-row-" + event.detail.value);
       const page = row.dataset.page;
       const order = row.dataset.order;
@@ -194,7 +228,7 @@ function setupParcelChangeEvent(team?: string) {
   document["__parcelChangeEventInstalled"] = true;
 }
 
-export function setupIndex(team?: string) {
-  setupParcelChangeEvent(team);
-  setupDropIndicator(team);
+export function setupIndex() {
+  setupParcelChangeEvent();
+  setupDropIndicator();
 }

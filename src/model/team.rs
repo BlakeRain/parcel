@@ -138,6 +138,18 @@ impl TeamMember {
             .fetch_all(pool)
             .await
     }
+
+    pub async fn get_for_user_and_team(
+        pool: &SqlitePool,
+        user: Key<User>,
+        team: Key<Team>,
+    ) -> sqlx::Result<Option<Self>> {
+        sqlx::query_as("SELECT * FROM team_members WHERE user = $1 AND team = $2")
+            .bind(user)
+            .bind(team)
+            .fetch_optional(pool)
+            .await
+    }
 }
 
 #[derive(Debug, FromRow, Serialize)]

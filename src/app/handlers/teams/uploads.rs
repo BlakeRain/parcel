@@ -13,7 +13,7 @@ use crate::{
     },
     env::Env,
     model::{
-        team::Team,
+        team::{Team, TeamMember},
         types::Key,
         upload::{UploadList, UploadStats},
     },
@@ -26,7 +26,6 @@ pub async fn get_list(
     Path(team_id): Path<Key<Team>>,
     Query(query): Query<ListQuery>,
 ) -> poem::Result<Html<String>> {
-    // See if we can get the team with the given ID
     let Some(team) = Team::get(&env.pool, team_id).await.map_err(|err| {
         tracing::error!(%team_id, ?err, "Unable to get team");
         InternalServerError(err)
@@ -36,16 +35,16 @@ pub async fn get_list(
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
-    // Check to make sure that this user is a member of the team.
-    let is_member = user.is_member_of(&env.pool, team_id).await.map_err(|err| {
-        tracing::error!(%user.id, %team_id, ?err, "Unable to check if user is a member of team");
-        InternalServerError(err)
-    })?;
-
-    if !is_member {
+    let Some(membership) = TeamMember::get_for_user_and_team(&env.pool, user.id, team_id)
+        .await
+        .map_err(|err| {
+            tracing::error!(%user.id, %team_id, ?err, "Unable to get team membership");
+            InternalServerError(err)
+        })?
+    else {
         tracing::error!(%user.id, %team_id, "User is not a member of team");
         return Err(poem::Error::from_status(StatusCode::FORBIDDEN));
-    }
+    };
 
     let stats = UploadStats::get_for_team(&env.pool, team_id)
         .await
@@ -62,6 +61,7 @@ pub async fn get_list(
         "uploads/list.html",
         context! {
             team,
+            membership,
             stats,
             uploads,
             query,
@@ -79,7 +79,6 @@ pub async fn get_page(
     Path((team_id, page)): Path<(Key<Team>, u32)>,
     Query(query): Query<ListQuery>,
 ) -> poem::Result<Html<String>> {
-    // See if we can find the team with the given ID.
     let Some(team) = Team::get(&env.pool, team_id).await.map_err(|err| {
         tracing::error!(%team_id, ?err, "Unable to get team");
         InternalServerError(err)
@@ -89,16 +88,16 @@ pub async fn get_page(
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
-    // Check to make sure that this user is a member of the team.
-    let is_member = user.is_member_of(&env.pool, team_id).await.map_err(|err| {
-        tracing::error!(%user.id, %team_id, ?err, "Unable to check if user is a member of team");
-        InternalServerError(err)
-    })?;
-
-    if !is_member {
+    let Some(membership) = TeamMember::get_for_user_and_team(&env.pool, user.id, team_id)
+        .await
+        .map_err(|err| {
+            tracing::error!(%user.id, %team_id, ?err, "Unable to get team membership");
+            InternalServerError(err)
+        })?
+    else {
         tracing::error!(%user.id, %team_id, "User is not a member of team");
         return Err(poem::Error::from_status(StatusCode::FORBIDDEN));
-    }
+    };
 
     let uploads =
         UploadList::get_for_team(&env.pool, team.id, query.order, query.asc, 50 * page, 50)
@@ -115,6 +114,7 @@ pub async fn get_page(
             uploads,
             query,
             team,
+            membership,
             ..authorized_context(&env, &user)
         },
     )

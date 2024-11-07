@@ -1,6 +1,5 @@
 <form id="upload-list-container" method="POST" hx-swap-oob="true">
-  <div class="flex flex-col border border-slate-400 dark:border-gray-700 dark:bg-gray-800 rounded-md
-    {% if not team %}rounded-tl-none{% endif %} shadow-md">
+  <div class="flex flex-col dark:bg-gray-800">
     <div class="flex flex-col sm:flex-row gap-4 justify-between p-4">
       {% include "uploads/stats.html" %}
       <div class="buttons">
@@ -9,11 +8,11 @@
           type="button"
           class="button order-2 sm:order-1"
           hx-trigger="click"
-          hx-post="/uploads/delete"
-          hx-target="#upload-list-container"
-          hx-select="#upload-list-container"
-          hx-confirm="Are you sure you want to delete the selected files?"
-          hx-swap="outerHTML"
+          {% if team and membership.can_delete %}
+            hx-post="/uploads/delete"
+            hx-confirm="Are you sure you want to delete the selected files?"
+          {% endif %}
+          hx-swap="none"
           disabled>
           <span class="icon-trash-2"></span>
           Delete
@@ -24,9 +23,7 @@
           class="button order-1 sm:order-2"
           hx-trigger="click,refresh"
           hx-get="{% if team %}/teams/{{ team.id }}{% endif %}/uploads/list?order={{ query.order }}&asc={{ query.asc }}"
-          hx-target="#upload-list-container"
-          hx-select="#upload-list-container"
-          hx-swap="outerHTML">
+          hx-swap="none">
           <span class="icon-refresh-cw"></span>
           Refresh
         </button>
@@ -50,7 +47,12 @@
     <div class="uploads-table {% if team %}for-team{% endif %}">
         <div class="uploads-table-header">
           <div class="text-center">
-            <parcel-checkbox-group id="uploads_group" name="uploads">
+            <parcel-checkbox-group
+              id="uploads_group"
+              name="uploads{% if team %}_{{ team.id }}{% endif %}"
+              {% if team and membership.can_delete %}
+                onchanged="document.getElementById('delete_selected').disabled = !event.detail.any">
+              {% endif %}
             </parcel-checkbox-group>
           </div>
           {% macro sort_heading(query, name, align, title) %}
@@ -64,9 +66,7 @@
               class="text-nowrap text-{{ align }} cursor-pointer hover:bg-neutral-200/50 dark:hover:bg-slate-700/25"
               hx-get="{% if team %}/teams/{{ team.id }}{% endif %}/uploads/list?{{ qs }}"
               hx-trigger="click"
-              hx-target="#upload-list-container"
-              hx-select="#upload-list-container"
-              hx-swap="outerHTML">
+              hx-swap="none">
               {{ title }}
               {% if query.order == name %}
                 {% if query.asc %}
@@ -94,13 +94,3 @@
     {% endif %}
   </div>
 </form>
-
-{% if stats.total > 0 %}
-  <script>
-    (function() {
-      document.getElementById("uploads_group").addEventListener("changed", (event) => {
-        document.getElementById("delete_selected").disabled = !event.detail.any;
-      });
-    })();
-  </script>
-{% endif %}

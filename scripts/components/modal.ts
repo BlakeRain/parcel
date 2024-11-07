@@ -83,8 +83,7 @@ export class ParcelModal extends HTMLElement {
 export function register() {
   customElements.define("parcel-modal", ParcelModal);
 
-  document.body.addEventListener("closeModals", (event: CustomEvent) => {
-    console.log("Closing all modals");
+  document.body.addEventListener("closeModals", (_: CustomEvent) => {
     for (const modal of Object.values(MODALS)) {
       if (modal) {
         modal.closeModal();

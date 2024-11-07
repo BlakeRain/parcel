@@ -13,6 +13,14 @@ class CheckboxGroup extends HTMLElement {
     super();
   }
 
+  get hasAnyChecked() {
+    return this.checkboxes.some((checkbox) => checkbox.checked);
+  }
+
+  get hasAllChecked() {
+    return this.checkboxes.every((checkbox) => checkbox.checked);
+  }
+
   connectedCallback() {
     let name = this.getAttribute("name");
     if (!name) {
@@ -22,6 +30,7 @@ class CheckboxGroup extends HTMLElement {
     this.checkbox = document.createElement("input");
     this.checkbox.type = "checkbox";
     this.checkbox.name = name;
+    this.checkbox.style.margin = "0px";
 
     this.checkbox.addEventListener("click", () => {
       this.checkboxes.forEach((checkbox) => {
@@ -34,7 +43,21 @@ class CheckboxGroup extends HTMLElement {
     const shadow = this.attachShadow({ mode: "open" });
     shadow.appendChild(this.checkbox);
 
+    if (this.hasAttribute("onchanged")) {
+      const handler_script = this.getAttribute("onchanged");
+      const func = new Function("event", handler_script).bind(this);
+      this.addEventListener("changed", func);
+    }
+
+    if (CHECKBOX_GROUPS[name]) {
+      throw new Error(`CheckboxGroup '${name}' already exists`);
+    }
+
     CHECKBOX_GROUPS[name] = this;
+  }
+
+  disconnectedCallback() {
+    delete CHECKBOX_GROUPS[this.getAttribute("name")];
   }
 
   registerCheckbox(checkbox: GroupedCheckbox) {
@@ -71,7 +94,7 @@ class CheckboxGroup extends HTMLElement {
 
 class GroupedCheckbox extends HTMLElement {
   private index = -1;
-  private group_name: string = null;
+  private group: CheckboxGroup = null;
   private checkbox: HTMLInputElement = null;
 
   get checked() {
@@ -85,17 +108,17 @@ class GroupedCheckbox extends HTMLElement {
   }
 
   connectedCallback() {
-    this.group_name = this.getAttribute("group");
-    if (!this.group_name) {
+    const group_name = this.getAttribute("group");
+    if (!group_name) {
       throw new Error("GroupedCheckbox requires a 'group' attribute");
     }
 
-    const group = CHECKBOX_GROUPS[this.group_name];
-    if (!group) {
-      throw new Error(`GroupedCheckbox group '${this.group_name}' not found`);
+    this.group = CHECKBOX_GROUPS[group_name];
+    if (!this.group) {
+      throw new Error(`GroupedCheckbox group '${group_name}' not found`);
     }
 
-    this.index = group.registerCheckbox(this);
+    this.index = this.group.registerCheckbox(this);
     this.checkbox = this.attachCheckbox();
     this.checkbox.type = "checkbox";
     this.checkbox.name = this.getAttribute("name");
@@ -104,18 +127,18 @@ class GroupedCheckbox extends HTMLElement {
 
     this.checkbox.addEventListener("click", (event) => {
       if (event.shiftKey) {
-        if (group.lastChecked) {
-          const checked = group.lastChecked.checked;
-          const start = Math.min(this.index, group.lastChecked.index);
-          const end = Math.max(this.index, group.lastChecked.index);
+        if (this.group.lastChecked) {
+          const checked = this.group.lastChecked.checked;
+          const start = Math.min(this.index, this.group.lastChecked.index);
+          const end = Math.max(this.index, this.group.lastChecked.index);
           for (let i = start; i <= end; ++i) {
-            group.checkboxes[i].checked = checked;
+            this.group.checkboxes[i].checked = checked;
           }
         }
       }
 
-      group.lastChecked = this;
-      group.updateCheckbox();
+      this.group.lastChecked = this;
+      this.group.updateCheckbox();
     });
   }
 
@@ -123,7 +146,7 @@ class GroupedCheckbox extends HTMLElement {
     if (this.checkbox) {
       this.removeChild(this.checkbox);
       this.checkbox = null;
-      CHECKBOX_GROUPS[this.group_name].unregisterCheckbox(this.index);
+      this.group.unregisterCheckbox(this.index);
     }
   }
 
