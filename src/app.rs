@@ -1,3 +1,4 @@
+use handlers::debug::add_debug_routes;
 use poem::{
     endpoint::StaticFilesEndpoint,
     middleware::{Csrf, Tracing},
@@ -20,6 +21,7 @@ pub mod templates;
 
 mod handlers {
     pub mod admin;
+    pub mod debug;
     pub mod index;
     pub mod teams;
     pub mod uploads;
@@ -35,7 +37,7 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> impl IntoEndpoint {
         CookieKey::generate()
     };
 
-    define_routes!({
+    let routes = add_debug_routes(define_routes!({
         *"/static" { StaticFilesEndpoint::new("./static") }
 
         "/"                             handlers::index::index                  GET
@@ -81,16 +83,18 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> impl IntoEndpoint {
         "/admin/teams/new/slug"         handlers::admin::teams::check_new_slug      POST
         "/admin/teams/:id"              handlers::admin::teams::team            GET POST
         "/admin/teams/:id/slug"         handlers::admin::teams::check_slug          POST
-    })
-    .catch_error(errors::NotSignedInError::handle)
-    .catch_error(errors::CsrfError::handle)
-    .data(env)
-    .with(Csrf::new())
-    .with(Tracing)
-    .with(CookieSession::new(
-        CookieConfig::private(cookie_key)
-            .name("parcel")
-            .same_site(Some(SameSite::Strict))
-            .max_age(Some(std::time::Duration::from_secs(14 * 24 * 60 * 60))),
-    ))
+    }));
+
+    routes
+        .catch_error(errors::NotSignedInError::handle)
+        .catch_error(errors::CsrfError::handle)
+        .data(env)
+        .with(Csrf::new())
+        .with(Tracing)
+        .with(CookieSession::new(
+            CookieConfig::private(cookie_key)
+                .name("parcel")
+                .same_site(Some(SameSite::Strict))
+                .max_age(Some(std::time::Duration::from_secs(14 * 24 * 60 * 60))),
+        ))
 }
