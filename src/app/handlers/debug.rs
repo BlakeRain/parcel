@@ -1,6 +1,5 @@
 use poem::{
     error::InternalServerError,
-    http::StatusCode,
     web::{Data, Json},
 };
 use serde::Deserialize;

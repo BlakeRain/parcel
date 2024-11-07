@@ -164,12 +164,6 @@ impl User {
             .await
     }
 
-    pub async fn get_list(pool: &SqlitePool) -> sqlx::Result<Vec<Self>> {
-        sqlx::query_as("SELECT * FROM users ORDER BY username")
-            .fetch_all(pool)
-            .await
-    }
-
     pub async fn delete(&self, pool: &SqlitePool) -> sqlx::Result<()> {
         sqlx::query("DELETE FROM team_members WHERE user = $1")
             .bind(self.id)
