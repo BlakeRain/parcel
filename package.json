@@ -15,7 +15,6 @@
     "postcss-import": "^16.1.0",
     "preact": "^10.24.3",
     "preact-custom-element": "^4.3.0",
-    "sqlite3": "^5.1.7",
     "start-server-and-test": "^2.0.5",
     "tailwindcss": "^3.3.3",
     "typescript": "^5.5.4"
