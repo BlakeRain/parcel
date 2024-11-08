@@ -169,28 +169,6 @@ pub async fn post_new(
             let size = meta.len() as i64;
             tracing::info!(?slug, size, "Upload to cache complete");
 
-            // let mut upload = Upload {
-            //     id: Key::new(),
-            //     slug,
-            //     filename,
-            //     size,
-            //     public: false,
-            //     downloads: 0,
-            //     limit: None,
-            //     remaining: None,
-            //     expiry_date: None,
-            //     password: None,
-            //     custom_slug: None,
-            //     owner_user: match team.as_ref() {
-            //         Some(_) => None,
-            //         None => Some(user.id),
-            //     },
-            //     owner_team: team.as_ref().map(|team| team.id),
-            //     uploaded_by: user.id,
-            //     uploaded_at: OffsetDateTime::now_utc(),
-            //     remote_addr: ip.as_ref().map(ToString::to_string),
-            // };
-
             uploads.push((slug, filename, size))
         } else {
             tracing::info!(field_name = ?field.name(), "Ignoring unrecognized field");
