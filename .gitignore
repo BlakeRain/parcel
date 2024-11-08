@@ -24,7 +24,7 @@ yarn.lock
 
 # Ignore the cache directory and the database created by the app
 cache/
-parcel.db
+parcel.db*
 
 # Ignore the generated CSS and the copied HTMX and Hyperscript bundles
 static/main.css
