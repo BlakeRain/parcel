@@ -1,6 +1,9 @@
 use std::{path::PathBuf, str::FromStr, sync::Arc};
 
-use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
+use sqlx::{
+    sqlite::{SqliteConnectOptions, SqliteJournalMode},
+    SqlitePool,
+};
 
 use crate::{args::Args, model::migration::MIGRATOR};
 
@@ -45,7 +48,11 @@ impl Env {
             std::fs::create_dir_all(&cache_dir)?;
         }
 
-        let opts = SqliteConnectOptions::from_str(db)?.create_if_missing(true);
+        let opts = SqliteConnectOptions::from_str(db)?
+            .create_if_missing(true)
+            .journal_mode(SqliteJournalMode::Wal)
+            .pragma("synchronous", "normal")
+            .pragma("journal_size_limit", "6144000");
         let pool = SqlitePool::connect_with(opts).await?;
         MIGRATOR.run(&pool).await?;
 
