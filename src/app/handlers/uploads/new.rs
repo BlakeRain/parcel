@@ -9,6 +9,7 @@ use poem::{
     web::{CsrfToken, CsrfVerifier, Data, Html, Json, Multipart, Query, RealIp},
 };
 use serde::{Deserialize, Serialize};
+use sqlx::{Executor, Statement};
 use time::OffsetDateTime;
 
 use crate::{
@@ -74,7 +75,7 @@ pub async fn get_new(
 
 #[derive(Debug, Default, Serialize)]
 pub struct UploadResult {
-    uploads: HashMap<String, Option<Upload>>,
+    uploads: HashMap<String, Option<Key<Upload>>>,
 }
 
 #[handler]
@@ -168,29 +169,29 @@ pub async fn post_new(
             let size = meta.len() as i64;
             tracing::info!(?slug, size, "Upload to cache complete");
 
-            let mut upload = Upload {
-                id: Key::new(),
-                slug,
-                filename,
-                size,
-                public: false,
-                downloads: 0,
-                limit: None,
-                remaining: None,
-                expiry_date: None,
-                password: None,
-                custom_slug: None,
-                owner_user: match team.as_ref() {
-                    Some(_) => None,
-                    None => Some(user.id),
-                },
-                owner_team: team.as_ref().map(|team| team.id),
-                uploaded_by: user.id,
-                uploaded_at: OffsetDateTime::now_utc(),
-                remote_addr: ip.as_ref().map(ToString::to_string),
-            };
+            // let mut upload = Upload {
+            //     id: Key::new(),
+            //     slug,
+            //     filename,
+            //     size,
+            //     public: false,
+            //     downloads: 0,
+            //     limit: None,
+            //     remaining: None,
+            //     expiry_date: None,
+            //     password: None,
+            //     custom_slug: None,
+            //     owner_user: match team.as_ref() {
+            //         Some(_) => None,
+            //         None => Some(user.id),
+            //     },
+            //     owner_team: team.as_ref().map(|team| team.id),
+            //     uploaded_by: user.id,
+            //     uploaded_at: OffsetDateTime::now_utc(),
+            //     remote_addr: ip.as_ref().map(ToString::to_string),
+            // };
 
-            uploads.push(upload);
+            uploads.push((slug, filename, size))
         } else {
             tracing::info!(field_name = ?field.name(), "Ignoring unrecognized field");
         }
@@ -199,28 +200,74 @@ pub async fn post_new(
     if !seen_csrf {
         tracing::error!("CSRF token was not seen in upload form");
 
-        for upload in uploads {
-            let path = env.cache_dir.join(&upload.slug);
-            tracing::info!(?path, ?upload.slug, "Deleting cached upload");
+        for (slug, _, _) in uploads {
+            let path = env.cache_dir.join(&slug);
+            tracing::info!(?path, ?slug, "Deleting cached upload");
             if let Err(err) = tokio::fs::remove_file(&path).await {
-                tracing::error!(path = ?path, err = ?err, slug = ?upload.slug,
-                        "Failed to delete cached upload");
+                tracing::error!(?path, ?err, ?slug, "Failed to delete cached upload");
             }
         }
 
         return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
     }
 
-    let mut result = UploadResult::default();
-    for mut upload in uploads {
-        upload.create(&env.pool).await.map_err(|err| {
-            tracing::error!(?err, "Unable to create upload");
+    let mut txn = env.pool.begin().await.map_err(|err| {
+        tracing::error!(?err, "Unable to start transaction");
+        InternalServerError(err)
+    })?;
+
+    let stmt = txn
+        .prepare(
+            "INSERT INTO uploads \
+                (id, slug, filename, size, public, downloads, \
+                 owner_user, owner_team, \
+                 uploaded_by, uploaded_at, remote_addr) \
+                VALUES (?, ?, ?, ?, 0, 0, \
+                    ?, ?, \
+                    ?, ?, ?)",
+        )
+        .await
+        .map_err(|err| {
+            tracing::error!(?err, "Unable to prepare statement");
             InternalServerError(err)
         })?;
 
-        tracing::info!(%upload.id, "Created upload");
-        result.uploads.insert(upload.filename.clone(), Some(upload));
+    let owner_user = match team.as_ref() {
+        Some(_) => None,
+        None => Some(user.id),
+    };
+
+    let owner_team = team.as_ref().map(|team| team.id);
+    let now = OffsetDateTime::now_utc();
+    let remote_addr = ip.as_ref().map(ToString::to_string);
+
+    let mut result = UploadResult::default();
+    for (slug, filename, size) in uploads {
+        let id = Key::<Upload>::new();
+        stmt.query()
+            .bind(id)
+            .bind(&slug)
+            .bind(&filename)
+            .bind(size)
+            .bind(owner_user)
+            .bind(owner_team)
+            .bind(user.id)
+            .bind(now)
+            .bind(&remote_addr)
+            .execute(&mut *txn)
+            .await
+            .map_err(|err| {
+                tracing::error!(?err, "Unable to insert upload");
+                InternalServerError(err)
+            })?;
+
+        result.uploads.insert(filename, Some(id));
     }
+
+    txn.commit().await.map_err(|err| {
+        tracing::error!(?err, "Unable to commit transaction");
+        InternalServerError(err)
+    })?;
 
     for filename in failures {
         result.uploads.insert(filename, None);
