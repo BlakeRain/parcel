@@ -22,8 +22,5 @@
   </div>
 {% endblock %}
 {% block scripts %}
-  <script type="module">
-    import { setupIndex } from "{{ index_js | script_bundle | safe }}";
-    setupIndex();
-  </script>
+  <script type="module" src="{{ index_js | script_bundle | safe }}"></script>
 {% endblock %}

@@ -59,7 +59,7 @@ pub async fn get_index(
             uploads,
             page => 0,
             limit => user.limit,
-            index_js => javascript!("scripts/index.ts", format = "esm"),
+            index_js => javascript!("scripts/index.ts"),
             ..authorized_context(&env, &user)
         },
     )

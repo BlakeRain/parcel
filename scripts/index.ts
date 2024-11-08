@@ -228,7 +228,5 @@ function setupParcelChangeEvent() {
   document["__parcelChangeEventInstalled"] = true;
 }
 
-export function setupIndex() {
-  setupParcelChangeEvent();
-  setupDropIndicator();
-}
+setupParcelChangeEvent();
+setupDropIndicator();

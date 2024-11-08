@@ -79,7 +79,7 @@ pub async fn get_team(
             uploads,
             page => 0,
             limit => team.limit,
-            index_js => javascript!("scripts/index.ts", format = "esm"),
+            index_js => javascript!("scripts/index.ts"),
             ..authorized_context(&env, &user)
         },
     )

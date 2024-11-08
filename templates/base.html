@@ -115,7 +115,7 @@
         // htmx.logAll();
       </script>
     {% endif %}
-    <script type="module" src="/static/scripts/bundles/{{ env.init_js | safe }}{% if build.profile != "debug" %}.min{% endif %}.js"></script>
+    <script type="module" src="{{ env.init_js | script_bundle | safe }}"></script>
     {% block scripts %}{% endblock %}
   </body>
 </html>

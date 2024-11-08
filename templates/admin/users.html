@@ -150,9 +150,6 @@
 </div>
 {% endblock %}
 {% block scripts %}
-<script
-  type="module"
-  src="/static/scripts/bundles/{{ teams_js | safe }}{% if build.profile != "debug" %}.min{% endif %}.js">
-</script>
+  <script type="module" src="{{ teams_js | script_bundle | safe }}"></script>
 {% endblock %}
 
