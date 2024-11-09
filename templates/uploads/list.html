@@ -9,7 +9,7 @@
           type="button"
           class="button order-2 sm:order-1"
           hx-trigger="click"
-          {% if team and membership.can_delete %}
+          {% if not team or membership.can_delete %}
             hx-post="/uploads/delete"
             hx-confirm="Are you sure you want to delete the selected files?"
           {% endif %}
@@ -51,7 +51,7 @@
             <parcel-checkbox-group
               id="uploads_group"
               name="uploads{% if team %}_{{ team.id }}{% endif %}"
-              {% if team and membership.can_delete %}
+              {% if not team or membership.can_delete %}
                 onchanged="document.getElementById('delete_selected').disabled = !event.detail.any">
               {% endif %}
             </parcel-checkbox-group>
