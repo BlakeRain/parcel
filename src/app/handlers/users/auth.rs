@@ -118,6 +118,15 @@ pub async fn post_signin(
 
 #[handler]
 pub async fn get_signout(session: &Session) -> poem::Result<Redirect> {
+    let mut stack = session
+        .take::<Vec<Key<User>>>("masquerade_stack")
+        .unwrap_or_default();
+    if let Some(user_id) = stack.pop() {
+        session.set("masquerade_stack", stack);
+        session.set("user_id", user_id);
+        return Ok(Redirect::see_other("/admin"));
+    }
+
     session.clear();
     Ok(Redirect::see_other("/"))
 }

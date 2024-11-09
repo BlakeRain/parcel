@@ -164,12 +164,6 @@ impl User {
             .await
     }
 
-    pub async fn get_list(pool: &SqlitePool) -> sqlx::Result<Vec<Self>> {
-        sqlx::query_as("SELECT * FROM users ORDER BY username")
-            .fetch_all(pool)
-            .await
-    }
-
     pub async fn delete(&self, pool: &SqlitePool) -> sqlx::Result<()> {
         sqlx::query("DELETE FROM team_members WHERE user = $1")
             .bind(self.id)
@@ -237,12 +231,22 @@ impl User {
         Ok(result.is_some())
     }
 
-    pub async fn join_team(&self, pool: &SqlitePool, team: Key<Team>) -> sqlx::Result<()> {
-        sqlx::query("INSERT INTO team_members (team, user) VALUES ($1, $2)")
-            .bind(team)
-            .bind(self.id)
-            .execute(pool)
-            .await?;
+    pub async fn join_team(
+        &self,
+        pool: &SqlitePool,
+        team: Key<Team>,
+        can_edit: bool,
+        can_delete: bool,
+    ) -> sqlx::Result<()> {
+        sqlx::query(
+            "INSERT INTO team_members (team, user, can_edit, can_delete) VALUES ($1, $2, $3, $4)",
+        )
+        .bind(team)
+        .bind(self.id)
+        .bind(can_edit)
+        .bind(can_delete)
+        .execute(pool)
+        .await?;
         Ok(())
     }
 
@@ -285,5 +289,53 @@ impl UserStats {
         sqlx::query_as("SELECT COUNT(*) AS total, SUM(enabled) AS enabled FROM users")
             .fetch_one(pool)
             .await
+    }
+}
+
+#[derive(Debug, FromRow, Serialize)]
+pub struct UserList {
+    pub id: Key<User>,
+    pub username: String,
+    pub name: String,
+    pub enabled: bool,
+    pub has_totp: bool,
+    pub admin: bool,
+    pub limit: Option<i64>,
+    pub team_count: i64,
+    pub upload_total: i64,
+    pub created_at: OffsetDateTime,
+    pub created_by_name: Option<String>,
+}
+
+impl UserList {
+    pub async fn get(pool: &SqlitePool) -> sqlx::Result<Vec<UserList>> {
+        sqlx::query_as(
+            "WITH team_counts AS (
+                SELECT user, COUNT(*) AS team_count FROM team_members GROUP BY user
+            ), upload_counts AS (
+                SELECT uploaded_by AS user, \
+                       SUM(size) AS upload_total \
+                FROM uploads GROUP BY uploaded_by \
+            ) \
+            SELECT \
+                users.id as id, \
+                users.username as username, \
+                users.name as name, \
+                users.enabled as enabled, \
+                users.totp IS NOT NULL AS has_totp, \
+                users.admin as admin, \
+                users.\"limit\" as \"limit\", \
+                COALESCE(tc.team_count, 0) AS team_count, \
+                COALESCE(uc.upload_total, 0) AS upload_total, \
+                users.created_at as created_at, \
+                created_by.name AS created_by_name \
+            FROM users \
+            LEFT JOIN team_counts tc ON tc.user = users.id \
+            LEFT JOIN upload_counts uc ON uc.user = users.id \
+            LEFT JOIN users AS created_by ON created_by.id = users.created_by \
+            ORDER BY users.username",
+        )
+        .fetch_all(pool)
+        .await
     }
 }

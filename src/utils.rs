@@ -1,5 +1,5 @@
 use poem::session::Session;
-use serde::de::DeserializeOwned;
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use validator::{ValidationError, ValidationErrors, ValidationErrorsKind};
 
 pub trait SessionExt {
@@ -39,6 +39,27 @@ impl ValidationErrorsExt for ValidationErrors {
             } else {
                 panic!("Attempt to add non-field errors to field errors");
             }
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum SizeUnit {
+    B,
+    KB,
+    MB,
+    GB,
+    TB,
+}
+
+impl SizeUnit {
+    pub fn to_bytes(self) -> i64 {
+        match self {
+            SizeUnit::B => 1,
+            SizeUnit::KB => 1_000,
+            SizeUnit::MB => 1_000_000,
+            SizeUnit::GB => 1_000_000_000,
+            SizeUnit::TB => 1_000_000_000_000,
         }
     }
 }

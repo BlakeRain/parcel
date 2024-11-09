@@ -8,7 +8,7 @@
     <div class="text-center">
       <parcel-grouped-checkbox
         name="selected"
-        group="uploads"
+        group="uploads{% if team %}_{{ team.id }}{% endif %}"
         value="{{ upload.id }}">
       </parcel-grouped-checkbox>
     </div>
@@ -93,18 +93,6 @@
           <a
             href="#"
             class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
-            title="Edit upload settings"
-            hx-get="/uploads/{{ upload.id }}/edit"
-            hx-trigger="click"
-            hx-target="body"
-            hx-swap="beforeend">
-            <span class="icon-pencil"></span>
-            Edit upload &hellip;
-          </a>
-          {% set target = ("/uploads/list/" + (page | safe) + "?order=" + query.order + "&asc=" + (query.asc | safe)) | urlencode %}
-          <a
-            href="#"
-            class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
             title="Share upload link"
             hx-get="/uploads/{{ upload.id }}/share"
             hx-trigger="click"
@@ -113,64 +101,102 @@
             <span class="icon-share"></span>
             Share link &hellip;
           </a>
-          <a
-            href="#"
-            class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
-            hx-post="/uploads/{{ upload.id }}/public?public={{ not upload.public }}"
-            hx-trigger="click"
-            hx-swap="none"
-            {% if upload.public %}
-              title="Deny public access to this upload"
-            {% else %}
-              hx-confirm="Are you sure you want to allow public access to this upload?"
-              title="Allow public access to this upload"
-            {% endif %}>
-            {% if upload.public %}
-              <span class="icon-eye-off"></span>
-              Make private
-            {% else %}
-              <span class="icon-eye"></span>
-              Make public
-            {% endif %}
-          </a>
-          {% if upload.limit is number and upload.remaining is number and upload.remaining < upload.limit %}
+          {% if (not team) or membership.can_edit %}
             <a
               href="#"
               class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
-              title="Reset remaining downloads to {{ upload.limit }}"
-              hx-post="/uploads/{{ upload.id }}/reset"
-              hx-trigger="click"
-              hx-swap="none"
-              hx-confirm="Are you sure you want to reset the remaining downloads for this upload?">
-              <span class="icon-rotate-ccw"></span>
-              Reset remaining
-            </a>
-          {% endif %}
-          {% if has_teams %}
-            <a
-              href="#"
-              class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
-              title="Copy or move to another team"
-              hx-get="/uploads/{{ upload.id }}/transfer"
+              title="Edit upload settings"
+              hx-get="/uploads/{{ upload.id }}/edit"
               hx-trigger="click"
               hx-target="body"
               hx-swap="beforeend">
+              <span class="icon-pencil"></span>
+              Edit upload &hellip;
+            </a>
+            <a
+              href="#"
+              class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
+              hx-post="/uploads/{{ upload.id }}/public?public={{ not upload.public }}"
+              hx-trigger="click"
+              hx-swap="none"
+              {% if upload.public %}
+                title="Deny public access to this upload"
+              {% else %}
+                hx-confirm="Are you sure you want to allow public access to this upload?"
+                title="Allow public access to this upload"
+              {% endif %}>
+              {% if upload.public %}
+                <span class="icon-eye-off"></span>
+                Make private
+              {% else %}
+                <span class="icon-eye"></span>
+                Make public
+              {% endif %}
+            </a>
+            {% if upload.limit is number and upload.remaining is number and upload.remaining < upload.limit %}
+              <a
+                href="#"
+                class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
+                title="Reset remaining downloads to {{ upload.limit }}"
+                hx-post="/uploads/{{ upload.id }}/reset"
+                hx-trigger="click"
+                hx-swap="none"
+                hx-confirm="Are you sure you want to reset the remaining downloads for this upload?">
+                <span class="icon-rotate-ccw"></span>
+                Reset remaining
+              </a>
+            {% endif %}
+            {% if has_teams %}
+              <a
+                href="#"
+                class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
+                title="Copy or move to another team"
+                hx-get="/uploads/{{ upload.id }}/transfer"
+                hx-trigger="click"
+                hx-target="body"
+                hx-swap="beforeend">
+                <span class="icon-copy"></span>
+                Copy or move &hellip;
+              </a>
+            {% endif %}
+          {% else %}
+            <div class="block px-4 py-2 opacity-50">
+              <span class="icon-pencil"></span>
+              Edit upload &hellip;
+            </div>
+            <div class="block px-4 py-2 opacity-50">
+              {% if upload.public %}
+                <span class="icon-eye-off"></span>
+                Make private
+              {% else %}
+                <span class="icon-eye"></span>
+                Make public
+              {% endif %}
+            </div>
+            <div class="block px-4 py-2 opacity-50">
               <span class="icon-copy"></span>
               Copy or move &hellip;
-            </a>
+            </div>
           {% endif %}
-          <a
-            href="#"
-            class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
-            title="Delete upload"
-            hx-delete="/uploads/{{ upload.id }}"
-            hx-trigger="click"
-            hx-target="closest .uploads-table-row"
-            hx-swap="outerHTML"
-            hx-confirm="Are you sure you want to delete this upload?">
-            <span class="icon-trash-2"></span>
-            Delete upload
-          </a>
+          {% if not team or (membership.can_edit and membership.can_delete) %}
+            <a
+              href="#"
+              class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
+              title="Delete upload"
+              hx-delete="/uploads/{{ upload.id }}"
+              hx-trigger="click"
+              hx-target="closest .uploads-table-row"
+              hx-swap="outerHTML"
+              hx-confirm="Are you sure you want to delete this upload?">
+              <span class="icon-trash-2"></span>
+              Delete upload
+            </a>
+          {% else %}
+            <div class="block px-4 py-2 opacity-50">
+              <span class="icon-trash-2"></span>
+              Delete upload
+            </div>
+          {% endif %}
         </div>
       </parcel-dropdown>
     </div>

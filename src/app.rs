@@ -1,3 +1,4 @@
+use handlers::debug::add_debug_routes;
 use poem::{
     endpoint::StaticFilesEndpoint,
     middleware::{Csrf, Tracing},
@@ -20,6 +21,7 @@ pub mod templates;
 
 mod handlers {
     pub mod admin;
+    pub mod debug;
     pub mod index;
     pub mod teams;
     pub mod uploads;
@@ -35,10 +37,11 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> impl IntoEndpoint {
         CookieKey::generate()
     };
 
-    define_routes!({
+    let routes = add_debug_routes(define_routes!({
         *"/static" { StaticFilesEndpoint::new("./static") }
 
         "/"                             handlers::index::index                  GET
+        "/tab"                          handlers::index::tab                    GET
         "/uploads/delete"               handlers::uploads::delete                   POST
         "/uploads/list"                 handlers::uploads::list                 GET
         "/uploads/list/:page"           handlers::uploads::page                 GET
@@ -53,6 +56,7 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> impl IntoEndpoint {
         "/uploads/:id/download"         handlers::uploads::download             GET POST
         "/uploads/:owner/:slug"         handlers::uploads::custom_upload        GET
         "/teams/:id"                    handlers::teams::team                   GET
+        "/teams/:id/tab"                handlers::teams::tab                    GET
         "/teams/:id/uploads/list"       handlers::teams::uploads::list          GET
         "/teams/:id/uploads/list/:page" handlers::teams::uploads::page          GET
         "/user/signin"                  handlers::users::signin                 GET POST
@@ -72,22 +76,25 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> impl IntoEndpoint {
         "/admin/users/:id"              handlers::admin::users::user            GET POST DELETE
         "/admin/users/:id/disable"      handlers::admin::users::disable_user        POST
         "/admin/users/:id/enable"       handlers::admin::users::enable_user         POST
+        "/admin/users/:id/masquerade"   handlers::admin::users::masquerade      GET
         "/admin/users/:id/username"     handlers::admin::users::check_username      POST
         "/admin/teams"                  handlers::admin::teams::teams           GET
         "/admin/teams/new"              handlers::admin::teams::new             GET POST
         "/admin/teams/new/slug"         handlers::admin::teams::check_new_slug      POST
         "/admin/teams/:id"              handlers::admin::teams::team            GET POST
         "/admin/teams/:id/slug"         handlers::admin::teams::check_slug          POST
-    })
-    .catch_error(errors::NotSignedInError::handle)
-    .catch_error(errors::CsrfError::handle)
-    .data(env)
-    .with(Csrf::new())
-    .with(Tracing)
-    .with(CookieSession::new(
-        CookieConfig::private(cookie_key)
-            .name("parcel")
-            .same_site(Some(SameSite::Strict))
-            .max_age(Some(std::time::Duration::from_secs(14 * 24 * 60 * 60))),
-    ))
+    }));
+
+    routes
+        .catch_error(errors::NotSignedInError::handle)
+        .catch_error(errors::CsrfError::handle)
+        .data(env)
+        .with(Csrf::new())
+        .with(Tracing)
+        .with(CookieSession::new(
+            CookieConfig::private(cookie_key)
+                .name("parcel")
+                .same_site(Some(SameSite::Strict))
+                .max_age(Some(std::time::Duration::from_secs(14 * 24 * 60 * 60))),
+        ))
 }

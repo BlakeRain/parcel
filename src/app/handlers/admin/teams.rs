@@ -22,7 +22,7 @@ use crate::{
         upload::Upload,
         user::User,
     },
-    utils::ValidationErrorsExt,
+    utils::{SizeUnit, ValidationErrorsExt},
 };
 
 #[handler]
@@ -158,6 +158,7 @@ pub struct NewTeamForm {
     pub slug: String,
     pub enabled: Option<String>,
     pub limit: Option<i64>,
+    pub limit_unit: Option<SizeUnit>,
 }
 
 #[handler]
@@ -216,6 +217,7 @@ pub async fn post_new(
                     slug => &form.slug,
                     enabled => form.enabled.as_deref() == Some("on"),
                     limit => form.limit,
+                    limit_unit => form.limit_unit,
                 },
                 ..authorized_context(&env, &admin)
             },
@@ -230,16 +232,18 @@ pub async fn post_new(
         slug,
         enabled,
         limit,
+        limit_unit,
         ..
     } = form;
 
     let enabled = enabled.as_deref() == Some("on");
+    let limit = limit.and_then(|limit| limit_unit.map(|unit| limit * unit.to_bytes()));
     let team = Team {
         id: Key::new(),
         name,
         slug,
         enabled,
-        limit: limit.map(|limit| limit * 1024 * 1024),
+        limit,
         created_at: OffsetDateTime::now_utc(),
         created_by: admin.id,
     };
@@ -289,6 +293,7 @@ pub struct EditTeamForm {
     pub slug: String,
     pub enabled: Option<String>,
     pub limit: Option<i64>,
+    pub limit_unit: Option<SizeUnit>,
 }
 
 #[handler]
@@ -353,6 +358,7 @@ pub async fn post_team(
                     slug => &form.slug,
                     enabled => form.enabled.as_deref() == Some("on"),
                     limit => form.limit,
+                    limit_unit => form.limit_unit,
                 },
                 ..authorized_context(&env, &admin)
             },
@@ -367,11 +373,12 @@ pub async fn post_team(
         slug,
         enabled,
         limit,
+        limit_unit,
         ..
     } = form;
 
     let enabled = enabled.as_deref() == Some("on");
-    let limit = limit.map(|limit| limit * 1024 * 1024);
+    let limit = limit.and_then(|limit| limit_unit.map(|unit| limit * unit.to_bytes()));
     team.update(&env.pool, &name, &slug, limit, enabled)
         .await
         .map_err(|err| {

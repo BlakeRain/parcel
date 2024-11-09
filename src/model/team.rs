@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, QueryBuilder, SqlitePool};
 use time::OffsetDateTime;
 
@@ -13,6 +13,12 @@ pub struct Team {
     pub enabled: bool,
     pub created_at: OffsetDateTime,
     pub created_by: Key<User>,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
+pub enum TeamPermission {
+    Edit,
+    Delete,
 }
 
 impl Team {
@@ -64,6 +70,19 @@ impl Team {
             .await
     }
 
+    pub async fn get_by_slug(pool: &SqlitePool, slug: &str) -> sqlx::Result<Option<Self>> {
+        sqlx::query_as("SELECT * FROM teams WHERE slug = $1")
+            .bind(slug)
+            .fetch_optional(pool)
+            .await
+    }
+
+    pub async fn get_list(pool: &SqlitePool) -> sqlx::Result<Vec<Self>> {
+        sqlx::query_as("SELECT * FROM teams ORDER BY name ASC")
+            .fetch_all(pool)
+            .await
+    }
+
     pub async fn get_for_user(pool: &SqlitePool, user: Key<User>) -> sqlx::Result<Vec<Self>> {
         sqlx::query_as("SELECT teams.* FROM teams LEFT JOIN team_members ON team_members.team = teams.id WHERE team_members.user = $1")
             .bind(user)
@@ -105,6 +124,35 @@ impl Team {
 }
 
 #[derive(Debug, FromRow, Serialize)]
+pub struct TeamMember {
+    pub team: Key<Team>,
+    pub user: Key<User>,
+    pub can_edit: bool,
+    pub can_delete: bool,
+}
+
+impl TeamMember {
+    pub async fn get_for_user(pool: &SqlitePool, user: Key<User>) -> sqlx::Result<Vec<TeamMember>> {
+        sqlx::query_as("SELECT * FROM team_members WHERE user = $1")
+            .bind(user)
+            .fetch_all(pool)
+            .await
+    }
+
+    pub async fn get_for_user_and_team(
+        pool: &SqlitePool,
+        user: Key<User>,
+        team: Key<Team>,
+    ) -> sqlx::Result<Option<Self>> {
+        sqlx::query_as("SELECT * FROM team_members WHERE user = $1 AND team = $2")
+            .bind(user)
+            .bind(team)
+            .fetch_optional(pool)
+            .await
+    }
+}
+
+#[derive(Debug, FromRow, Serialize)]
 pub struct TeamStats {
     pub total: i32,
 }
@@ -114,6 +162,30 @@ impl TeamStats {
         sqlx::query_as("SELECT COUNT(*) AS total FROM teams")
             .fetch_one(pool)
             .await
+    }
+}
+
+#[derive(Debug, FromRow, Serialize)]
+pub struct TeamTab {
+    pub id: Key<Team>,
+    pub name: String,
+    pub slug: String,
+    pub count: i64,
+}
+
+impl TeamTab {
+    pub async fn get_for_user(pool: &SqlitePool, user: Key<User>) -> sqlx::Result<Vec<Self>> {
+        sqlx::query_as(
+            "SELECT teams.id, teams.name, teams.slug, COUNT(uploads.id) AS count \
+            FROM teams \
+            LEFT JOIN uploads ON uploads.owner_team = teams.id \
+            LEFT JOIN team_members ON team_members.team = teams.id \
+            WHERE team_members.user = $1 \
+            GROUP BY teams.id",
+        )
+        .bind(user)
+        .fetch_all(pool)
+        .await
     }
 }
 

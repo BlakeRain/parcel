@@ -1,9 +1,16 @@
+import users from "../fixtures/users.json";
+
 Cypress.Commands.add("resetDatabase", () => {
-  cy.task("resetDatabase", null, { log: true });
+  cy.request("/debug/reset-database").then((response) => {
+    expect(response.status).to.eq(200);
+  });
 });
 
 Cypress.Commands.add("initialUsers", () => {
-  cy.task("initialUsers", null, { log: true });
+  const body = Object.keys(users).map((key) => users[key]);
+  cy.request("POST", "/debug/initial-users", body).then((response) => {
+    expect(response.status).to.eq(200);
+  });
 });
 
 Cypress.Commands.add("login", ({ username, password }) => {

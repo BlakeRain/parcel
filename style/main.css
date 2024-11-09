@@ -2,6 +2,7 @@
 
 @import "components/button.css";
 @import "components/drop.css";
+@import "components/dropdown.css";
 @import "components/form.css";
 @import "components/modal.css";
 @import "components/panel.css";
@@ -12,7 +13,6 @@
 
 @import "utils/animation.css";
 @import "utils/icons.css";
-@import "utils/triangles.css";
 
 body.has-web-components .no-web-components {
   display: none;

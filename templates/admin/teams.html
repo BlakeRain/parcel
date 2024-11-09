@@ -3,96 +3,93 @@
 {% block title %}Teams{% endblock %}
 
 {% block content %}
-<div class="grow container mx-auto mt-4">
-  <div id="teams-list-container" class="panel gap-4">
-    <div class="flex flex-row justify-between items-center">
-      <h1 class="heading">
-        <a href="/admin">Administration</a> / Teams
-      </h1>
-      <div class="buttons">
-        <button
-          type="button"
-          class="button"
-          hx-get="/admin/teams"
-          hx-target="#teams-list-container"
-          hx-select="#teams-list-container"
-          hx-swap="outerHTML">
-          <span class="icon-refresh-cw"></span>
-          Refresh
-        </button>
-        <button
-          type="button"
-          class="button"
-          hx-get="/admin/teams/new"
-          hx-target="body"
-          hx-swap="beforeend">
-          <span class="icon-plus"></span>
-          Add Team
-        </button>
-      </div>
-    </div>
-    <div class="table">
-      <table>
-        <thead>
-          <tr>
-            <th class="text-left">ID</th>
-            <th class="text-left">Team name</th>
-            <th class="text-center">Enabled</th>
-            <th class="text-right">Members</th>
-            <th class="text-right">Uploads</th>
-            <th class="text-right">Total</th>
-            <th class="text-right">Limit</th>
-            <th class="text-left">Created At</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {% if teams | length == 0 %}
-            <tr>
-              <td colspan="9" class="text-center text-gray-500 dark:text-gray-400">
-                No teams found
-              </td>
-            </tr>
-          {% endif %}
-          {% for team in teams %}
-            <tr>
-              <td class="text-left">{{ team.id }}</td>
-              <td class="text-left">{{ team.name }}</td>
-              <td class="text-center {% if team.enabled %}text-success{% else %}text-danger{% endif %}">
-                {% if team.enabled %}Yes{% else %}No{% endif %}
-              </td>
-              <td class="text-right">{{ team.member_count }}</td>
-              <td class="text-right">{{ team.upload_count }}</td>
-              <td class="text-right">{{ team.upload_total | filesizeformat }}</td>
-              <td class="text-right">
-                {% if team.limit is number %}
-                  {{ team.limit | filesizeformat }}
-                {% else %}
-                  <i>No Limit</i>
-                {% endif %}
-              </td>
-              <td class="text-left">{{ team.created_at | datetime }}</td>
-              <td class="text-right">
-                <parcel-dropdown>
-                  <div class="flex flex-col my-2 text-left dark:text-neutral-100">
-                    <a
-                      href="#"
-                      class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
-                      title="Edit this team"
-                      hx-get="/admin/teams/{{ team.id }}"
-                      hx-target="body"
-                      hx-swap="beforeend">
-                      <span class="icon-pencil"></span>
-                      Edit team &hellip;
-                    </a>
-                  </div>
-                </parcel-dropdown>
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+<div id="teams-list-container" class="grow flex flex-col gap-4 mt-4">
+  <div class="flex flex-row justify-between items-center gap-4 px-8">
+    <h1 class="text-xl md:text-2xl font-bold leading-tight tracking-tight text-gray-900
+      dark:text-white">
+      <a href="/admin">Administration</a> <span class="icon-chevron-right"></span> Teams
+    </h1>
+    <div class="buttons">
+      <button
+        type="button"
+        class="button"
+        hx-get="/admin/teams"
+        hx-target="#teams-list-container"
+        hx-select="#teams-list-container"
+        hx-swap="outerHTML">
+        <span class="icon-refresh-cw"></span>
+        Refresh
+      </button>
+      <button
+        type="button"
+        class="button"
+        hx-get="/admin/teams/new"
+        hx-target="body"
+        hx-swap="beforeend">
+        <span class="icon-plus"></span>
+        Add Team
+      </button>
     </div>
   </div>
+  <table>
+    <thead>
+      <tr>
+        <th class="text-left">ID</th>
+        <th class="text-left">Team name</th>
+        <th class="text-center">Enabled</th>
+        <th class="text-right">Members</th>
+        <th class="text-right">Uploads</th>
+        <th class="text-right">Total</th>
+        <th class="text-right">Limit</th>
+        <th class="text-left">Created At</th>
+        <th />
+      </tr>
+    </thead>
+    <tbody>
+      {% if teams | length == 0 %}
+        <tr>
+          <td colspan="9" class="text-center text-gray-500 dark:text-gray-400">
+            No teams found
+          </td>
+        </tr>
+      {% endif %}
+      {% for team in teams %}
+        <tr>
+          <td class="text-left">{{ team.id }}</td>
+          <td class="text-left">{{ team.name }}</td>
+          <td class="text-center {% if team.enabled %}text-success{% else %}text-danger{% endif %}">
+            {% if team.enabled %}Yes{% else %}No{% endif %}
+          </td>
+          <td class="text-right">{{ team.member_count }}</td>
+          <td class="text-right">{{ team.upload_count }}</td>
+          <td class="text-right">{{ team.upload_total | filesizeformat }}</td>
+          <td class="text-right">
+            {% if team.limit is number %}
+              {{ team.limit | filesizeformat }}
+            {% else %}
+              <i>No Limit</i>
+            {% endif %}
+          </td>
+          <td class="text-left">{{ team.created_at | datetime }}</td>
+          <td class="text-right">
+            <parcel-dropdown>
+              <div class="flex flex-col my-2 text-left dark:text-neutral-100">
+                <a
+                  href="#"
+                  class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
+                  title="Edit this team"
+                  hx-get="/admin/teams/{{ team.id }}"
+                  hx-target="body"
+                  hx-swap="beforeend">
+                  <span class="icon-pencil"></span>
+                  Edit team &hellip;
+                </a>
+              </div>
+            </parcel-dropdown>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 {% endblock %}

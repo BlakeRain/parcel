@@ -207,10 +207,65 @@ fn filter_filesizeformat(value: usize, kwargs: Kwargs) -> Result<String, Error> 
     let format = if binary {
         humansize::BINARY
     } else {
-        humansize::WINDOWS
+        humansize::DECIMAL
     };
 
     Ok(humansize::format_size(value, format))
+}
+
+fn filter_script_bundle(name: String) -> Result<String, Error> {
+    // If we're create a release build, then we want to return the path to the bundle plus the
+    // '.min.js' extension; otherwise we want to just use the '.js' extension.
+    const EXTENSION: &str = if cfg!(debug_assertions) {
+        ".js"
+    } else {
+        ".min.js"
+    };
+    const PREFIX: &str = "/static/scripts/bundles/";
+
+    Ok(format!("{PREFIX}{name}{EXTENSION}"))
+}
+
+fn filter_nearest_unit(value: usize, kwargs: Kwargs) -> Result<String, Error> {
+    // Given the size in bytes, return the nearest unit (MB, GB, etc.).
+    static UNITS: &[&str] = &["B", "KB", "MB", "GB", "TB", "PB", "EB"];
+
+    // The 'limit' keyword argument can be used to specify the maximum unit. For example, if the
+    // limit is set to 'TB', the unit will not be greater than 'TB'.
+    let limit = kwargs.get::<Option<String>>("limit")?;
+
+    // Changing to binary uses 1024 as the base instead of 1000.
+    let binary = (kwargs.get::<Option<bool>>("binary")?).unwrap_or(false);
+    let base = if binary { 1024.0 } else { 1000.0 };
+
+    let mut unit = 0;
+    let mut size = value as f64;
+
+    while size >= base && (limit.is_none() || UNITS[unit] != limit.as_deref().unwrap()) {
+        size /= base;
+        unit += 1;
+    }
+
+    Ok(UNITS[unit].to_string())
+}
+
+fn func_unit_multiplier(unit: String, kwargs: Kwargs) -> Result<usize, Error> {
+    let binary = (kwargs.get::<Option<bool>>("binary")?).unwrap_or(false);
+    let factor = if binary { 1024 } else { 1000 };
+
+    match unit.as_str() {
+        "B" => Ok(1),
+        "KB" => Ok(factor),
+        "MB" => Ok(factor * factor),
+        "GB" => Ok(factor * factor * factor),
+        "TB" => Ok(factor * factor * factor * factor),
+        "PB" => Ok(factor * factor * factor * factor * factor),
+        "EB" => Ok(factor * factor * factor * factor * factor * factor),
+        _ => Err(Error::new(
+            ErrorKind::InvalidOperation,
+            "invalid unit multiplier",
+        )),
+    }
 }
 
 fn test_past(value: Value) -> Result<bool, Error> {
@@ -233,6 +288,9 @@ pub(super) fn add_to_environment(environment: &mut Environment) {
     environment.add_filter("date", filter_date);
     environment.add_filter("substr", filter_substr);
     environment.add_filter("filesizeformat", filter_filesizeformat);
+    environment.add_filter("nearest_unit", filter_nearest_unit);
+    environment.add_filter("script_bundle", filter_script_bundle);
     environment.add_test("past", test_past);
     environment.add_test("future", test_future);
+    environment.add_function("unit_multiplier", func_unit_multiplier);
 }

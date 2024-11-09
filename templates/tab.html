@@ -1,0 +1,5 @@
+{% include "uploads/tabs.html" %}
+{% include "uploads/list.html" %}
+<script type="text/json" id="team-identifier" hx-swap-oob="true">
+  [{% if team %}{{ team.id | tojson }}{% endif %}]
+</script>

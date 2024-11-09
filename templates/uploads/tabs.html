@@ -1,10 +1,13 @@
-<div class="tabs">
-  <a href="/" class="tab{% if not team %} active{% endif %}">
+<div id="team-tab-list" class="tabs" hx-swap-oob="true">
+  <a hx-get="/tab" hx-swap="none" class="tab{% if not team %} active{% endif %}">
     <span class="icon-house"></span>
     Your Uploads
   </a>
-  {% for tab in teams %}
-    <a href="/teams/{{ tab.slug }}" class="tab{% if team and tab.id == team.id %} active{% endif %}">
+  {% for tab in tabs %}
+    <a
+      class="tab{% if team and tab.id == team.id %} active{% endif %}"
+      hx-get="/teams/{{ tab.slug }}/tab"
+      hx-swap="none">
       <span class="hidden md:inline-block icon-users"></span>
       {{ tab.name }}
     </a>

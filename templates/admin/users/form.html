@@ -76,49 +76,76 @@
           <label for="admin">User is an administrator</label>
         </div>
         <div>
-          <label>Teams</label>
-          <script type="text/json" id="teams-data">{{ teams | tojson }}</script>
+          <script type="text/json" id="teams-data">
+            [ {% for team in teams %}
+              {{ dict(id=team.id, name=team.name, enabled=team.enabled) | tojson }}
+              {%- if not loop.last -%},{%- endif -%}
+              {% endfor %} ]
+          </script>
           {% if form or user %}
             <script type="text/json" id="membership-data">
-              {% if form %}{{ form.teams | tojson }}{% elif user %}{{ membership | tojson }}{% endif %}
+              {% if form -%}
+                {{ form.teams | safe }}
+              {%- elif user -%}
+                {{ "{" }} {% for member in membership %}
+                  "{{ member.team }}":
+                    {{ dict(edit=member.can_edit, delete=member.can_delete) | tojson }}
+                  {%- if not loop.last -%},{%- endif -%}
+                {% endfor %} {{ "}" }}
+              {%- endif %}
             </script>
           {% endif %}
-          <parcel-select
+          <parcel-teams
             name="teams"
-            id="teams"
-            options="#teams-data"
-            {% if form or user %}values="#membership-data"{% endif %}
-            class="mt-2" />
+            teams="#teams-data"
+            {% if form or user %}membership="#membership-data"{% endif %}
+            class="mt-2"></parcel-teams>
         </div>
       </div>
 
       <div class="lg:flex lg:flex-col lg:justify-end">
-        {% set has_limit = (not form and not team) or (form and form.limit is number) or (team and team.limit is number) %}
+        {% set has_limit = (not form and not user) or (form and form.limit is number) or (user and user.limit is number) %}
         <div class="checkbox">
           <input
             type="checkbox"
             name="limit_check"
             id="limit_check"
-            onchange="document.getElementById('limit').disabled = !this.checked"
+            onchange="document.getElementById('limit').disabled = !this.checked;
+            document.getElementById('limit_unit').disabled = !this.checked;"
             {% if has_limit %}checked{% endif %}>
           <label for="limit_check">User has an upload limit</label>
         </div>
-        <label>Upload limit in megabytes</label>
-        <input
-          type="number"
-          class="field"
-          name="limit"
-          id="limit"
-          {% if form and form.limit %}
-            value="{{ form.limit }}"
-          {% elif user and user.limit %}
-            value="{{ (user.limit / 1048576) | int }}"
-          {% else %}
-            value="1024"
+        {% set limit       = 1   %}
+        {% set limit_unit = "GB" %}
+        {% if form and form.limit %}
+          {% set limit      = form.limit %}
+          {% set limit_unit = form.limit_unit %}
+        {% elif user and user.limit %}
+          {% set limit_unit = user.limit | nearest_unit(limit = "TB") %}
+          {% set limit      = user.limit / unit_multiplier(limit_unit) %}
+        {% endif %}
+        <div class="flex flex-row gap-2 mt-2">
+          <input
+            type="number"
+            class="field"
+            name="limit"
+            id="limit"
+            value="{{ limit | int }}"
+            min="1"
             {% if not has_limit %}disabled{% endif %}
-          {% endif %}
-          min="0"
-          required>
+            required>
+          <select
+            class="field"
+            name="limit_unit"
+            id="limit_unit"
+            {% if not has_limit %}disabled{% endif %}>
+            <option value="B" {% if limit_unit == "B" %}selected{% endif %}>B</option>
+            <option value="KB" {% if limit_unit == "KB" %}selected{% endif %}>KB</option>
+            <option value="MB" {% if limit_unit == "MB" %}selected{% endif %}>MB</option>
+            <option value="GB" {% if limit_unit == "GB" %}selected{% endif %}>GB</option>
+            <option value="TB" {% if limit_unit == "TB" %}selected{% endif %}>TB</option>
+          </select>
+        </div>
       </div>
     </div>
 

@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use esbuild_bundle::javascript;
 use minijinja::context;
 use poem::{
@@ -8,7 +6,7 @@ use poem::{
     http::StatusCode,
     web::{CsrfToken, CsrfVerifier, Data, Html, Json, Multipart, Query, RealIp},
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use time::OffsetDateTime;
 
 use crate::{
@@ -72,11 +70,6 @@ pub async fn get_new(
     )
 }
 
-#[derive(Debug, Default, Serialize)]
-pub struct UploadResult {
-    uploads: HashMap<String, Option<Upload>>,
-}
-
 #[handler]
 pub async fn post_new(
     env: Data<&Env>,
@@ -84,7 +77,7 @@ pub async fn post_new(
     SessionUser(user): SessionUser,
     csrf_verifier: &CsrfVerifier,
     mut form: Multipart,
-) -> poem::Result<Json<UploadResult>> {
+) -> poem::Result<Json<()>> {
     let mut seen_csrf = false;
     let mut uploads = Vec::new();
     let mut failures = Vec::new();
@@ -168,29 +161,12 @@ pub async fn post_new(
             let size = meta.len() as i64;
             tracing::info!(?slug, size, "Upload to cache complete");
 
-            let mut upload = Upload {
-                id: Key::new(),
-                slug,
-                filename,
-                size,
-                public: false,
-                downloads: 0,
-                limit: None,
-                remaining: None,
-                expiry_date: None,
-                password: None,
-                custom_slug: None,
-                owner_user: match team.as_ref() {
-                    Some(_) => None,
-                    None => Some(user.id),
-                },
-                owner_team: team.as_ref().map(|team| team.id),
-                uploaded_by: user.id,
-                uploaded_at: OffsetDateTime::now_utc(),
-                remote_addr: ip.as_ref().map(ToString::to_string),
-            };
-
-            uploads.push(upload);
+            uploads.push(serde_json::json!({
+                "id": Key::<Upload>::new(),
+                "slug": slug,
+                "filename": filename,
+                "size": size,
+            }));
         } else {
             tracing::info!(field_name = ?field.name(), "Ignoring unrecognized field");
         }
@@ -200,31 +176,59 @@ pub async fn post_new(
         tracing::error!("CSRF token was not seen in upload form");
 
         for upload in uploads {
-            let path = env.cache_dir.join(&upload.slug);
-            tracing::info!(?path, ?upload.slug, "Deleting cached upload");
+            let slug = upload
+                .get("slug")
+                .expect("slug field missing")
+                .as_str()
+                .expect("slug field is not a string");
+
+            let path = env.cache_dir.join(slug);
+            tracing::info!(?path, ?slug, "Deleting cached upload");
             if let Err(err) = tokio::fs::remove_file(&path).await {
-                tracing::error!(path = ?path, err = ?err, slug = ?upload.slug,
-                        "Failed to delete cached upload");
+                tracing::error!(?path, ?err, ?slug, "Failed to delete cached upload");
             }
         }
 
         return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
     }
 
-    let mut result = UploadResult::default();
-    for mut upload in uploads {
-        upload.create(&env.pool).await.map_err(|err| {
-            tracing::error!(?err, "Unable to create upload");
-            InternalServerError(err)
-        })?;
+    let owner_user = match team.as_ref() {
+        Some(_) => None,
+        None => Some(user.id),
+    };
 
-        tracing::info!(%upload.id, "Created upload");
-        result.uploads.insert(upload.filename.clone(), Some(upload));
-    }
+    let owner_team = team.as_ref().map(|team| team.id);
+    let remote_addr = ip.as_ref().map(ToString::to_string);
 
-    for filename in failures {
-        result.uploads.insert(filename, None);
-    }
+    sqlx::query(
+        "\
+        WITH data AS ( \
+            SELECT value ->> 'id' AS id, \
+                   value ->> 'slug' AS slug, \
+                   value ->> 'filename' AS filename, \
+                   (value ->> 'size') AS size \
+            FROM json_each($1)) \
+        INSERT INTO uploads \
+        (id, slug, filename, size, public, downloads, \
+         owner_user, owner_team, \
+         uploaded_at, uploaded_by, remote_addr) \
+        SELECT data.id, data.slug, data.filename, data.size, 0, 0, \
+               $2, $3, \
+               $4, $5, $6 \
+        FROM data",
+    )
+    .bind(serde_json::to_string(&uploads).expect("JSON serialization failed"))
+    .bind(owner_user)
+    .bind(owner_team)
+    .bind(OffsetDateTime::now_utc())
+    .bind(user.id)
+    .bind(remote_addr)
+    .execute(&env.pool)
+    .await
+    .map_err(|err| {
+        tracing::error!(?err, "Unable to insert uploads");
+        InternalServerError(err)
+    })?;
 
-    Ok(Json(result))
+    Ok(Json(()))
 }

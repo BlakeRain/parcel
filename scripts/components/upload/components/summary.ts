@@ -11,7 +11,7 @@ const FilesSummary: FunctionComponent = () => {
     action = html`
       <a
         href="#"
-        class="text-red-200 dark:text-red-800 hover:text-red-500"
+        class="text-red-400 dark:text-red-800 hover:text-red-500"
         onclick=${(event: MouseEvent) => {
           event.preventDefault();
           dispatch({ type: "removeAll" });

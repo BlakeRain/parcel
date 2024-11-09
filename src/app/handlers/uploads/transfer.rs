@@ -11,11 +11,15 @@ use serde::{Deserialize, Serialize};
 use crate::{
     app::{
         extractors::user::SessionUser,
-        handlers::utils::{check_owns_upload, get_upload_by_id},
+        handlers::utils::{check_permission, get_upload_by_id},
         templates::{authorized_context, render_template},
     },
     env::Env,
-    model::{team::Team, types::Key, upload::Upload},
+    model::{
+        team::Team,
+        types::Key,
+        upload::{Upload, UploadPermission},
+    },
 };
 
 #[handler]
@@ -26,7 +30,7 @@ pub async fn get_transfer(
     Path(upload_id): Path<Key<Upload>>,
 ) -> poem::Result<Html<String>> {
     let upload = get_upload_by_id(&env, upload_id).await?;
-    check_owns_upload(&env, &user, &upload).await?;
+    check_permission(&env, &upload, Some(&user), UploadPermission::Transfer).await?;
 
     // Get the teams for the user.
     let teams = Team::get_for_user(&env.pool, user.id)
@@ -80,7 +84,7 @@ pub async fn post_transfer(
     Form(form): Form<TransferForm>,
 ) -> poem::Result<Response> {
     let upload = get_upload_by_id(&env, upload_id).await?;
-    check_owns_upload(&env, &user, &upload).await?;
+    check_permission(&env, &upload, Some(&user), UploadPermission::Transfer).await?;
 
     if !csrf_verifier.is_valid(&form.csrf_token) {
         tracing::error!(%user.id, %upload_id, "CSRF token verification failed");

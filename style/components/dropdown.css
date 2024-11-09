@@ -1,0 +1,32 @@
+@layer components {
+  .dropdown {
+    @apply inline-block relative;
+  }
+
+  .dropdown-button {
+    @apply flex items-center justify-center w-6 h-6;
+    @apply rounded-full;
+    @apply cursor-pointer;
+    @apply hover:bg-neutral-100 text-neutral-800 hover:text-neutral-900;
+    @apply dark:hover:bg-gray-700 dark:text-neutral-300 dark:hover:text-neutral-100;
+  }
+
+  .dropdown-menu {
+    @apply absolute right-[-0.3rem] top-[1.9rem] w-44 hidden z-10;
+    @apply rounded-lg shadow;
+    @apply bg-neutral-200 text-neutral-800;
+    @apply dark:bg-gray-700 dark:text-neutral-300;
+    @apply text-nowrap;
+
+    z-index: 3000;
+
+    &.open {
+      @apply block;
+    }
+
+    &:before {
+      @apply content-[""] absolute w-0 h-0 -top-2 right-2 border-[0.5rem] border-transparent;
+      @apply border-t-0 border-b-neutral-200 dark:border-b-gray-700;
+    }
+  }
+}
