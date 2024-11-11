@@ -1,109 +1,122 @@
-const CHECKBOX_GROUPS = {};
-
 class CheckboxGroup extends HTMLElement {
-  public checkbox: HTMLInputElement = null;
-  public checkboxes: GroupedCheckbox[] = [];
+  private _checkbox: HTMLInputElement = null;
+  private _dirty: boolean = true;
+  private _hasAnyChecked: boolean = false;
+  private _hasAllChecked: boolean = false;
   public lastChecked: GroupedCheckbox | null = null;
 
   static get observedAttributes() {
-    return ["name"];
+    return ["id"];
   }
 
   constructor() {
     super();
   }
 
+  get id() {
+    return this.getAttribute("id");
+  }
+
   get hasAnyChecked() {
-    return this.checkboxes.some((checkbox) => checkbox.checked);
+    this.fetchCheckboxStates();
+    return this._hasAnyChecked;
   }
 
   get hasAllChecked() {
-    return this.checkboxes.every((checkbox) => checkbox.checked);
+    this.fetchCheckboxStates();
+    return this._hasAllChecked;
   }
 
   connectedCallback() {
-    let name = this.getAttribute("name");
-    if (!name) {
-      throw Error("CheckboxGroup requires a name attribute");
-    }
+    this._checkbox = document.createElement("input");
+    this._checkbox.type = "checkbox";
+    this._checkbox.style.margin = "0px";
 
-    this.checkbox = document.createElement("input");
-    this.checkbox.type = "checkbox";
-    this.checkbox.name = name;
-    this.checkbox.style.margin = "0px";
-
-    this.checkbox.addEventListener("click", () => {
-      this.checkboxes.forEach((checkbox) => {
-        checkbox.checked = this.checkbox.checked;
+    this._checkbox.addEventListener("click", () => {
+      const checked = this._checkbox.checked;
+      this.getChildCheckboxes().forEach((checkbox) => {
+        checkbox.checked = checked;
       });
 
+      this._dirty = false;
+      this._hasAllChecked = checked;
+      this._hasAnyChecked = checked;
       this.dispatchChangedEvent();
     });
 
     const shadow = this.attachShadow({ mode: "open" });
-    shadow.appendChild(this.checkbox);
+    shadow.appendChild(this._checkbox);
 
     if (this.hasAttribute("onchanged")) {
       const handler_script = this.getAttribute("onchanged");
       const func = new Function("event", handler_script).bind(this);
       this.addEventListener("changed", func);
     }
+  }
 
-    if (CHECKBOX_GROUPS[name]) {
-      throw new Error(`CheckboxGroup '${name}' already exists`);
+  disconnectedCallback() {}
+
+  markDirty() {
+    this._dirty = true;
+  }
+
+  fetchCheckboxStates() {
+    if (!this._dirty) {
+      return;
     }
 
-    CHECKBOX_GROUPS[name] = this;
-  }
+    let checked = 0,
+      total = 0;
+    this.getChildCheckboxes().forEach((checkbox) => {
+      if (checkbox.checked) {
+        checked++;
+      }
 
-  disconnectedCallback() {
-    delete CHECKBOX_GROUPS[this.getAttribute("name")];
-  }
+      total++;
+    });
 
-  registerCheckbox(checkbox: GroupedCheckbox) {
-    const index = this.checkboxes.length;
-    this.checkboxes.push(checkbox);
-    return index;
-  }
-
-  unregisterCheckbox(index: number) {
-    this.checkboxes.splice(index, 1);
+    this._hasAnyChecked = total > 0 && checked > 0;
+    this._hasAllChecked = total > 0 && checked === total;
+    this._dirty = false;
   }
 
   updateCheckbox() {
-    const checked = this.checkboxes.filter((checkbox) => checkbox.checked);
-    this.checkbox.checked = checked.length === this.checkboxes.length;
-    this.checkbox.indeterminate =
-      checked.length > 0 && checked.length < this.checkboxes.length;
+    this.fetchCheckboxStates();
+    this._checkbox.checked = this._hasAllChecked;
+    this._checkbox.indeterminate = this._hasAnyChecked;
     this.dispatchChangedEvent();
   }
 
   dispatchChangedEvent() {
-    const checked = this.checkboxes.filter((checkbox) => checkbox.checked);
-
     const event = new CustomEvent("changed", {
       detail: {
-        all: checked.length == this.checkboxes.length,
-        any: checked.length > 0,
+        all: this._hasAllChecked,
+        any: this._hasAnyChecked,
       },
     });
 
     this.dispatchEvent(event);
   }
+
+  getChildCheckboxes(): GroupedCheckbox[] {
+    return Array.from(
+      document.querySelectorAll<GroupedCheckbox>(
+        `parcel-grouped-checkbox[group='${this.id}']`,
+      ),
+    );
+  }
 }
 
 class GroupedCheckbox extends HTMLElement {
-  private index = -1;
-  private group: CheckboxGroup = null;
-  private checkbox: HTMLInputElement = null;
+  private _checkbox: HTMLInputElement = null;
 
   get checked() {
-    return this.checkbox && this.checkbox.checked;
+    return this._checkbox && this._checkbox.checked;
   }
 
   set checked(value) {
-    if (this.checkbox) {
-      this.checkbox.checked = value;
+    if (this._checkbox) {
+      this._checkbox.checked = value;
     }
   }
 
@@ -113,40 +126,53 @@ class GroupedCheckbox extends HTMLElement {
       throw new Error("GroupedCheckbox requires a 'group' attribute");
     }
 
-    this.group = CHECKBOX_GROUPS[group_name];
-    if (!this.group) {
+    const group = document.getElementById(group_name);
+    if (!group) {
       throw new Error(`GroupedCheckbox group '${group_name}' not found`);
     }
 
-    this.index = this.group.registerCheckbox(this);
-    this.checkbox = this.attachCheckbox();
-    this.checkbox.type = "checkbox";
-    this.checkbox.name = this.getAttribute("name");
-    this.checkbox.value = this.getAttribute("value");
-    this.checkbox.checked = !!this.getAttribute("checked");
+    if (!(group instanceof CheckboxGroup)) {
+      throw new Error(
+        `GroupedCheckbox group '${group_name}' is not a CheckboxGroup`,
+      );
+    }
 
-    this.checkbox.addEventListener("click", (event) => {
+    this._checkbox = this.attachCheckbox();
+    this._checkbox.type = "checkbox";
+    this._checkbox.name = this.getAttribute("name");
+    this._checkbox.value = this.getAttribute("value");
+    this._checkbox.checked = !!this.getAttribute("checked");
+
+    this._checkbox.addEventListener("click", (event) => {
       if (event.shiftKey) {
-        if (this.group.lastChecked) {
-          const checked = this.group.lastChecked.checked;
-          const start = Math.min(this.index, this.group.lastChecked.index);
-          const end = Math.max(this.index, this.group.lastChecked.index);
+        if (group.lastChecked) {
+          const children = group.getChildCheckboxes();
+          const index = children.indexOf(this);
+          const last = children.indexOf(group.lastChecked);
+
+          const checked = group.lastChecked.checked;
+          const start = Math.min(index, last);
+          const end = Math.max(index, last);
+
           for (let i = start; i <= end; ++i) {
-            this.group.checkboxes[i].checked = checked;
+            children[i].checked = checked;
           }
         }
       }
 
-      this.group.lastChecked = this;
-      this.group.updateCheckbox();
+      group.lastChecked = this;
+      group.markDirty();
+      group.updateCheckbox();
     });
+
+    group.markDirty();
+    group.updateCheckbox();
   }
 
   disconnectedCallback() {
-    if (this.checkbox) {
-      this.removeChild(this.checkbox);
-      this.checkbox = null;
-      this.group.unregisterCheckbox(this.index);
+    if (this._checkbox) {
+      this.removeChild(this._checkbox);
+      this._checkbox = null;
     }
   }
 

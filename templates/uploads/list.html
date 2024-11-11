@@ -49,8 +49,7 @@
         <div class="uploads-table-header">
           <div class="text-center">
             <parcel-checkbox-group
-              id="uploads_group"
-              name="uploads{% if team %}_{{ team.id }}{% endif %}"
+              id="uploads{% if team %}_{{ team.id }}{% endif %}"
               {% if not team or membership.can_delete %}
                 onchanged="document.getElementById('delete_selected').disabled = !event.detail.any">
               {% endif %}
