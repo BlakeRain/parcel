@@ -52,7 +52,8 @@ impl Env {
             .create_if_missing(true)
             .journal_mode(SqliteJournalMode::Wal)
             .pragma("synchronous", "normal")
-            .pragma("journal_size_limit", "6144000");
+            .pragma("journal_size_limit", "6144000")
+            .pragma("mmap_size", "268435456");
         let pool = SqlitePool::connect_with(opts).await?;
         MIGRATOR.run(&pool).await?;
 
