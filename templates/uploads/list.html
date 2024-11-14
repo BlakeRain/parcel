@@ -41,11 +41,11 @@
       </div>
     </div>
     {% if stats.total == 0 %}
-      <div class="text italic text-center p-8">
+      <div id="uploads-table" class="text italic text-center p-8">
         You have not uploaded any files yet.
       </div>
     {% else %}
-    <div class="uploads-table {% if team %}for-team{% endif %}">
+    <div id="uploads-table" class="uploads-table {% if team %}for-team{% endif %}">
         <div class="uploads-table-header">
           <div class="text-center">
             <parcel-checkbox-group
