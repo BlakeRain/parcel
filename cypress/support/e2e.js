@@ -39,3 +39,20 @@ Cypress.Commands.add("login", ({ username, password }) => {
       });
     });
 });
+
+Cypress.Commands.add("upload", ({ filename, owner }) => {
+  Cypress.log({
+    name: "upload",
+    message: "${filename} | ${owner}",
+  });
+
+  cy.readFile(`cypress/uploads/${filename}`, "base64", {
+    log: true,
+  }).then((content) => {
+    cy.request("POST", "/debug/uploads", [{ filename, owner, content }]).then(
+      (response) => {
+        expect(response.status).to.eq(200);
+      },
+    );
+  });
+});
