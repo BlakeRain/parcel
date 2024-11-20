@@ -1,7 +1,8 @@
 <div id="team-tab-list" class="tabs" hx-swap-oob="true">
   <a hx-get="/tab" hx-swap="none" class="tab{% if not team %} active{% endif %}">
     <span class="icon-house"></span>
-    Your Uploads
+    <span>Your Uploads</span>
+    <span class="label">{{ home.count }}</span>
   </a>
   {% for tab in tabs %}
     <a
@@ -9,7 +10,8 @@
       hx-get="/teams/{{ tab.slug }}/tab"
       hx-swap="none">
       <span class="hidden md:inline-block icon-users"></span>
-      {{ tab.name }}
+      <span>{{ tab.name }}</span>
+      <span class="label">{{ tab.count }}</span>
     </a>
   {% endfor %}
 </div>

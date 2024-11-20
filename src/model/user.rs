@@ -280,13 +280,13 @@ impl User {
 
 #[derive(Debug, FromRow, Serialize)]
 pub struct UserStats {
-    pub total: i32,
+    pub count: i32,
     pub enabled: i32,
 }
 
 impl UserStats {
     pub async fn get(pool: &SqlitePool) -> sqlx::Result<UserStats> {
-        sqlx::query_as("SELECT COUNT(*) AS total, SUM(enabled) AS enabled FROM users")
+        sqlx::query_as("SELECT COUNT(*) AS count, SUM(enabled) AS enabled FROM users")
             .fetch_one(pool)
             .await
     }

@@ -12,7 +12,7 @@ use crate::{
     },
     env::Env,
     model::{
-        team::TeamTab,
+        team::{HomeTab, TeamTab},
         upload::{UploadList, UploadStats},
     },
 };
@@ -25,8 +25,13 @@ pub async fn get_index(
     SessionUser(user): SessionUser,
     Query(query): Query<ListQuery>,
 ) -> poem::Result<Html<String>> {
-    // Get the tab data for the teams the user belongs to. This is used by the nested 'teams.html'
-    // template, which will render the tabs for the teams.
+    let home = HomeTab::get_for_user(&env.pool, user.id)
+        .await
+        .map_err(|err| {
+            tracing::error!(%user.id, ?err, "Unable to get home tab for user");
+            poem::error::InternalServerError(err)
+        })?;
+
     let tabs = TeamTab::get_for_user(&env.pool, user.id)
         .await
         .map_err(|err| {
@@ -54,6 +59,7 @@ pub async fn get_index(
         "index.html",
         minijinja::context! {
             query,
+            home,
             tabs,
             stats,
             uploads,
@@ -71,6 +77,13 @@ pub async fn get_tab(
     SessionUser(user): SessionUser,
     Query(query): Query<ListQuery>,
 ) -> poem::Result<Response> {
+    let home = HomeTab::get_for_user(&env.pool, user.id)
+        .await
+        .map_err(|err| {
+            tracing::error!(%user.id, ?err, "Unable to get home tab for user");
+            poem::error::InternalServerError(err)
+        })?;
+
     let tabs = TeamTab::get_for_user(&env.pool, user.id)
         .await
         .map_err(|err| {
@@ -96,6 +109,7 @@ pub async fn get_tab(
         "tab.html",
         minijinja::context! {
             query,
+            home,
             tabs,
             stats,
             uploads,

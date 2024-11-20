@@ -14,7 +14,7 @@ use crate::{
     },
     env::Env,
     model::{
-        team::{Team, TeamMember, TeamTab},
+        team::{HomeTab, Team, TeamMember, TeamTab},
         upload::{UploadList, UploadStats},
     },
 };
@@ -50,6 +50,13 @@ pub async fn get_team(
         return Err(poem::Error::from_status(StatusCode::FORBIDDEN));
     };
 
+    let home = HomeTab::get_for_user(&env.pool, user.id)
+        .await
+        .map_err(|err| {
+            tracing::error!(%user.id, ?err, "Unable to get home tab for user");
+            InternalServerError(err)
+        })?;
+
     let tabs = TeamTab::get_for_user(&env.pool, user.id)
         .await
         .map_err(|err| {
@@ -73,6 +80,7 @@ pub async fn get_team(
         minijinja::context! {
             query,
             tabs,
+            home,
             team,
             membership,
             stats,
@@ -112,6 +120,13 @@ pub async fn get_tab(
         return Err(poem::Error::from_status(StatusCode::FORBIDDEN));
     };
 
+    let home = HomeTab::get_for_user(&env.pool, user.id)
+        .await
+        .map_err(|err| {
+            tracing::error!(%user.id, ?err, "Unable to get home tab for user");
+            InternalServerError(err)
+        })?;
+
     let tabs = TeamTab::get_for_user(&env.pool, user.id)
         .await
         .map_err(|err| {
@@ -135,6 +150,7 @@ pub async fn get_tab(
         minijinja::context! {
             query,
             tabs,
+            home,
             team,
             membership,
             stats,

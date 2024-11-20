@@ -3,14 +3,16 @@
     @apply flex flex-row;
 
     .tab {
-      @apply flex flex-row gap-1 rounded-t-lg bg-transparent cursor-pointer px-4 py-2;
+      @apply flex flex-row items-center gap-1 rounded-t-md bg-transparent cursor-pointer px-4 py-2;
       @apply hover:bg-neutral-200 dark:hover:bg-gray-800/25;
+      @apply border border-b-0 border-transparent;
+
+      margin-bottom: -1px;
 
       &.active {
-        @apply border border-b-0 border-slate-400 dark:border-gray-700;
+        @apply border-slate-400 dark:border-gray-700;
         @apply bg-neutral-100 dark:bg-gray-800;
 
-        margin-bottom: -1px;
         z-index: 1;
       }
     }

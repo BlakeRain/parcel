@@ -1,0 +1,7 @@
+@layer components {
+  .label {
+    @apply rounded-full bg-blue-300 text-blue-900 dark:bg-blue-600 dark:text-blue-100;
+    @apply text-sm leading-none px-2 pt-[0.2rem] pb-[0.3rem];
+  }
+}
+

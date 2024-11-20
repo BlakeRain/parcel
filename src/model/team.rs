@@ -190,6 +190,24 @@ impl TeamTab {
 }
 
 #[derive(Debug, FromRow, Serialize)]
+pub struct HomeTab {
+    pub count: i64,
+}
+
+impl HomeTab {
+    pub async fn get_for_user(pool: &SqlitePool, user: Key<User>) -> sqlx::Result<Self> {
+        sqlx::query_as(
+            "SELECT COUNT(uploads.id) AS count \
+            FROM uploads \
+            WHERE uploads.owner_user = $1",
+        )
+        .bind(user)
+        .fetch_one(pool)
+        .await
+    }
+}
+
+#[derive(Debug, FromRow, Serialize)]
 pub struct TeamList {
     pub id: Key<Team>,
     pub name: String,
