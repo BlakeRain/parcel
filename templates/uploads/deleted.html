@@ -1,0 +1,6 @@
+{% include "uploads/stats.html" %}
+{% if stats.total == 0 %}
+  <div id="uploads-table" hx-swap-oob="true" class="text italic text-center p-8">
+    You have not uploaded any files yet.
+  </div>
+{% endif %}

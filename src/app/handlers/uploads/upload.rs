@@ -20,7 +20,7 @@ use crate::{
     model::{
         team::{Team, TeamMember},
         types::Key,
-        upload::{Upload, UploadPermission},
+        upload::{Upload, UploadPermission, UploadStats},
         user::User,
     },
     utils::SessionExt,
@@ -179,9 +179,47 @@ pub async fn delete_upload(
         tracing::error!(?path, ?err, %upload.id, "Failed to delete cached upload");
     }
 
-    Ok(Html("")
-        .with_header("HX-Trigger", "parcelUploadDeleted")
-        .into_response())
+    let (stats, limit) = match (upload.owner_user, upload.owner_team) {
+        (Some(user_id), None) => {
+            assert_eq!(user_id, user.id, "User ID mismatch");
+            let stats = UploadStats::get_for_user(&env.pool, user.id)
+                .await
+                .map_err(InternalServerError)?;
+            (stats, user.limit)
+        }
+
+        (None, Some(team_id)) => {
+            let stats = UploadStats::get_for_team(&env.pool, team_id)
+                .await
+                .map_err(InternalServerError)?;
+            let Some(team) = Team::get(&env.pool, team_id)
+                .await
+                .map_err(InternalServerError)?
+            else {
+                tracing::error!(team_id = %team_id, "Unable to find team with given ID");
+                return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
+            };
+
+            (stats, team.limit)
+        }
+
+        (_, _) => unreachable!("Upload has no owner"),
+    };
+
+    Ok(render_template(
+        "uploads/deleted.html",
+        context! {
+            stats,
+            limit,
+            ..authorized_context(&env, &user)
+        },
+    )?
+    .with_header("HX-Trigger", "parcelUploadDeleted")
+    .into_response())
+
+    // Ok(Html("")
+    //     .with_header("HX-Trigger", "parcelUploadDeleted")
+    //     .into_response())
 }
 
 #[derive(Debug, Deserialize)]

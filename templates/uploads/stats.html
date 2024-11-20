@@ -1,5 +1,10 @@
-<div id="upload-stats-container" class="grow sm:grow-0 md:grow lg:grow-0 flex flex-row sm:flex-col md:flex-row md:items-center gap-2">
-  <div id="upload-stats-progress" class="grow sm:grow-0 md:grow lg:grow-0 lg:w-80 rounded-full dark:bg-gray-700 border border-blue-600 dark:border-0">
+<div
+  id="upload-stats-container"
+  hx-swap-oob="true"
+  class="grow sm:grow-0 md:grow lg:grow-0 flex flex-row sm:flex-col md:flex-row md:items-center gap-2">
+  <div
+    id="upload-stats-progress"
+    class="grow sm:grow-0 md:grow lg:grow-0 lg:w-80 rounded-full dark:bg-gray-700 border border-blue-600 dark:border-0">
     {% if limit is number and stats.size > 0 %}
       {% set percent = (stats.size / (limit | default(value = 0)) * 100) | round | int %}
       <div
