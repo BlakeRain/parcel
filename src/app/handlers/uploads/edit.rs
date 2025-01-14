@@ -42,6 +42,7 @@ pub async fn get_edit(
             token => token.0,
             now => time::OffsetDateTime::now_utc(),
             upload,
+            has_password => upload.password.is_some(),
             ..authorized_context(&env, &user)
         },
     )

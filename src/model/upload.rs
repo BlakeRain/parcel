@@ -487,6 +487,7 @@ pub struct UploadList {
     pub filename: String,
     pub size: i64,
     pub public: bool,
+    pub has_password: bool,
     pub downloads: i64,
     pub limit: Option<i64>,
     pub remaining: Option<i64>,
@@ -512,6 +513,7 @@ impl UploadList {
                 uploads.size, uploads.public, uploads.downloads, \
                 uploads.\"limit\", uploads.remaining, uploads.expiry_date, \
                 uploads.custom_slug, \
+                uploads.password is not null as has_password, \
                 COALESCE(teams.slug, users.username) AS owner_slug, \
                 uploads.uploaded_by AS uploaded_by_id, \
                 uploader.name AS uploaded_by_name, \
@@ -545,6 +547,7 @@ impl UploadList {
                 uploads.size, uploads.public, uploads.downloads, \
                 uploads.\"limit\", uploads.remaining, uploads.expiry_date, \
                 uploads.custom_slug, \
+                uploads.password is not null as has_password, \
                 COALESCE(teams.slug, users.username) AS owner_slug, \
                 uploads.uploaded_by AS uploaded_by_id, \
                 uploader.name AS uploaded_by_name, \

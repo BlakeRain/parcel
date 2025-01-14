@@ -60,7 +60,10 @@
       {% endif %}
     </div>
 
-    <div class="text-center text-nowrap {% if upload.public %}text-danger{% endif %}">
+    <div class="text-right text-nowrap {% if upload.public %}text-danger{% endif %}">
+      {% if upload.has_password %}
+        <span class="icon-key"></span>
+      {% endif %}
       {% if upload.public %}
         Yes
       {% else %}

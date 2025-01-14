@@ -75,22 +75,19 @@
           {% if not has_expiry_date %}disabled{% endif %}>
       </div>
       <div>
-        {% set has_password = (form and form.password is string) or (upload.password is string) %}
         <div class="checkbox">
           <input
             type="checkbox"
             name="has_password"
             id="has_password"
-            {% if has_password %}
-              onchange="const password = document.getElementById('password');
-                password.disabled = !(password.required = this.checked);"
+            {% if has_password or (form and form.password is string) %}
               checked
             {% else %}
-              onchange="document.getElementById('change_password').disabled = !this.checked;"
+              onchange="document.getElementById('password').disabled = !this.checked;"
             {% endif %}>
           <label for="has_password">Password protect download</label>
         </div>
-        {% if has_password %}
+        {% if has_password or (form and form.password is string) %}
           <div class="checkbox">
             <input
               type="checkbox"
