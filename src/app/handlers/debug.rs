@@ -160,16 +160,10 @@ async fn post_uploads(
     Ok(Json(result))
 }
 
-#[cfg(debug_assertions)]
 pub fn add_debug_routes(app: poem::Route) -> poem::Route {
     use poem::{get, post};
 
     app.at("/debug/reset-database", get(reset_database))
         .at("/debug/initial-users", post(initial_users))
         .at("/debug/uploads", post(post_uploads))
-}
-
-#[cfg(not(debug_assertions))]
-pub fn add_debug_routes(app: poem::Route) -> poem::Route {
-    app
 }

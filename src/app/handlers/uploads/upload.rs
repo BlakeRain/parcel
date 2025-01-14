@@ -119,6 +119,7 @@ async fn render_upload(
             }
         },
     )
+    .await
 }
 
 #[handler]
@@ -213,13 +214,10 @@ pub async fn delete_upload(
             limit,
             ..authorized_context(&env, &user)
         },
-    )?
+    )
+    .await?
     .with_header("HX-Trigger", "parcelUploadDeleted")
     .into_response())
-
-    // Ok(Html("")
-    //     .with_header("HX-Trigger", "parcelUploadDeleted")
-    //     .into_response())
 }
 
 #[derive(Debug, Deserialize)]
@@ -246,4 +244,5 @@ pub async fn get_share(
             ..authorized_context(&env, &user)
         },
     )
+    .await
 }

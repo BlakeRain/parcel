@@ -60,6 +60,7 @@ pub async fn get_transfer(
             ..authorized_context(&env, &user)
         },
     )
+    .await
 }
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq)]
@@ -100,7 +101,7 @@ pub async fn post_transfer(
         return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
-    // Make sure that the user is a member of the team we're targetting.
+    // Make sure that the user is a member of the team we're targeting.
     let is_member = user.is_member_of(&env.pool, team.id).await.map_err(|err| {
         tracing::error!(%user.id, %upload_id, %err, "Failed to check if user is a member of the team");
         InternalServerError(err)

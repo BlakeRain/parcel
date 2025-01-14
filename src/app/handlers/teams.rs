@@ -91,6 +91,7 @@ pub async fn get_team(
             ..authorized_context(&env, &user)
         },
     )
+    .await
 }
 
 #[handler]
@@ -159,7 +160,8 @@ pub async fn get_tab(
             limit => team.limit,
             ..authorized_context(&env, &user)
         },
-    )?
+    )
+    .await?
     .with_header("HX-Push-Url", format!("/teams/{}", team.slug))
     .into_response())
 }

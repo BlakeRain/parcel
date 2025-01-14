@@ -68,6 +68,7 @@ pub async fn get_new(
             ..authorized_context(&env, &user)
         },
     )
+    .await
 }
 
 #[handler]

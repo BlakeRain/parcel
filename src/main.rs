@@ -1,3 +1,4 @@
+use anyhow::Context;
 use app::create_app;
 use args::Args;
 use clap::Parser;
@@ -12,7 +13,7 @@ mod model;
 mod utils;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
     {
@@ -27,9 +28,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         sub.init();
     }
 
-    let cookie_key = args.get_cookie_key()?;
+    let cookie_key = args.get_cookie_key().context("failed to get cookie key")?;
     let env = Env::new(&args).await?;
-    let app = create_app(env, cookie_key.as_deref());
+    let app = create_app(env, cookie_key.as_deref()).context("failed to create application")?;
     Server::new(TcpListener::bind("0.0.0.0:3000"))
         .run(app)
         .await?;

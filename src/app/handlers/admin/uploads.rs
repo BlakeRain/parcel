@@ -63,11 +63,15 @@ pub async fn get_uploads(
             ..authorized_context(&env, &admin)
         },
     )
+    .await
 }
 
 #[handler]
-pub fn get_cache(env: Data<&Env>, SessionAdmin(admin): SessionAdmin) -> poem::Result<Html<String>> {
-    render_template("admin/uploads/cache.html", authorized_context(&env, &admin))
+pub async fn get_cache(
+    env: Data<&Env>,
+    SessionAdmin(admin): SessionAdmin,
+) -> poem::Result<Html<String>> {
+    render_template("admin/uploads/cache.html", authorized_context(&env, &admin)).await
 }
 
 trait WithCacheFiles: Default {
@@ -199,6 +203,7 @@ pub async fn post_cache(
             ..authorized_context(&env, &admin)
         },
     )
+    .await
 }
 
 #[handler]
@@ -214,4 +219,5 @@ pub async fn delete_cache(
             ..authorized_context(&env, &admin)
         },
     )
+    .await
 }

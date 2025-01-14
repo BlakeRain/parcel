@@ -17,7 +17,7 @@ use validator::{Validate, ValidationError, ValidationErrors};
 use crate::{
     app::{
         extractors::{admin::SessionAdmin, form::Form},
-        templates::{authorized_context, render_404, render_template},
+        templates::{authorized_context, render_template},
     },
     env::Env,
     model::{
@@ -46,7 +46,8 @@ pub async fn get_users(
             teams_js => javascript!("scripts/components/teams.ts"),
             ..authorized_context(&env, &admin)
         },
-    )?
+    )
+    .await?
     .with_header("HX-Trigger", "closeModals")
     .into_response())
 }
@@ -70,6 +71,7 @@ pub async fn get_new(
             ..authorized_context(&env, &admin)
         },
     )
+    .await
 }
 
 #[derive(Debug, Deserialize, Validate)]
@@ -172,7 +174,8 @@ pub async fn post_new(
                 },
                 ..authorized_context(&env, &auth)
             },
-        )?
+        )
+        .await?
         .with_header("HX-Retarget", "#user-form")
         .with_header("HX-Reselect", "#user-form")
         .into_response());
@@ -277,6 +280,7 @@ pub async fn post_new_username(
             exists, form => context! { username }
         },
     )
+    .await
 }
 
 #[handler]
@@ -292,7 +296,7 @@ pub async fn get_user(
     })?
     else {
         tracing::error!(%user_id, "Unrecognized user ID");
-        return render_404("Unrecognized user ID");
+        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
     let teams = Team::get_list(&env.pool).await.map_err(|err| {
@@ -317,6 +321,7 @@ pub async fn get_user(
             ..authorized_context(&env, &admin)
         },
     )
+    .await
 }
 
 #[derive(Debug, Deserialize, Validate)]
@@ -353,7 +358,7 @@ pub async fn post_user(
     })?
     else {
         tracing::error!(user_id = %user_id, "Unrecognized user ID");
-        return Ok(render_404("Unrecognized user ID")?.into_response());
+        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
     let mut errors = ValidationErrors::new();
@@ -420,7 +425,8 @@ pub async fn post_user(
                 },
                 ..authorized_context(&env, &auth)
             },
-        )?
+        )
+        .await?
         .with_header("HX-Retarget", "#user-form")
         .with_header("HX-Reselect", "#user-form")
         .into_response());
@@ -550,7 +556,7 @@ pub async fn post_check_username(
     })?
     else {
         tracing::error!("Unrecognized user ID '{user_id}'");
-        return render_404("Unrecognized user ID");
+        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
     let username = username.trim().to_string();
@@ -577,6 +583,7 @@ pub async fn post_check_username(
             exists, user, form => context! { username }
         },
     )
+    .await
 }
 
 #[handler]

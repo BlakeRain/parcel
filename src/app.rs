@@ -1,4 +1,3 @@
-use handlers::debug::add_debug_routes;
 use poem::{
     endpoint::StaticFilesEndpoint,
     middleware::{Cors, Csrf, NormalizePath, Tracing, TrailingSlash},
@@ -21,15 +20,43 @@ pub mod templates;
 
 mod handlers {
     pub mod admin;
-    pub mod debug;
     pub mod index;
     pub mod teams;
     pub mod uploads;
     pub mod users;
     pub mod utils;
+
+    #[cfg(debug_assertions)]
+    pub mod debug;
 }
 
-pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> impl IntoEndpoint {
+fn add_tailwind_rebuilder<E: IntoEndpoint>(endpoint: E) -> anyhow::Result<impl IntoEndpoint> {
+    #[cfg(debug_assertions)]
+    {
+        use anyhow::Context;
+        use templates::tailwind::TailwindRebuilder;
+
+        let rebuilder = TailwindRebuilder::new(".", ["templates", "style"])
+            .context("failed to create tailwind rebuilder")?;
+
+        Ok(endpoint.data(rebuilder))
+    }
+
+    #[cfg(not(debug_assertions))]
+    {
+        Ok(endpoint)
+    }
+}
+
+#[cfg(debug_assertions)]
+use handlers::debug::add_debug_routes;
+
+#[cfg(not(debug_assertions))]
+fn add_debug_routes(app: poem::Route) -> poem::Route {
+    app
+}
+
+pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> anyhow::Result<impl IntoEndpoint> {
     let cookie_key = if let Some(key) = cookie_key {
         CookieKey::derive_from(key)
     } else {
@@ -85,7 +112,9 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> impl IntoEndpoint {
         "/admin/teams/:id/slug"         handlers::admin::teams::check_slug          POST
     }));
 
-    routes
+    let routes = add_tailwind_rebuilder(routes)?.into_endpoint();
+
+    Ok(routes
         .with(NormalizePath::new(TrailingSlash::Trim))
         .catch_error(errors::NotSignedInError::handle)
         .catch_error(errors::CsrfError::handle)
@@ -100,5 +129,5 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> impl IntoEndpoint {
                 .name("parcel")
                 .same_site(Some(SameSite::Strict))
                 .max_age(Some(std::time::Duration::from_secs(14 * 24 * 60 * 60))),
-        ))
+        )))
 }

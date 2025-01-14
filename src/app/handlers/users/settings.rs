@@ -25,7 +25,7 @@ use crate::{
 };
 
 #[handler]
-pub fn get_settings(
+pub async fn get_settings(
     env: Data<&Env>,
     SessionUser(user): SessionUser,
     session: &Session,
@@ -42,6 +42,7 @@ pub fn get_settings(
             ..authorized_context(&env, &user)
         },
     )
+    .await
 }
 
 #[derive(Debug, Deserialize)]
@@ -179,7 +180,7 @@ fn generate_totp_secret() -> String {
 }
 
 #[handler]
-pub fn get_setup_totp(
+pub async fn get_setup_totp(
     env: Data<&Env>,
     SessionUser(user): SessionUser,
     csrf_token: &CsrfToken,
@@ -217,6 +218,7 @@ pub fn get_setup_totp(
             ..authorized_context(&env, &user)
         },
     )
+    .await
 }
 
 #[derive(Debug, Deserialize)]
@@ -340,7 +342,7 @@ pub async fn post_setup_totp(
 }
 
 #[handler]
-pub fn get_remove_totp(
+pub async fn get_remove_totp(
     env: Data<&Env>,
     SessionUser(user): SessionUser,
     csrf_token: &CsrfToken,
@@ -352,6 +354,7 @@ pub fn get_remove_totp(
             ..authorized_context(&env, &user)
         },
     )
+    .await
 }
 
 #[derive(Debug, Deserialize)]

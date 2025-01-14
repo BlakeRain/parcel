@@ -181,7 +181,7 @@ const ParcelSelectInfo: FunctionComponent<{ placeholder?: string }> = ({
           ? placeholder || "No selection"
           : `${state.checked.size} selected:`}</span
       >
-      <span class="text-elipsis ml-1 italic text-gray-500 dark:text-gray-500"
+      <span class="text-ellipsis ml-1 italic text-gray-500 dark:text-gray-500"
         >${names}</span
       >
     </div>

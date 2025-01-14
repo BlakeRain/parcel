@@ -69,6 +69,7 @@ pub async fn get_index(
             ..authorized_context(&env, &user)
         },
     )
+    .await
 }
 
 #[handler]
@@ -117,7 +118,8 @@ pub async fn get_tab(
             limit => user.limit,
             ..authorized_context(&env, &user)
         },
-    )?
+    )
+    .await?
     .with_header("HX-Push-Url", "/")
     .into_response())
 }

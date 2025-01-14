@@ -13,7 +13,7 @@ use validator::{Validate, ValidationError, ValidationErrors};
 use crate::{
     app::{
         extractors::admin::SessionAdmin,
-        templates::{authorized_context, render_404, render_template},
+        templates::{authorized_context, render_template},
     },
     env::Env,
     model::{
@@ -41,13 +41,14 @@ pub async fn get_teams(
             teams,
             ..authorized_context(&env, &admin)
         },
-    )?
+    )
+    .await?
     .with_header("HX-Trigger", "closeModals")
     .into_response())
 }
 
 #[handler]
-pub fn get_new(
+pub async fn get_new(
     env: Data<&Env>,
     SessionAdmin(admin): SessionAdmin,
     token: &CsrfToken,
@@ -59,6 +60,7 @@ pub fn get_new(
             ..authorized_context(&env, &admin)
         },
     )
+    .await
 }
 
 #[derive(Debug, Deserialize)]
@@ -101,6 +103,7 @@ pub async fn post_check_new_slug(
         "admin/teams/slug.html",
         context! { exists, form => context! { slug } },
     )
+    .await
 }
 
 #[handler]
@@ -147,6 +150,7 @@ pub async fn post_check_slug(
         "admin/teams/slug.html",
         context! { exists, team, form => context! { slug } },
     )
+    .await
 }
 
 #[derive(Debug, Deserialize, Validate)]
@@ -221,7 +225,8 @@ pub async fn post_new(
                 },
                 ..authorized_context(&env, &admin)
             },
-        )?
+        )
+        .await?
         .with_header("HX-Retarget", "#team-form")
         .with_header("HX-Reselect", "#team-form")
         .into_response());
@@ -271,7 +276,7 @@ pub async fn get_team(
     })?
     else {
         tracing::error!(%team_id, "Unrecognized team ID");
-        return render_404("Unrecognized team ID");
+        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
     render_template(
@@ -282,6 +287,7 @@ pub async fn get_team(
             ..authorized_context(&env, &admin)
         },
     )
+    .await
 }
 
 #[derive(Debug, Deserialize, Validate)]
@@ -316,7 +322,7 @@ pub async fn post_team(
     })?
     else {
         tracing::error!(%team_id, "Unrecognized team ID");
-        return Ok(render_404("Unrecognized team ID")?.into_response());
+        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
     };
 
     let mut errors = ValidationErrors::new();
@@ -362,7 +368,8 @@ pub async fn post_team(
                 },
                 ..authorized_context(&env, &admin)
             },
-        )?
+        )
+        .await?
         .with_header("HX-Retarget", "#team-form")
         .with_header("HX-Reselect", "#team-form")
         .into_response());

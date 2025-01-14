@@ -5,6 +5,7 @@ edition = "2021"
 publish = false
 
 [dependencies]
+anyhow = { version = "1.0" }
 base32 = { version = "0.5" }
 base64 = { version = "0.22" }
 clap = { version = "4.4", features = ["derive", "env"] }
@@ -14,8 +15,9 @@ humansize = { version = "2.1" }
 mime = { version = "0.3" }
 minijinja = { version = "2.0", features = ["unicode", "loader", "json", "urlencode", "speedups"] }
 nanoid = { version = "0.4" }
+notify = { version = "8.0" }
 pbkdf2 = { version = "0.12", features = ["simple"] }
-poem = { version = "3.1", features = ["cookie", "csrf", "multipart", "session", "static-files"] }
+poem = { version = "3.1", features = ["anyhow", "cookie", "csrf", "multipart", "session", "static-files"] }
 rand_core = { version = "0.6", features = ["std"] }
 rand = { version = "0.8" }
 rust-embed = { version = "8.0", features = ["debug-embed", "interpolate-folder-path"] }

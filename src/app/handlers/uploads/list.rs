@@ -63,6 +63,7 @@ pub async fn get_list(
             ..authorized_context(&env, &user)
         },
     )
+    .await
 }
 
 #[handler]
@@ -134,4 +135,5 @@ pub async fn get_page(
             ..authorized_context(&env, &user)
         },
     )
+    .await
 }

@@ -24,10 +24,6 @@ pub async fn get_admin(
     env: Data<&Env>,
     SessionAdmin(admin): SessionAdmin,
 ) -> poem::Result<Html<String>> {
-    return Err(poem::Error::from(InternalServerError(
-        std::io::Error::other("I'm a teapot"),
-    )));
-
     let users = UserStats::get(&env.pool).await.map_err(|err| {
         tracing::error!(err = ?err, "Failed to get user stats for admin dashboard");
         InternalServerError(err)
@@ -52,4 +48,5 @@ pub async fn get_admin(
             ..authorized_context(&env, &admin)
         },
     )
+    .await
 }

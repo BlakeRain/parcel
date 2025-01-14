@@ -44,6 +44,7 @@ pub async fn get_signin(
             ..default_context(&env)
         },
     )
+    .await
     .map(IntoResponse::into_response)
 }
 
@@ -132,7 +133,7 @@ pub async fn get_signout(session: &Session) -> poem::Result<Redirect> {
 }
 
 #[handler]
-pub fn get_signin_totp(
+pub async fn get_signin_totp(
     env: Data<&Env>,
     token: &CsrfToken,
     session: &Session,
@@ -150,7 +151,8 @@ pub fn get_signin_totp(
             error => session.take::<String>("error"),
             ..default_context(&env)
         },
-    )?
+    )
+    .await?
     .into_response())
 }
 

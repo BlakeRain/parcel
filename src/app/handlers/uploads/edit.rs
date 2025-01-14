@@ -45,6 +45,7 @@ pub async fn get_edit(
             ..authorized_context(&env, &user)
         },
     )
+    .await
 }
 
 #[derive(Debug, Deserialize)]
@@ -91,6 +92,7 @@ pub async fn post_check_slug(
             custom_slug,
         },
     )
+    .await
 }
 
 time::serde::format_description!(iso8601_date, Date, "[year]-[month]-[day]");
@@ -179,7 +181,8 @@ pub async fn post_edit(
                 upload,
                 ..authorized_context(&env, &user)
             },
-        )?
+        )
+        .await?
         .with_header("HX-Retarget", "#upload-form")
         .with_header("HX-Reselect", "#upload-form")
         .into_response());

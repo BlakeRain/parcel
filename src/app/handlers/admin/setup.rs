@@ -45,7 +45,8 @@ pub async fn get_setup(
             token => token.0,
             ..default_context(&env)
         },
-    )?;
+    )
+    .await?;
 
     Ok((StatusCode::OK, HeaderMap::new(), body))
 }
@@ -79,7 +80,8 @@ pub async fn post_setup(
                 error => "Setup is no longer required",
                 ..default_context(&env)
             },
-        )?
+        )
+        .await?
         .into_response());
     }
 
@@ -98,7 +100,8 @@ pub async fn post_setup(
                 errors => err,
                 ..default_context(&env)
             },
-        )?
+        )
+        .await?
         .into_response());
     }
 
