@@ -27,6 +27,11 @@
           maxlength="100"
           placeholder="Team Name"
           value="{% if form %}{{ form.name }}{% elif team %}{{ team.name }}{% endif %}"
+          {% if not form and not team %}
+            oninput="document.getElementById('slug').value =
+            this.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g,
+            '-').replace(/^-|-$/g, '');"
+          {% endif %}
           required>
         <p class="text-xs text-gray-500 dark:text-gray-300 m-1">
           This is the name of the team that is displayed in the interface.
