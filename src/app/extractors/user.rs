@@ -6,7 +6,7 @@ use crate::{
     model::{types::Key, user::User},
 };
 
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[serde(transparent)]
 pub struct SessionUser(pub User);
 
@@ -58,7 +58,10 @@ impl<'r> FromRequest<'r> for SessionUser {
         // As the user is valid, we can set a 'last seen' variable in the session. This will
         // have the effect of updating the cookie we send to the user, which will keep the
         // session alive.
-        session.set("last_seen", time::OffsetDateTime::now_utc().unix_timestamp());
+        session.set(
+            "last_seen",
+            time::OffsetDateTime::now_utc().unix_timestamp(),
+        );
 
         Ok(SessionUser(user))
     }

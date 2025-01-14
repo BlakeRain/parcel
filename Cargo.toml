@@ -6,6 +6,7 @@ publish = false
 
 [dependencies]
 anyhow = { version = "1.0" }
+argon2 = { version = "0.5", features = ["std"] }
 base32 = { version = "0.5" }
 base64 = { version = "0.22" }
 clap = { version = "4.4", features = ["derive", "env"] }

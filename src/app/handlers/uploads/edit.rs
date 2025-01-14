@@ -19,9 +19,9 @@ use crate::{
     },
     env::Env,
     model::{
+        password::StoredPassword,
         types::Key,
         upload::{Upload, UploadPermission},
-        user::hash_password,
     },
     utils::ValidationErrorsExt,
 };
@@ -211,7 +211,7 @@ pub async fn post_edit(
     let has_password = has_password.as_deref() == Some("on");
     if has_password {
         if let Some(ref password) = password {
-            upload.password = Some(hash_password(password));
+            upload.password = Some(StoredPassword::new(password)?);
         } else if upload.password.is_none() {
             tracing::error!("Password is required but not provided");
             return Err(poem::Error::from_status(StatusCode::BAD_REQUEST));

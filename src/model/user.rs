@@ -1,23 +1,19 @@
 use std::collections::HashSet;
 
-use pbkdf2::{
-    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
-    Pbkdf2,
-};
-use rand_core::OsRng;
+use anyhow::Context;
 use serde::Serialize;
 use sqlx::{FromRow, QueryBuilder, SqlitePool};
 use time::OffsetDateTime;
 
-use super::{team::Team, types::Key};
+use super::{password::StoredPassword, team::Team, types::Key};
 
-#[derive(Debug, FromRow, Serialize)]
+#[derive(FromRow, Serialize)]
 pub struct User {
     pub id: Key<User>,
     pub username: String,
     pub name: String,
     #[serde(skip)]
-    pub password: String,
+    pub password: StoredPassword,
     #[serde(skip)]
     pub totp: Option<String>,
     pub enabled: bool,
@@ -33,22 +29,6 @@ pub async fn requires_setup(pool: &SqlitePool) -> sqlx::Result<bool> {
         .await?;
 
     Ok(count == 0)
-}
-
-pub fn hash_password(plain: &str) -> String {
-    Pbkdf2
-        .hash_password(plain.as_bytes(), &SaltString::generate(&mut OsRng))
-        .expect("password hash")
-        .to_string()
-}
-
-pub fn verify_password(hash: &str, plain: &str) -> bool {
-    Pbkdf2
-        .verify_password(
-            plain.as_bytes(),
-            &PasswordHash::new(hash).expect("valid password hash"),
-        )
-        .is_ok()
 }
 
 impl User {
@@ -95,14 +75,15 @@ impl User {
         Ok(())
     }
 
-    pub async fn set_password(&mut self, pool: &SqlitePool, password: &str) -> sqlx::Result<()> {
-        let password = hash_password(password);
+    pub async fn set_password(&mut self, pool: &SqlitePool, password: &str) -> anyhow::Result<()> {
+        let password = StoredPassword::new(password).context("failed to hash password")?;
 
         sqlx::query("UPDATE users SET password = $1 WHERE id = $2")
             .bind(&password)
             .bind(self.id)
             .execute(pool)
-            .await?;
+            .await
+            .context("failed to update user password")?;
 
         self.password = password;
         Ok(())
@@ -179,7 +160,7 @@ impl User {
     }
 
     pub fn verify_password(&self, plain: &str) -> bool {
-        verify_password(&self.password, plain)
+        self.password.verify(plain)
     }
 
     pub async fn set_totp_secret(&mut self, pool: &SqlitePool, secret: &str) -> sqlx::Result<()> {

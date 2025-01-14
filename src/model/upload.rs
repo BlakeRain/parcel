@@ -1,8 +1,10 @@
+use anyhow::Context;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, QueryBuilder, SqlitePool};
 use time::{Date, OffsetDateTime};
 
 use super::{
+    password::StoredPassword,
     team::{Team, TeamMember},
     types::Key,
     user::User,
@@ -20,7 +22,7 @@ pub struct Upload {
     pub remaining: Option<i64>,
     pub expiry_date: Option<Date>,
     #[serde(skip)]
-    pub password: Option<String>,
+    pub password: Option<StoredPassword>,
     pub custom_slug: Option<String>,
     pub owner_team: Option<Key<Team>>,
     pub owner_user: Option<Key<User>>,
@@ -285,6 +287,20 @@ impl Upload {
             return Err(sqlx::Error::RowNotFound);
         }
 
+        Ok(())
+    }
+
+    pub async fn set_password(&mut self, pool: &SqlitePool, password: &str) -> anyhow::Result<()> {
+        let password = StoredPassword::new(password).context("failed to hash password")?;
+
+        sqlx::query("UPDATE uploads SET password = $1 WHERE id = $2")
+            .bind(&password)
+            .bind(self.id)
+            .execute(pool)
+            .await
+            .context("failed to update user password")?;
+
+        self.password = Some(password);
         Ok(())
     }
 

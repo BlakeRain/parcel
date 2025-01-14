@@ -1,3 +1,4 @@
+use anyhow::Context;
 use base64::Engine;
 use poem::{
     error::InternalServerError,
@@ -10,11 +11,7 @@ use time::OffsetDateTime;
 
 use crate::{
     env::Env,
-    model::{
-        types::Key,
-        upload::Upload,
-        user::{hash_password, User},
-    },
+    model::{password::StoredPassword, types::Key, upload::Upload, user::User},
 };
 
 async fn empty_tables(pool: &SqlitePool) -> poem::Result<()> {
@@ -59,9 +56,10 @@ async fn initial_users(env: Data<&Env>, Json(users): Json<Vec<InitialUser>>) -> 
 
     for user in users {
         let hash = if let Some(hash) = user.password_hash {
-            hash
+            StoredPassword::try_from(hash.as_str())
+                .context("failed to parse password hash for user")?
         } else {
-            hash_password(&user.password)
+            StoredPassword::new(&user.password).context("failed to hash password for user")?
         };
 
         sqlx::query("INSERT INTO users (id, username, name, password, enabled, admin, created_at) VALUES (?, ?, ?, ?, 1, ?, ?)")

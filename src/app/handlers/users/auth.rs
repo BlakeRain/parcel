@@ -78,7 +78,7 @@ pub async fn post_signin(
             InternalServerError(err)
         })?;
 
-    let user = match user {
+    let mut user = match user {
         Some(user) => user,
         None => {
             tracing::info!(?username, "User not found");
@@ -91,6 +91,11 @@ pub async fn post_signin(
         tracing::info!(?username, "Invalid password");
         session.set("error", "Invalid username or password");
         return Ok(Redirect::see_other("/user/signin"));
+    }
+
+    if user.password.needs_migrating() {
+        tracing::info!(%user.id, ?username, "Migrating password hash");
+        user.set_password(&env.pool, &password).await?;
     }
 
     if !user.enabled {

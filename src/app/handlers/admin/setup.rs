@@ -15,8 +15,9 @@ use crate::{
     app::templates::{default_context, render_template},
     env::Env,
     model::{
+        password::StoredPassword,
         types::Key,
-        user::{hash_password, requires_setup, User},
+        user::{requires_setup, User},
     },
     utils::validate_slug,
 };
@@ -114,7 +115,7 @@ pub async fn post_setup(
         id: Key::new(),
         username,
         name,
-        password: hash_password(&password),
+        password: StoredPassword::new(&password)?,
         totp: None,
         enabled: true,
         admin: true,
@@ -124,11 +125,17 @@ pub async fn post_setup(
     };
 
     admin.create(&env.pool).await.map_err(|err| {
-        tracing::error!(admin = ?admin, err = ?err, "Failed to create new administrator");
+        tracing::error!(
+            admin = %admin.id,
+            username = ?admin.username,
+            err = ?err,
+            "Failed to create new administrator"
+        );
+
         InternalServerError(err)
     })?;
 
-    tracing::info!(admin = ?admin, "Created initial administrator");
+    tracing::info!(admin = %admin.id, "Created initial administrator");
     session.set("user_id", admin.id);
 
     Ok(Redirect::see_other("/admin").into_response())

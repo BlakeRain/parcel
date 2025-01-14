@@ -19,7 +19,7 @@ use crate::{
     env::Env,
     model::{
         upload::{Upload, UploadPermission},
-        user::{verify_password, User},
+        user::User,
     },
 };
 
@@ -119,10 +119,15 @@ pub async fn post_download(
         return Ok(Redirect::see_other(format!("/uploads/{slug}/download")).into_response());
     };
 
-    if !verify_password(hash, &password) {
+    if !hash.verify(&password) {
         tracing::error!(%upload.id, "Invalid password provided");
         session.set("download_error", "Incorrect password");
         return Ok(Redirect::see_other(format!("/uploads/{slug}")).into_response());
+    }
+
+    if hash.needs_migrating() {
+        tracing::info!(%upload.id, "Migrating password hash");
+        upload.set_password(&env.pool, &password).await?;
     }
 
     send_download(&env, upload, user.as_deref()).await

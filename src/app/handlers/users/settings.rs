@@ -155,7 +155,7 @@ pub async fn post_password(
         .map_err(|err| {
             tracing::error!(%user.id, ?user.username, ?err,
                     "Failed to set password");
-            InternalServerError(err)
+            err
         })?;
 
     session.set(

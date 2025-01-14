@@ -21,10 +21,11 @@ use crate::{
     },
     env::Env,
     model::{
+        password::StoredPassword,
         team::{Team, TeamMember, TeamSelect},
         types::Key,
         upload::Upload,
-        user::{hash_password, User, UserList},
+        user::{User, UserList},
     },
     utils::{SessionExt, SizeUnit, ValidationErrorsExt},
 };
@@ -208,7 +209,7 @@ pub async fn post_new(
         id: Key::new(),
         username,
         name,
-        password: hash_password(&password),
+        password: StoredPassword::new(&password)?,
         totp: None,
         enabled,
         admin,
@@ -218,7 +219,7 @@ pub async fn post_new(
     };
 
     user.create(&env.pool).await.map_err(|err| {
-        tracing::error!(?user, ?err, "Failed to create new user");
+        tracing::error!(user = %user.id, ?err, "Failed to create new user");
         InternalServerError(err)
     })?;
 
