@@ -49,6 +49,11 @@ fn main() {
         ),
         (
             true,
+            "node_modules/htmx-ext-loading-states/loading-states.js",
+            "static/scripts/vendor/htmx.loading-states.js",
+        ),
+        (
+            true,
             "node_modules/lucide-static/font/lucide.css",
             "static/icons/lucide.css",
         ),
