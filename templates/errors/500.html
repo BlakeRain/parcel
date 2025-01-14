@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Internal Server Error{% endblock %}
+{% block body %}
+<div class="grow flex flex-col gap-6 justify-center items-center p-4 lg:p-0">
+  <h1 class="font-bold text-9xl text-slate-600 dark:text-slate-500">500</h1>
+  <h2 class="font-sofia font-bold text-4xl">Internal Server Error</h2>
+  <p class="font-sofia font-medium text-xl">Something has gone horribly wrong.</p>
+  {% if build.profile == "debug" %}
+    <pre class="text-wrap text-center w-full lg:w-2/3">{{ error }}</pre>
+  {% endif %}
+</div>
+{% endblock %}
+

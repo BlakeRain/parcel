@@ -1,7 +1,7 @@
 use handlers::debug::add_debug_routes;
 use poem::{
     endpoint::StaticFilesEndpoint,
-    middleware::{Csrf, Tracing},
+    middleware::{Cors, Csrf, NormalizePath, Tracing, TrailingSlash},
     session::{CookieConfig, CookieSession},
     web::cookie::{CookieKey, SameSite},
     EndpointExt, IntoEndpoint,
@@ -86,10 +86,14 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> impl IntoEndpoint {
     }));
 
     routes
+        .with(NormalizePath::new(TrailingSlash::Trim))
         .catch_error(errors::NotSignedInError::handle)
         .catch_error(errors::CsrfError::handle)
+        .catch_error(errors::handle_404)
+        .catch_all_error(errors::handle_500)
         .data(env)
-        .with(Csrf::new())
+        .with(Cors::new())
+        .with(Csrf::new().cookie_name("parcel-csrf"))
         .with(Tracing)
         .with(CookieSession::new(
             CookieConfig::private(cookie_key)
