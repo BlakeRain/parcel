@@ -75,29 +75,32 @@
           {% if not has_expiry_date %}disabled{% endif %}>
       </div>
       <div>
-        <div class="checkbox">
-          <input
-            type="checkbox"
-            name="has_password"
-            id="has_password"
-            {% if has_password or (form and form.password is string) %}
-              checked
-            {% else %}
-              onchange="document.getElementById('password').disabled = !this.checked;"
-            {% endif %}>
-          <label for="has_password">Password protect download</label>
-        </div>
-        {% if has_password or (form and form.password is string) %}
+        <div class="flex flex-col md:flex-row md:justify-between">
           <div class="checkbox">
             <input
               type="checkbox"
-              id="change_password"
-              onchange="document.getElementById('password').disabled = !this.checked;">
-            <label for="change_password">Change password</label>
+              name="has_password"
+              id="has_password"
+              {% if has_password or (form and form.password is string) %}
+                checked
+                onchange="document.getElementById('change_password').disabled = !this.checked;"
+              {% else %}
+                onchange="document.getElementById('password').disabled = !this.checked;"
+              {% endif %}>
+            <label for="has_password">Password protect download</label>
           </div>
-        {% endif %}
+          {% if has_password or (form and form.password is string) %}
+            <div class="checkbox">
+              <input
+                type="checkbox"
+                id="change_password"
+                onchange="document.getElementById('password').disabled = !this.checked;">
+              <label for="change_password">Change password</label>
+            </div>
+          {% endif %}
+        </div>
         <input
-          class="grow field"
+          class="grow field mt-2"
           type="password"
           id="password"
           name="password"
