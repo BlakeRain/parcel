@@ -18,7 +18,7 @@ use crate::{
     },
     env::Env,
     model::{
-        team::{Team, TeamMember},
+        team::{HomeTab, Team, TeamMember, TeamTab},
         types::Key,
         upload::{Upload, UploadPermission, UploadStats},
         user::User,
@@ -180,13 +180,13 @@ pub async fn delete_upload(
         tracing::error!(?path, ?err, %upload.id, "Failed to delete cached upload");
     }
 
-    let (stats, limit) = match (upload.owner_user, upload.owner_team) {
+    let (stats, limit, team) = match (upload.owner_user, upload.owner_team) {
         (Some(user_id), None) => {
             assert_eq!(user_id, user.id, "User ID mismatch");
             let stats = UploadStats::get_for_user(&env.pool, user.id)
                 .await
                 .map_err(InternalServerError)?;
-            (stats, user.limit)
+            (stats, user.limit, None)
         }
 
         (None, Some(team_id)) => {
@@ -201,15 +201,32 @@ pub async fn delete_upload(
                 return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
             };
 
-            (stats, team.limit)
+            (stats, team.limit, Some(team))
         }
 
         (_, _) => unreachable!("Upload has no owner"),
     };
 
+    let home = HomeTab::get_for_user(&env.pool, user.id)
+        .await
+        .map_err(|err| {
+            tracing::error!(%user.id, ?err, "Unable to get home tab for user");
+            poem::error::InternalServerError(err)
+        })?;
+
+    let tabs = TeamTab::get_for_user(&env.pool, user.id)
+        .await
+        .map_err(|err| {
+            tracing::error!(%user.id, ?err, "Unable to get team tabs for user");
+            poem::error::InternalServerError(err)
+        })?;
+
     Ok(render_template(
         "uploads/deleted.html",
         context! {
+            team,
+            home,
+            tabs,
             stats,
             limit,
             ..authorized_context(&env, &user)

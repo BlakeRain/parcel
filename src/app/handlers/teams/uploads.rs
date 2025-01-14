@@ -13,7 +13,7 @@ use crate::{
     },
     env::Env,
     model::{
-        team::{Team, TeamMember},
+        team::{HomeTab, Team, TeamMember, TeamTab},
         types::Key,
         upload::{UploadList, UploadStats},
     },
@@ -46,6 +46,20 @@ pub async fn get_list(
         return Err(poem::Error::from_status(StatusCode::FORBIDDEN));
     };
 
+    let home = HomeTab::get_for_user(&env.pool, user.id)
+        .await
+        .map_err(|err| {
+            tracing::error!(%user.id, ?err, "Unable to get home tab for user");
+            poem::error::InternalServerError(err)
+        })?;
+
+    let tabs = TeamTab::get_for_user(&env.pool, user.id)
+        .await
+        .map_err(|err| {
+            tracing::error!(%user.id, ?err, "Unable to get team tabs for user");
+            poem::error::InternalServerError(err)
+        })?;
+
     let stats = UploadStats::get_for_team(&env.pool, team_id)
         .await
         .map_err(InternalServerError)?;
@@ -62,6 +76,8 @@ pub async fn get_list(
         context! {
             team,
             membership,
+            home,
+            tabs,
             stats,
             uploads,
             query,

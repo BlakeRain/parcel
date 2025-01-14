@@ -3,11 +3,7 @@
 {% block content %}
   <div class="grow flex flex-col p-4 lg:mt-4 lg:px-4 lg:py-0">
     <script type="text/json" id="team-identifier">[]</script>
-
-    {# We can inline the tabs.html content here #}
-    {% include "uploads/tabs.html" %}
-
-    {# We can also inline the first page of the uploads list #}
+    {# We can inline the first page of the uploads list #}
     {% include "uploads/list.html" %}
   </div>
   <div id="drop-indicator" class="drop-indicator invisible">

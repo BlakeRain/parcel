@@ -16,6 +16,7 @@ use crate::{
     },
     env::Env,
     model::{
+        team::{HomeTab, TeamTab},
         types::Key,
         upload::{Upload, UploadList, UploadOrder, UploadPermission, UploadStats},
     },
@@ -40,6 +41,20 @@ pub async fn get_list(
         InternalServerError(err)
     })?;
 
+    let home = HomeTab::get_for_user(&env.pool, user.id)
+        .await
+        .map_err(|err| {
+            tracing::error!(%user.id, ?err, "Unable to get home tab for user");
+            poem::error::InternalServerError(err)
+        })?;
+
+    let tabs = TeamTab::get_for_user(&env.pool, user.id)
+        .await
+        .map_err(|err| {
+            tracing::error!(%user.id, ?err, "Unable to get team tabs for user");
+            poem::error::InternalServerError(err)
+        })?;
+
     let stats = UploadStats::get_for_user(&env.pool, user.id)
         .await
         .map_err(InternalServerError)?;
@@ -54,6 +69,8 @@ pub async fn get_list(
     render_template(
         "uploads/list.html",
         context! {
+            home,
+            tabs,
             stats,
             uploads,
             has_teams,
