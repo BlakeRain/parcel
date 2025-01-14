@@ -201,7 +201,7 @@ const ParcelTeams: FunctionComponent<{
       <${WithState} selector=${props.membership}>
         <${HiddenField} name=${props.name} />
         <div
-          class="sm:text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg p-2 grid grid-cols-[max-content_1fr_repeat(2,max-content)] items-center gap-1 ${props.class}"
+          class="sm:text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 grid grid-cols-[max-content_1fr_repeat(2,max-content)] items-center gap-1 ${props.class}"
         >
           <${TeamHeadings} />
           <${TeamRows} />

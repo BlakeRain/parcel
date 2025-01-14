@@ -17,14 +17,6 @@
     @apply mt-2;
   }
 
-  input + label,
-  .checkbox + label,
-  input + .checkbox,
-  .checkbox + input,
-  .checkbox + .checkbox {
-    @apply mt-2;
-  }
-
   .checkbox {
     @apply flex flex-row items-center gap-2;
 

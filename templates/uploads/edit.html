@@ -14,7 +14,7 @@
       value="{% if form %}{{ form.filename }}{% else %}{{ upload.filename }}{% endif %}"
       autofocus
       required />
-    <div class="checkbox">
+    <div class="checkbox mt-2">
       <input
         type="checkbox"
         name="public"
@@ -35,7 +35,7 @@
           <label for="limit_check">Limit downloads</label>
         </div>
         <input
-          class="field"
+          class="field mt-2"
           type="number"
           min="0"
           id="limit"
@@ -61,7 +61,7 @@
           <label for="expiry_check">Expiry date</label>
         </div>
         <input
-          class="field"
+          class="field mt-2"
           type="date"
           id="expiry_date"
           name="expiry_date"
@@ -87,15 +87,15 @@
               {% else %}
                 onchange="document.getElementById('password').disabled = !this.checked;"
               {% endif %}>
-            <label for="has_password">Password protect download</label>
+            <label for="has_password">Password protected</label>
           </div>
           {% if has_password or (form and form.password is string) %}
-            <div class="checkbox">
+            <div class="checkbox mt-2 md:mt-0">
               <input
                 type="checkbox"
                 id="change_password"
                 onchange="document.getElementById('password').disabled = !this.checked;">
-              <label for="change_password">Change password</label>
+              <label for="change_password">Change<span class="md:hidden"> password</span></label>
             </div>
           {% endif %}
         </div>
