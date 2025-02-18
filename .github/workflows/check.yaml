@@ -36,7 +36,7 @@ jobs:
         env:
           DB: /tmp/cypress.db
       - name: Save Cypress artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: cypress-screenshots
