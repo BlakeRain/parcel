@@ -33,7 +33,7 @@ class Dropdown extends HTMLElement {
       this.button.className = "dropdown-button";
 
       const icon = document.createElement("span");
-      icon.className = "icon-ellipsis";
+      icon.className = "icon-menu";
       this.button.appendChild(icon);
       this.appendChild(this.button);
       this.appendChild(this.dropdown);
