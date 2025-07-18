@@ -11,19 +11,6 @@ class Dropdown extends HTMLElement {
   private button: HTMLDivElement;
   private dropdown: HTMLDivElement;
 
-  static BUTTON_TEMPLATE = document.createElement("template");
-  static DROPDOWN_TEMPLATE = document.createElement("template");
-
-  static {
-    this.BUTTON_TEMPLATE.innerHTML = `
-      <span class=></span>
-    `.trim();
-
-    this.DROPDOWN_TEMPLATE.innerHTML = `
-      <div class="z-10 hidden"></div>
-    `.trim();
-  }
-
   connectedCallback() {
     this.className = "dropdown";
 
