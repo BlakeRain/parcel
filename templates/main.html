@@ -94,13 +94,4 @@
       </div>
     {% endif %}
   </footer>
-  <script type="text/javascript" src="/static/scripts/vendor/htmx.js"></script>
-  <script type="text/javascript" src="/static/scripts/vendor/htmx.loading-states.js"></script>
-  {% if build.profile == "debug" %}
-    <script type="text/javascript">
-      // htmx.logAll();
-    </script>
-  {% endif %}
-  <script type="module" src="{{ env.init_js | script_bundle | safe }}"></script>
-  {% block scripts %}{% endblock %}
 {% endblock %}
