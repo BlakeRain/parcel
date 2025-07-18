@@ -170,10 +170,10 @@ const TOTP_CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 const TOTP_SECRET_LEN: usize = 32;
 
 fn generate_totp_secret() -> String {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     (0..TOTP_SECRET_LEN)
         .map(|_| {
-            let idx = rng.gen_range(0..TOTP_CHARSET.len());
+            let idx = rng.random_range(0..TOTP_CHARSET.len());
             TOTP_CHARSET[idx] as char
         })
         .collect()

@@ -18,7 +18,7 @@ async fn empty_tables(pool: &SqlitePool) -> poem::Result<()> {
     const TABLE_NAMES: &[&str] = &["uploads", "team_members", "teams", "users"];
 
     for table_name in TABLE_NAMES.iter() {
-        sqlx::query(&format!("DELETE FROM {}", table_name))
+        sqlx::query(&format!("DELETE FROM {table_name}"))
             .execute(pool)
             .await
             .map_err(|err| {

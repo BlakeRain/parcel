@@ -1,7 +1,7 @@
 use std::process::Command;
 
 fn main() {
-    let build_date = build_data::format_date(build_data::now());
+    let build_date = build_data::format_date(build_data::now()).expect("build date");
     let profile = std::env::var("PROFILE").expect("PROFILE");
     let is_debug = profile == "debug";
 

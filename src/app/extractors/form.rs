@@ -57,7 +57,7 @@ impl<'r, T: DeserializeOwned> FromRequest<'r> for Form<T> {
             content_type.parse::<mime::Mime>(),
             Ok(mime)if mime.type_() == "application" &&
                 (mime.subtype() == "x-www-form-urlencoded" ||
-                 mime.suffix().map_or(false, |v| v == "x-www-form-urlencoded")))
+                 mime.suffix().is_some_and(|v| v == "x-www-form-urlencoded")))
         {
             return Err(ParseFormError::InvalidContentType(content_type.to_string()).into());
         }

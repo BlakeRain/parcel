@@ -10,7 +10,7 @@ argon2 = { version = "0.5", features = ["std"] }
 base32 = { version = "0.5" }
 base64 = { version = "0.22" }
 clap = { version = "4.4", features = ["derive", "env"] }
-fast_qr = { version = "0.12", features = ["svg"] }
+fast_qr = { version = "0.13", features = ["svg"] }
 futures-util = { version = "0.3" }
 humansize = { version = "2.1" }
 mime = { version = "0.3" }
@@ -19,8 +19,8 @@ nanoid = { version = "0.4" }
 notify = { version = "8.0" }
 pbkdf2 = { version = "0.12", features = ["simple"] }
 poem = { version = "3.1", features = ["anyhow", "cookie", "csrf", "multipart", "session", "static-files"] }
-rand_core = { version = "0.6", features = ["std"] }
-rand = { version = "0.8" }
+rand_core = { version = "0.9", features = ["std"] }
+rand = { version = "0.9" }
 rust-embed = { version = "8.0", features = ["debug-embed", "interpolate-folder-path"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_html_form = { version = "0.2" }
@@ -30,15 +30,15 @@ thiserror = { version = "2.0" }
 time = { version = "0.3", features = ["formatting", "macros", "serde"] }
 time-humanize = { version = "0.1" }
 tokio = { version = "1.32", features = ["full"] }
-toml = { version = "0.8" }
+toml = { version = "0.9" }
 totp-lite = { version = "2.0" }
 tracing = { version = "0.1", features = ["log"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1.11", features = ["v4", "serde"] }
-validator = { version = "0.19", features = ["derive"] }
+validator = { version = "0.20", features = ["derive"] }
 
 esbuild-bundle = { git = "https://github.com/BlakeRain/esbuild-bundle", tag = "v0.3.0" }
 poem-route-macro = { git = "https://github.com/BlakeRain/poem-route-macro" }
 
 [build-dependencies]
-build-data = { version = "0.2" }
+build-data = { version = "0.3" }

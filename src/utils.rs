@@ -34,7 +34,15 @@ impl ValidationErrorsExt for ValidationErrors {
         for (field, errors) in other.0 {
             if let ValidationErrorsKind::Field(errors) = errors {
                 for error in errors {
-                    self.add(field, error);
+                    if let ValidationErrorsKind::Field(ref mut own) = self
+                        .0
+                        .entry(field.clone())
+                        .or_insert_with(|| ValidationErrorsKind::Field(vec![]))
+                    {
+                        own.push(error);
+                    } else {
+                        panic!("Attempt to merge non-field errors into field errors");
+                    }
                 }
             } else {
                 panic!("Attempt to add non-field errors to field errors");

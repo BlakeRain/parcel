@@ -75,7 +75,9 @@ pub async fn get_cache(
 }
 
 trait WithCacheFiles: Default {
+    #[allow(clippy::result_large_err)]
     fn valid_cache_file(&mut self, entry: std::fs::DirEntry, upload: Upload) -> poem::Result<()>;
+    #[allow(clippy::result_large_err)]
     fn invalid_cache_file(&mut self, entry: std::fs::DirEntry) -> poem::Result<()>;
 }
 
