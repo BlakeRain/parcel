@@ -25,29 +25,34 @@
   <table>
     <thead>
       <tr>
-        <th class="text-nowrap text-right">ID</th>
+        <th class="text-nowrap text-left">ID</th>
         <th class="text-nowrap text-left">Slug</th>
         <th class="text-nowrap text-left">Filename</th>
         <th class="text-nowrap text-left">Access</th>
-        <th class="text-nowrap text-right">Downloads</th>
+        <th class="text-nowrap text-right">DL</th>
         <th class="text-nowrap text-right">Limit</th>
         <th class="text-nowrap text-left">Expires</th>
-        <th class="text-nowrap text-left">Uploaded At</th>
-        <th class="text-nowrap text-left">Uploaded By</th>
-        <th class="text-nowrap text-left">Uploaded From</th>
+        <th class="text-nowrap text-left">Uploaded</th>
+        <th class="text-nowrap text-left">Uploader</th>
+        <th class="text-nowrap text-left">IP</th>
       </tr>
     </thead>
     <tbody>
       {% for upload in uploads %}
         <tr>
-          <td class="text-right text-nowrap">{{ upload.id }}</td>
+          <td>
+            <div class="flex flex-row items-center gap-1 text-nowrap">
+              <span class="font-mono">{{ upload.id | substr(start=0, len=8) }} … {{ upload.id | substr(start=-4) }}</span>
+              <parcel-clipboard value="{{ upload.id }}"></parcel-clipboard>
+            </div>
+          </td>
           <td class="text-left text-nowrap">
             <a href="/uploads/{{ upload.slug }}" target="_blank">
               {{ upload.slug }}
             </a>
           </td>
           <td class="text-left">
-            <code class="text-nowrap">{{ upload.filename }}</code>
+            {{ upload.filename }}
           </td>
           <td class="text-nowrap">
             {% if upload.public %}Public{% else %}Private{% endif %}
@@ -59,7 +64,7 @@
             {% if upload.limit %}
               {{ upload.limit }} ({{ upload.remaining }} remaining)
             {% else %}
-              <i>Unlimited</i>
+              &#8734;
             {% endif %}
           </td>
           <td class="text-left text-nowrap">
