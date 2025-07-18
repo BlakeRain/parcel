@@ -12,20 +12,18 @@
       </div>
       <div class="form">
         <input type="hidden" name="csrf_token" value="{{csrf_token}}">
-        {% if totp_error %}
-          <div class="text-danger">{{ totp_error }}</div>
-        {% endif %}
         <p>
           Scan the QR code with your authenticator app (Google Authenticator, Authy, etc).
-        </p>
-        <p>
           If you can't scan the QR code, you can manually enter the following code:
         </p>
         <div class="bg-gray-100 border border-gray-300 dark:bg-gray-800 dark:border-gray-700 p-2
-          rounded text-sm flex flex-row justify-between gap-2">
+          rounded text-sm flex flex-row justify-between gap-2 mt-2">
           <pre>{{ secret }}</pre>
           <parcel-clipboard value="{{ secret }}"></parcel-clipboard>
         </div>
+        {% if totp_error %}
+          <div class="text-danger mt-2">{{ totp_error }}</div>
+        {% endif %}
         <p class="mt-auto">
           Enter the 6-digit code from your authenticator app below.
         </p>
