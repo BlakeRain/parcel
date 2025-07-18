@@ -108,7 +108,7 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> anyhow::Result<impl In
         "/admin/teams"                  handlers::admin::teams::teams           GET
         "/admin/teams/new"              handlers::admin::teams::new             GET POST
         "/admin/teams/new/slug"         handlers::admin::teams::check_new_slug      POST
-        "/admin/teams/:id"              handlers::admin::teams::team            GET POST
+        "/admin/teams/:id"              handlers::admin::teams::team            GET POST DELETE
         "/admin/teams/:id/slug"         handlers::admin::teams::check_slug          POST
     }));
 
