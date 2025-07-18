@@ -2,7 +2,7 @@ use minijinja::context;
 use poem::{
     error::InternalServerError,
     http::StatusCode,
-    web::{Data, Html, Path, Query},
+    web::{CsrfToken, Data, Html, Path, Query},
 };
 
 use crate::{
@@ -23,6 +23,7 @@ use crate::{
 pub async fn get_list(
     env: Data<&Env>,
     SessionUser(user): SessionUser,
+    csrf_token: &CsrfToken,
     Path(team_id): Path<Key<Team>>,
     Query(query): Query<ListQuery>,
 ) -> poem::Result<Html<String>> {
@@ -81,6 +82,7 @@ pub async fn get_list(
             stats,
             uploads,
             query,
+            csrf_token => csrf_token.0,
             page => 0,
             limit => team.limit,
             ..authorized_context(&env, &user)
