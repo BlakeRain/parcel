@@ -111,6 +111,7 @@ pub async fn post_setup(
     } = form;
 
     let name = username.clone();
+    let now = OffsetDateTime::now_utc();
     let admin = User {
         id: Key::new(),
         username,
@@ -120,8 +121,9 @@ pub async fn post_setup(
         enabled: true,
         admin: true,
         limit: None,
-        created_at: OffsetDateTime::now_utc(),
+        created_at: now,
         created_by: None,
+        last_access: Some(now),
     };
 
     admin.create(&env.pool).await.map_err(|err| {

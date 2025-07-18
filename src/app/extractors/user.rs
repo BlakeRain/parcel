@@ -36,7 +36,7 @@ impl<'r> FromRequest<'r> for SessionUser {
             return Err(NotSignedInError.into());
         };
 
-        let Some(user) = User::get(&env.pool, user_id)
+        let Some(mut user) = User::get(&env.pool, user_id)
             .await
             .map_err(InternalServerError)?
         else {
@@ -62,6 +62,11 @@ impl<'r> FromRequest<'r> for SessionUser {
             "last_seen",
             time::OffsetDateTime::now_utc().unix_timestamp(),
         );
+
+        user.record_last_access(&env.pool).await.map_err(|err| {
+            tracing::error!("Failed to update last access for user {user_id}: {err}");
+            InternalServerError(err)
+        })?;
 
         Ok(SessionUser(user))
     }

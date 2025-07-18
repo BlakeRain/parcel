@@ -21,6 +21,7 @@ pub struct User {
     pub limit: Option<i64>,
     pub created_at: OffsetDateTime,
     pub created_by: Option<Key<User>>,
+    pub last_access: Option<OffsetDateTime>,
 }
 
 pub async fn requires_setup(pool: &SqlitePool) -> sqlx::Result<bool> {
@@ -128,6 +129,18 @@ impl User {
         self.enabled = enabled;
         self.admin = admin;
 
+        Ok(())
+    }
+
+    pub async fn record_last_access(&mut self, pool: &SqlitePool) -> sqlx::Result<()> {
+        let now = OffsetDateTime::now_utc();
+        sqlx::query("UPDATE users SET last_access = $1 WHERE id = $2")
+            .bind(now)
+            .bind(self.id)
+            .execute(pool)
+            .await?;
+
+        self.last_access = Some(now);
         Ok(())
     }
 
@@ -286,6 +299,7 @@ pub struct UserList {
     pub upload_total: i64,
     pub created_at: OffsetDateTime,
     pub created_by_name: Option<String>,
+    pub last_access: Option<OffsetDateTime>,
 }
 
 impl UserList {
@@ -309,7 +323,8 @@ impl UserList {
                 COALESCE(tc.team_count, 0) AS team_count, \
                 COALESCE(uc.upload_total, 0) AS upload_total, \
                 users.created_at as created_at, \
-                created_by.name AS created_by_name \
+                created_by.name AS created_by_name, \
+                users.last_access AS last_access \
             FROM users \
             LEFT JOIN team_counts tc ON tc.user = users.id \
             LEFT JOIN upload_counts uc ON uc.user = users.id \

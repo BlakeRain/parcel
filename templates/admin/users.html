@@ -44,13 +44,19 @@
         <th class="text-right">Teams</th>
         <th class="text-right">Uploaded</th>
         <th class="text-left">Created</th>
+        <th class="text-left">Seen</th>
         <th />
       </tr>
     </thead>
     <tbody>
       {% for user in users %}
         <tr>
-          <td class="text-left">{{ user.id }}</td>
+          <td class="text-left">
+            <div class="flex flex-row items-center gap-1 text-nowrap">
+              <span class="font-mono">{{ user.id | substr(start=0, len=8) }} … {{ user.id | substr(start=-4) }}</span>
+              <parcel-clipboard value="{{ user.id }}"></parcel-clipboard>
+            </div>
+          </td>
           <td class="text-left">
             {{ user.username }}
             {% if user.id == auth.id %}
@@ -86,6 +92,13 @@
               <span class="text-xs opacity-75">
                 (by {{ user.created_by_name }})
               </span>
+            {% endif %}
+          </td>
+          <td class="text-left">
+            {% if user.last_access %}
+              <parcel-datetime value="{{ user.last_access|datetime }}"></parcel-datetime>
+            {% else %}
+              <i>Never</i>
             {% endif %}
           </td>
           <td class="text-right">

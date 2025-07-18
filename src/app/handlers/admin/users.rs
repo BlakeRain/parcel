@@ -216,6 +216,7 @@ pub async fn post_new(
         limit,
         created_at: OffsetDateTime::now_utc(),
         created_by: Some(auth.id),
+        last_access: None,
     };
 
     user.create(&env.pool).await.map_err(|err| {
