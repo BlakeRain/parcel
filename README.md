@@ -11,6 +11,7 @@
 Parcel is a simple light-weight file upload application with a nice UI and a small set of features.
 
 - Support multiple users and administrators, including MFA
+- Users can be grouped into teams, with shared uploads
 - Uploaded files can be made public to allow download from anywhere
 - Number of downloads can be limited, and downloads can have an expiry date
 - Public downloads can be password protected
