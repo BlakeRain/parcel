@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="/static/main.css">
     <link rel="stylesheet" href="/static/icons/lucide.css" />
     {% if env.analytics_domain and env.plausible_script %}
-      <script defer data-domain="{{ env.plausible_domain }}" src="{{ env.plausible_script }}"></script>
+      <script defer data-domain="{{ env.analytics_domain }}" src="{{ env.plausible_script }}"></script>
     {% else %}
       <!-- No analytics domain or script provided -->
     {% endif %}
