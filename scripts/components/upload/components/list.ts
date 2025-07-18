@@ -17,7 +17,7 @@ const File: FunctionComponent<{
       actions = html`
         <a
           href="#"
-          class="text-neutral-400 dark:text-neutral-600 hover:text-red-500"
+          class="text-neutral-500 dark:text-slate-600 hover:text-red-500"
           onclick=${(event: MouseEvent) => {
             event.preventDefault();
             dispatch({ type: "remove", index: props.index });
@@ -30,7 +30,7 @@ const File: FunctionComponent<{
 
     case StateMode.Uploading:
       actions = html`<span
-        class="icon-upload text-neutral-400 dark:text-neutral-600"
+        class="icon-upload text-neutral-400 dark:text-slate-600"
       ></span>`;
       break;
 

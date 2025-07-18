@@ -13,8 +13,8 @@
 
   .dropdown-menu {
     @apply absolute right-[-0.3rem] top-[1.9rem] w-44 hidden z-10;
-    @apply rounded-lg shadow;
-    @apply bg-neutral-200 text-neutral-800;
+    @apply rounded-lg shadow-lg;
+    @apply bg-neutral-300 text-neutral-800;
     @apply dark:bg-gray-700 dark:text-neutral-300;
     @apply text-nowrap;
 
@@ -26,7 +26,15 @@
 
     &:before {
       @apply content-[""] absolute w-0 h-0 -top-2 right-2 border-[0.5rem] border-transparent;
-      @apply border-t-0 border-b-neutral-200 dark:border-b-gray-700;
+      @apply border-t-0 border-b-neutral-300 dark:border-b-gray-700;
+    }
+
+    .dropdown-list {
+      @apply flex flex-col my-2 text-left dark:text-neutral-100;
+
+      > a {
+        @apply block text-inherit hover:bg-neutral-200 dark:hover:bg-gray-600 px-4 py-2;
+      }
     }
   }
 }

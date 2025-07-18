@@ -87,17 +87,15 @@
 
     <div>
       <parcel-dropdown>
-        <div class="flex flex-col my-2 dark:text-neutral-100">
+        <div class="dropdown-list">
           <a
             href="/uploads/{{ upload.slug }}/download"
-            class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
             title="Download {{ upload.filename }}">
             <span class="icon-download"></span>
             Download file
           </a>
           <a
             href="#"
-            class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
             title="Share upload link"
             hx-get="/uploads/{{ upload.id }}/share"
             hx-trigger="click"
@@ -109,7 +107,6 @@
           {% if (not team) or membership.can_edit %}
             <a
               href="#"
-              class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
               title="Edit upload settings"
               hx-get="/uploads/{{ upload.id }}/edit"
               hx-trigger="click"
@@ -120,7 +117,6 @@
             </a>
             <a
               href="#"
-              class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
               hx-post="/uploads/{{ upload.id }}/public?public={{ not upload.public }}"
               hx-trigger="click"
               hx-swap="none"
@@ -141,7 +137,6 @@
             {% if upload.limit is number and upload.remaining is number and upload.remaining < upload.limit %}
               <a
                 href="#"
-                class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
                 title="Reset remaining downloads to {{ upload.limit }}"
                 hx-post="/uploads/{{ upload.id }}/reset"
                 hx-trigger="click"
@@ -154,7 +149,6 @@
             {% if has_teams %}
               <a
                 href="#"
-                class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
                 title="Copy or move to another team"
                 hx-get="/uploads/{{ upload.id }}/transfer"
                 hx-trigger="click"
@@ -186,7 +180,6 @@
           {% if not team or (membership.can_edit and membership.can_delete) %}
             <a
               href="#"
-              class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
               title="Delete upload"
               hx-delete="/uploads/{{ upload.id }}"
               hx-trigger="click"

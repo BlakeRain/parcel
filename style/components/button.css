@@ -2,7 +2,7 @@
   .button {
     @apply rounded-md flex flex-row gap-1;
     @apply px-5 py-2;
-    @apply text-white bg-primary-600;
+    @apply text-white bg-primary-700;
     @apply focus:ring-2 focus:outline-none focus:ring-primary-300;
     @apply dark:focus:ring-primary-800;
     @apply text-center text-sm font-medium text-nowrap;
@@ -13,7 +13,7 @@
 
     &:disabled {
       @apply text-white/75 dark:text-white/50;
-      @apply bg-primary-400 dark:bg-primary-900;
+      @apply bg-primary-700/50;
     }
 
     &.success {
@@ -45,10 +45,10 @@
 
     &.hollow {
       @apply bg-transparent text-primary-600 dark:text-primary-400;
-      @apply border border-primary-600;
+      @apply border border-primary-700;
 
       &:not(:disabled) {
-        @apply hover:bg-primary-600/25 hover:text-primary-800 dark:hover:text-primary-300;
+        @apply hover:bg-primary-700/15 hover:text-primary-800 dark:hover:text-primary-300;
       }
 
       &:disabled {

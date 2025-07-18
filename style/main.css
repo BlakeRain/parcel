@@ -50,7 +50,7 @@ body.has-web-components .no-web-components {
   }
 
   .text-success {
-    @apply text-green-600 dark:text-green-400;
+    @apply text-green-700 dark:text-green-400;
   }
 }
 

@@ -3,9 +3,9 @@ import { useEffect } from "preact/hooks";
 import { StateMode, useState } from "../state";
 
 const STATE_COLORS = {
-  idle: "bg-neutral-100 dark:bg-slate-800/50 text-neutral-400 dark:text-neutral-600",
+  idle: "bg-neutral-100 dark:bg-slate-800/50 text-neutral-500 dark:text-slate-500",
   active:
-    "bg-neutral-200 dark:bg-slate-800/75 text-neutral-600 dark:text-neutral-400",
+    "bg-neutral-200 dark:bg-slate-800/75 text-neutral-600 dark:text-slate-400",
   complete:
     "bg-green-200 dark:bg-green-900/50 text-green-600 dark:text-green-500",
   error: "bg-red-200 dark:bg-red-900/50 text-red-400 dark:text-red-600",
@@ -94,7 +94,7 @@ const DropZone = () => {
   };
 
   const classes =
-    "transition-colors border border-gray-300 dark:border-slate-600 rounded-md p-8 flex flex-col gap-4 " +
+    "transition-colors cursor-pointer border border-gray-300 dark:border-slate-600 rounded-md p-8 flex flex-col gap-4 " +
     colors;
 
   return html`

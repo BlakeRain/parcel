@@ -73,10 +73,9 @@
           <td class="text-left">{{ team.created_at | datetime }}</td>
           <td class="text-right">
             <parcel-dropdown>
-              <div class="flex flex-col my-2 text-left dark:text-neutral-100">
+              <div class="dropdown-list">
                 <a
                   href="#"
-                  class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
                   title="Edit this team"
                   hx-get="/admin/teams/{{ team.id }}"
                   hx-target="body"

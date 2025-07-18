@@ -103,10 +103,9 @@
           </td>
           <td class="text-right">
             <parcel-dropdown>
-              <div class="flex flex-col my-2 text-left dark:text-neutral-100">
+              <div class="dropdown-list">
                 <a
                   href="#"
-                  class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
                   title="Edit user"
                   hx-get="/admin/users/{{ user.id }}"
                   hx-target="body"
@@ -117,7 +116,6 @@
                 {% if user.id != auth.id %}
                   <a
                     href="#"
-                    class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
                     title="{% if user.enabled %}Disable{% else %}Enable{% endif %} user"
                     hx-post="/admin/users/{{ user.id }}/{% if user.enabled %}disable{% else %}enable{% endif %}"
                     hx-trigger="click"
@@ -134,7 +132,6 @@
                   </a>
                   <a
                     href="#"
-                    class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
                     title="Delete user"
                     hx-delete="/admin/users/{{ user.id }}"
                     hx-trigger="click"
@@ -148,7 +145,6 @@
                 {% endif %}
                 <a
                   href="/admin/users/{{ user.id }}/masquerade"
-                  class="block no-color hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2"
                   title="Masquerade as this user">
                   <span class="icon-venetian-mask"></span>
                   Masquerade as user
