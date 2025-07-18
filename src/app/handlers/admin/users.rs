@@ -7,7 +7,7 @@ use poem::{
     handler,
     http::StatusCode,
     session::Session,
-    web::{CsrfToken, CsrfVerifier, Data, Html, Path, Redirect},
+    web::{CsrfToken, CsrfVerifier, Data, Html, Path, Query, Redirect},
     IntoResponse, Response,
 };
 use serde::{Deserialize, Serialize};
@@ -33,6 +33,7 @@ use crate::{
 #[handler]
 pub async fn get_users(
     env: Data<&Env>,
+    csrf_token: &CsrfToken,
     SessionAdmin(admin): SessionAdmin,
 ) -> poem::Result<Response> {
     let users = UserList::get(&env.pool).await.map_err(|err| {
@@ -44,6 +45,7 @@ pub async fn get_users(
         "admin/users.html",
         context! {
             users,
+            csrf_token => csrf_token.0,
             teams_js => javascript!("scripts/components/teams.ts"),
             ..authorized_context(&env, &admin)
         },
@@ -500,12 +502,24 @@ pub async fn post_user(
     Ok(Redirect::see_other("/admin/users").into_response())
 }
 
+#[derive(Debug, Deserialize)]
+pub struct DeleteUserQuery {
+    csrf_token: String,
+}
+
 #[handler]
 pub async fn delete_user(
     env: Data<&Env>,
     SessionAdmin(_): SessionAdmin,
+    csrf_verifier: &CsrfVerifier,
     Path(user_id): Path<Key<User>>,
+    Query(DeleteUserQuery { csrf_token }): Query<DeleteUserQuery>,
 ) -> poem::Result<Redirect> {
+    if !csrf_verifier.is_valid(&csrf_token) {
+        tracing::error!("Invalid CSRF token in delete user request");
+        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+    }
+
     let Some(mut user) = User::get(&env.pool, user_id).await.map_err(|err| {
         tracing::error!(err = ?err, user_id = %user_id, "Failed to get user");
         InternalServerError(err)

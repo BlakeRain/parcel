@@ -4,6 +4,7 @@
 
 {% block content %}
 <div id="user-list-container" class="grow flex flex-col gap-4 mt-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <div class="flex flex-row justify-between items-center gap-4 px-8">
     <h1 class="text-xl md:text-2xl font-bold leading-tight tracking-tight text-gray-900
       dark:text-white">
@@ -134,6 +135,7 @@
                     href="#"
                     title="Delete user"
                     hx-delete="/admin/users/{{ user.id }}"
+                    hx-include="[name='csrf_token']"
                     hx-trigger="click"
                     hx-target="#user-list-container"
                     hx-select="#user-list-container"
