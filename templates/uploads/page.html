@@ -57,6 +57,8 @@
         <span class="block xl:hidden">
           {{ upload.expiry_date | datetime_offset }}
         </span>
+      {% else %}
+        <i>Never</i>
       {% endif %}
     </div>
 
