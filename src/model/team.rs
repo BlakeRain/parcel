@@ -224,11 +224,10 @@ impl TeamList {
         sqlx::query_as(
             "SELECT \
             teams.id, teams.name, teams.enabled, teams.\"limit\", teams.created_at, \
-            COUNT(team_members.user) AS member_count, \
+            (SELECT COUNT(*) FROM team_members WHERE team_members.team = teams.id) AS member_count, \
             COUNT(uploads.id) AS upload_count, \
             SUM(uploads.size) AS upload_total \
             FROM teams \
-            LEFT JOIN team_members ON team_members.team = teams.id \
             LEFT JOIN uploads ON uploads.owner_team = teams.id \
             GROUP BY teams.id \
             ORDER BY teams.name ASC",
