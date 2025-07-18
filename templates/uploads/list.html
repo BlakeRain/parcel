@@ -1,5 +1,6 @@
 {% include "uploads/tabs.html" %}
 <form id="upload-list-container" method="POST" hx-swap-oob="true">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <div class="flex flex-col dark:bg-gray-800 border border-slate-400 dark:border-gray-700 rounded-md
     {% if not team %}rounded-tl-none{% endif %}">
     <div class="flex flex-col sm:flex-row gap-4 justify-between p-4">
@@ -13,6 +14,7 @@
           {% if not team or membership.can_delete %}
             hx-post="/uploads/delete"
             hx-confirm="Are you sure you want to delete the selected files?"
+            hx-include="[name='csrf_token']"
           {% endif %}
           hx-swap="none"
           disabled>

@@ -1,7 +1,7 @@
 use esbuild_bundle::javascript;
 use poem::{
     handler,
-    web::{Data, Html, Query},
+    web::{CsrfToken, Data, Html, Query},
     IntoResponse, Response,
 };
 
@@ -23,6 +23,7 @@ use super::uploads::ListQuery;
 pub async fn get_index(
     env: Data<&Env>,
     SessionUser(user): SessionUser,
+    csrf_token: &CsrfToken,
     Query(query): Query<ListQuery>,
 ) -> poem::Result<Html<String>> {
     let home = HomeTab::get_for_user(&env.pool, user.id)
@@ -63,6 +64,7 @@ pub async fn get_index(
             tabs,
             stats,
             uploads,
+            csrf_token => csrf_token.0,
             page => 0,
             limit => user.limit,
             index_js => javascript!("scripts/index.ts"),

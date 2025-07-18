@@ -4,7 +4,7 @@ use poem::{
     handler,
     http::StatusCode,
     session::Session,
-    web::{CsrfToken, Data, Html, Path, Query},
+    web::{CsrfToken, CsrfVerifier, Data, Html, Path, Query},
     IntoResponse,
 };
 use serde::Deserialize;
@@ -160,12 +160,24 @@ pub async fn get_custom_upload(
     render_upload(env, user.as_deref(), session, csrf_token, upload).await
 }
 
+#[derive(Debug, Deserialize)]
+pub struct DeleteUploadQuery {
+    csrf_token: String,
+}
+
 #[handler]
 pub async fn delete_upload(
     env: Data<&Env>,
     SessionUser(user): SessionUser,
+    csrf_verifier: &CsrfVerifier,
     Path(id): Path<Key<Upload>>,
+    Query(DeleteUploadQuery { csrf_token }): Query<DeleteUploadQuery>,
 ) -> poem::Result<poem::Response> {
+    if !csrf_verifier.is_valid(&csrf_token) {
+        tracing::warn!(%user.id, %id, "CSRF token verification failed for upload deletion");
+        return Err(poem::Error::from_status(StatusCode::FORBIDDEN));
+    }
+
     let upload = get_upload_by_id(&env, id).await?;
     check_permission(&env, &upload, Some(&user), UploadPermission::Delete).await?;
 

@@ -3,7 +3,7 @@ use poem::{
     error::InternalServerError,
     handler,
     http::StatusCode,
-    web::{Data, Form, Html, Path, Query},
+    web::{CsrfToken, CsrfVerifier, Data, Form, Html, Path, Query},
     IntoResponse,
 };
 use serde::{Deserialize, Serialize};
@@ -34,6 +34,7 @@ pub struct ListQuery {
 pub async fn get_list(
     env: Data<&Env>,
     SessionUser(user): SessionUser,
+    csrf_token: &CsrfToken,
     Query(query): Query<ListQuery>,
 ) -> poem::Result<Html<String>> {
     let has_teams = user.has_teams(&env.pool).await.map_err(|err| {
@@ -75,6 +76,7 @@ pub async fn get_list(
             uploads,
             has_teams,
             query,
+            csrf_token => csrf_token.0,
             page => 0,
             limit => user.limit,
             ..authorized_context(&env, &user)
@@ -87,13 +89,32 @@ pub async fn get_list(
 pub async fn post_delete(
     env: Data<&Env>,
     SessionUser(user): SessionUser,
-    Form(form): Form<Vec<(String, Key<Upload>)>>,
+    csrf_verifier: &CsrfVerifier,
+    Form(form): Form<Vec<(String, String)>>,
 ) -> poem::Result<impl IntoResponse> {
+    let csrf_token = form
+        .iter()
+        .find(|(name, _)| name == "csrf_token")
+        .map(|(_, token)| token)
+        .ok_or_else(|| {
+            tracing::error!("CSRF token not found in form data");
+            poem::Error::from_status(StatusCode::BAD_REQUEST)
+        })?;
+
+    if !csrf_verifier.is_valid(csrf_token) {
+        tracing::error!("Invalid CSRF token in form data");
+        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+    }
+
     let ids = form
         .into_iter()
         .filter(|(name, _)| name == "selected")
-        .map(|(_, id)| id)
-        .collect::<Vec<_>>();
+        .map(|(_, id)| id.parse::<Key<Upload>>())
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|_| {
+            tracing::error!("Invalid upload ID in form data");
+            poem::Error::from_status(StatusCode::BAD_REQUEST)
+        })?;
 
     for id in ids {
         let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {

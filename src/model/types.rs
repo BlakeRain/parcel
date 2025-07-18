@@ -85,6 +85,18 @@ impl<T> From<Key<T>> for Uuid {
     }
 }
 
+impl<T> std::str::FromStr for Key<T> {
+    type Err = uuid::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let value = Uuid::parse_str(s)?;
+        Ok(Key {
+            value,
+            phantom: PhantomData,
+        })
+    }
+}
+
 impl<T> Serialize for Key<T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

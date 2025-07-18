@@ -182,6 +182,7 @@
               href="#"
               title="Delete upload"
               hx-delete="/uploads/{{ upload.id }}"
+              hx-include="[name='csrf_token']"
               hx-trigger="click"
               hx-target="closest .uploads-table-row"
               hx-swap="outerHTML"
