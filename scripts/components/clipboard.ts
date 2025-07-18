@@ -35,10 +35,10 @@ class ClipboardElement extends HTMLElement {
       const data = [new ClipboardItem({ ["text/plain"]: blob })];
       navigator.clipboard.write(data);
 
-      this.icon.className = "cursor-pointer icon-clipboard-check";
+      this.icon.className = "cursor-pointer icon-clipboard-check text-success";
       window.setTimeout(() => {
         this.icon.className = "cursor-pointer icon-clipboard-copy";
-      }, 1000);
+      }, 2000);
     });
   }
 
