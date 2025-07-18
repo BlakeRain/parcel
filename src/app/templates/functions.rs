@@ -179,9 +179,23 @@ pub(super) fn filter_datetime_offset(value: Value) -> Result<String, Error> {
 }
 
 fn filter_substr(value: String, kwargs: Kwargs) -> Result<String, Error> {
-    let start = kwargs.get::<Option<usize>>("start")?.unwrap_or(0);
+    let start = kwargs.get::<Option<isize>>("start")?.unwrap_or(0);
     let len = kwargs.get::<Option<usize>>("len")?;
-    let end = kwargs.get::<Option<usize>>("end")?;
+    let end = kwargs.get::<Option<isize>>("end")?;
+
+    let start = if start < 0 {
+        value.len().saturating_add_signed(start)
+    } else {
+        start as usize
+    };
+
+    let end = end.map(|end| {
+        if end < 0 {
+            value.len().saturating_add_signed(end)
+        } else {
+            end as usize
+        }
+    });
 
     if len.is_some() && end.is_some() {
         return Err(Error::new(
