@@ -23,7 +23,11 @@
       </p>
       {% set url = "/uploads/" + (upload.slug | urlencode) %}
       {% if upload.custom_slug is string %}
-        {% set url = "/uploads/" + (auth.username | urlencode) + "/" + (upload.custom_slug | urlencode) %}
+        {% set owner_slug = auth.username | urlencode %}
+        {% if team %}
+          {% set owner_slug = team.slug | urlencode %}
+        {% endif %}
+        {% set url = "/uploads/" + owner_slug + "/" + (upload.custom_slug | urlencode) %}
       {% endif %}
       <div class="bg-gray-100 border border-gray-300 dark:bg-gray-800 dark:border-gray-700 p-2
         rounded text-sm flex flex-row gap-2">

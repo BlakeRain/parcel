@@ -253,11 +253,23 @@ pub async fn get_share(
     let upload = get_upload_by_id(&env, id).await?;
     check_permission(&env, &upload, Some(&user), UploadPermission::Share).await?;
 
+    let team = if let Some(team_id) = upload.owner_team {
+        Team::get(&env.pool, team_id)
+            .await
+            .map_err(|err| {
+                tracing::error!(?err, team_id = %team_id, "Unable to get team by ID");
+                InternalServerError(err)
+            })?
+    } else {
+        None
+    };
+
     render_template(
         "uploads/share.html",
         context! {
             upload,
             immediate,
+            team,
             ..authorized_context(&env, &user)
         },
     )
