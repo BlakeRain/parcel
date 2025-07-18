@@ -1,5 +1,8 @@
 <parcel-modal class="hidden" with-htmx>
-  <h1 class="text-2xl font-bold mb-4">File Cache GC</h1>
+  <h1 class="text-2xl font-bold mb-4">
+    <span class="icon-brush-cleaning"></span>
+    File Cache GC
+  </h1>
   <div id="cache-modal" class="flex flex-col gap-4">
     {% if result %}
       <p class="text-success">
@@ -57,6 +60,7 @@
           <button
             class="button hollow"
             onclick="event.preventDefault(); event.target.closest('parcel-modal').closeModal();">
+            <span class="icon-x"></span>
             Cancel
           </button>
           <button
@@ -76,6 +80,7 @@
           <button
             class="button hollow"
             onclick="event.preventDefault(); event.target.closest('parcel-modal').closeModal();">
+            <icon class="icon-x"></icon>
             Close
           </button>
         </div>
@@ -98,6 +103,7 @@
         <button
           class="button hollow"
           onclick="event.preventDefault(); event.target.closest('parcel-modal').closeModal();">
+          <span class="icon-x"></span>
           Cancel
         </button>
         <button

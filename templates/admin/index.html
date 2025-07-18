@@ -12,8 +12,14 @@
           Users
         </h1>
         <div class="flex flex-row gap-2">
-          <a href="/admin/users" class="button">Manage users</a>
-          <a href="/admin/teams" class="button">Manage teams</a>
+          <a href="/admin/users" class="button">
+            <span class="icon-user"></span>
+            Manage users
+          </a>
+          <a href="/admin/teams" class="button">
+            <span class="icon-users"></span>
+            Manage teams
+          </a>
         </div>
       </div>
       <dl class="grow grid grid-cols-3 gap-4 lg:gap-8 mx-auto text-gray-900 dark:text-white">
@@ -38,13 +44,17 @@
           Uploads
         </h1>
         <div class="buttons">
-          <a href="/admin/uploads" class="button">Manage uploads</a>
+          <a href="/admin/uploads" class="button">
+            <span class="icon-files"></span>
+            Manage uploads
+          </a>
           <button
             type="button"
             class="button"
             hx-get="/admin/uploads/cache"
             hx-target="body"
             hx-swap="beforeend">
+            <span class="icon-brush-cleaning"></span>
             GC Cache
           </button>
         </div>
