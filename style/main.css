@@ -1,19 +1,36 @@
-@import "tailwind.css";
+@import "tailwindcss";
 
-@import "components/button.css";
-@import "components/drop.css";
-@import "components/dropdown.css";
-@import "components/form.css";
-@import "components/label.css";
-@import "components/modal.css";
-@import "components/panel.css";
-@import "components/select.css";
-@import "components/table.css";
-@import "components/tabs.css";
-@import "components/uploads.css";
+@source "../templates";
+@source "../scripts";
 
-@import "utils/animation.css";
-@import "utils/icons.css";
+@import "./components/button.css";
+@import "./components/drop.css";
+@import "./components/dropdown.css";
+@import "./components/form.css";
+@import "./components/label.css";
+@import "./components/modal.css";
+@import "./components/panel.css";
+@import "./components/select.css";
+@import "./components/table.css";
+@import "./components/tabs.css";
+@import "./components/uploads.css";
+
+@import "./utils/animation.css";
+@import "./utils/icons.css";
+
+@theme {
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+  --color-primary-950: #172554;
+}
 
 body.has-web-components .no-web-components {
   display: none;

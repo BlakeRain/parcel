@@ -1,5 +1,6 @@
 @layer components {
   .button {
+    @apply cursor-pointer;
     @apply rounded-md flex flex-row gap-1;
     @apply px-5 py-2;
     @apply text-white bg-primary-700;
@@ -8,7 +9,7 @@
     @apply text-center text-sm font-medium text-nowrap;
 
     &:not(:disabled) {
-      @apply hover:text-white hover:bg-primary-700;
+      @apply hover:bg-primary-600;
     }
 
     &:disabled {
