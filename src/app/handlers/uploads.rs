@@ -1,7 +1,8 @@
 use poem::{
     error::InternalServerError,
     handler,
-    web::{Data, Html, Path, Query},
+    http::StatusCode,
+    web::{CsrfVerifier, Data, Form, Html, Path},
     IntoResponse, Response,
 };
 use serde::Deserialize;
@@ -36,15 +37,22 @@ pub use upload::{delete_upload, get_custom_upload, get_share, get_upload};
 #[derive(Debug, Deserialize)]
 pub struct MakePublicQuery {
     public: bool,
+    csrf_token: String,
 }
 
 #[handler]
 pub async fn post_public(
     env: Data<&Env>,
     SessionUser(user): SessionUser,
+    csrf_verifier: &CsrfVerifier,
     Path(id): Path<Key<Upload>>,
-    Query(MakePublicQuery { public }): Query<MakePublicQuery>,
+    Form(MakePublicQuery { public, csrf_token }): Form<MakePublicQuery>,
 ) -> poem::Result<Response> {
+    if !csrf_verifier.is_valid(&csrf_token) {
+        tracing::warn!(%id, "CSRF verification failed for upload public state change");
+        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+    }
+
     let mut upload = get_upload_by_id(&env, id).await?;
     check_permission(&env, &upload, Some(&user), UploadPermission::Edit).await?;
 
@@ -65,12 +73,24 @@ pub async fn post_public(
         .into_response())
 }
 
+#[derive(Debug, Deserialize)]
+pub struct ResetForm {
+    csrf_token: String,
+}
+
 #[handler]
 pub async fn post_reset(
     env: Data<&Env>,
     SessionUser(user): SessionUser,
+    csrf_verifier: &CsrfVerifier,
     Path(id): Path<Key<Upload>>,
+    Form(ResetForm { csrf_token }): Form<ResetForm>,
 ) -> poem::Result<Response> {
+    if !csrf_verifier.is_valid(&csrf_token) {
+        tracing::warn!(%id, "CSRF verification failed for upload reset");
+        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+    }
+
     let mut upload = get_upload_by_id(&env, id).await?;
     check_permission(&env, &upload, Some(&user), UploadPermission::ResetDownloads).await?;
 

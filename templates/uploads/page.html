@@ -34,6 +34,7 @@
             href="#"
             title="Reset remaining downloads to {{ upload.limit }}"
             hx-post="/uploads/{{ upload.id }}/reset"
+            hx-include="[name='csrf_token']"
             hx-trigger="click"
             hx-swap="none"
             hx-confirm="Are you sure you want to reset the remaining downloads for this upload?">
@@ -117,7 +118,9 @@
             </a>
             <a
               href="#"
-              hx-post="/uploads/{{ upload.id }}/public?public={{ not upload.public }}"
+              hx-post="/uploads/{{ upload.id }}/public"
+              hx-vals='{"public": {{ (not upload.public) | tojson }} }'
+              hx-include="[name='csrf_token']"
               hx-trigger="click"
               hx-swap="none"
               {% if upload.public %}
@@ -139,6 +142,7 @@
                 href="#"
                 title="Reset remaining downloads to {{ upload.limit }}"
                 hx-post="/uploads/{{ upload.id }}/reset"
+                hx-include="[name='csrf_token']"
                 hx-trigger="click"
                 hx-swap="none"
                 hx-confirm="Are you sure you want to reset the remaining downloads for this upload?">

@@ -40,11 +40,14 @@
     {% endif %}
   </div>
   <div class="buttons end mt-4">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     {% if not upload.public %}
       <button
         type="button"
         class="button hollow"
-        hx-post="/uploads/{{ upload.id }}/public?public=true"
+        hx-post="/uploads/{{ upload.id }}/public"
+        hx-vals='{"public":true}'
+        hx-include="previous [name='csrf_token']"
         hx-trigger="click"
         hx-swap="none">
         <span class="icon-eye"></span>

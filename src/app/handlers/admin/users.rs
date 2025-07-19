@@ -602,12 +602,24 @@ pub async fn post_check_username(
     .await
 }
 
+#[derive(Debug, Deserialize)]
+pub struct DisableUserForm {
+    csrf_token: String,
+}
+
 #[handler]
 pub async fn post_disable_user(
     env: Data<&Env>,
-    Path(user_id): Path<Key<User>>,
     SessionAdmin(_): SessionAdmin,
+    csrf_verifier: &CsrfVerifier,
+    Path(user_id): Path<Key<User>>,
+    Form(DisableUserForm { csrf_token }): Form<DisableUserForm>,
 ) -> poem::Result<Redirect> {
+    if !csrf_verifier.is_valid(&csrf_token) {
+        tracing::error!("Invalid CSRF token in disable user request");
+        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+    }
+
     let Some(mut user) = User::get(&env.pool, user_id).await.map_err(|err| {
         tracing::error!(err = ?err, user_id = %user_id, "Failed to get user");
         InternalServerError(err)
@@ -629,9 +641,16 @@ pub async fn post_disable_user(
 #[handler]
 pub async fn post_enable_user(
     env: Data<&Env>,
-    Path(user_id): Path<Key<User>>,
     SessionAdmin(_): SessionAdmin,
+    csrf_verifier: &CsrfVerifier,
+    Path(user_id): Path<Key<User>>,
+    Form(DisableUserForm { csrf_token }): Form<DisableUserForm>,
 ) -> poem::Result<Redirect> {
+    if !csrf_verifier.is_valid(&csrf_token) {
+        tracing::error!("Invalid CSRF token in disable user request");
+        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+    }
+
     let Some(mut user) = User::get(&env.pool, user_id).await.map_err(|err| {
         tracing::error!(err = ?err, user_id = %user_id, "Failed to get user");
         InternalServerError(err)

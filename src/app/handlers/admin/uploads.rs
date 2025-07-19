@@ -2,9 +2,9 @@ use minijinja::context;
 use poem::{
     error::InternalServerError,
     handler,
-    web::{Data, Html},
+    web::{CsrfToken, CsrfVerifier, Data, Form, Html, Query},
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use time::{Date, OffsetDateTime};
 
@@ -69,9 +69,17 @@ pub async fn get_uploads(
 #[handler]
 pub async fn get_cache(
     env: Data<&Env>,
+    csrf_token: &CsrfToken,
     SessionAdmin(admin): SessionAdmin,
 ) -> poem::Result<Html<String>> {
-    render_template("admin/uploads/cache.html", authorized_context(&env, &admin)).await
+    render_template(
+        "admin/uploads/cache.html",
+        context! {
+            csrf_token => csrf_token.0,
+            ..authorized_context(&env, &admin)
+        },
+    )
+    .await
 }
 
 trait WithCacheFiles: Default {
@@ -192,16 +200,32 @@ where
     Ok(result)
 }
 
+#[derive(Debug, Deserialize)]
+pub struct CacheParams {
+    csrf_token: String,
+}
+
 #[handler]
 pub async fn post_cache(
     env: Data<&Env>,
     SessionAdmin(admin): SessionAdmin,
+    next_token: &CsrfToken,
+    csrf_verifier: &CsrfVerifier,
+    Form(CacheParams { csrf_token }): Form<CacheParams>,
 ) -> poem::Result<Html<String>> {
+    if !csrf_verifier.is_valid(&csrf_token) {
+        tracing::error!("CSRF token is invalid in cache management");
+        return Err(poem::Error::from_status(
+            poem::http::StatusCode::UNAUTHORIZED,
+        ));
+    }
+
     let summary = find_cache_files::<CacheFilesSummary>(*env).await?;
     render_template(
         "admin/uploads/cache.html",
         context! {
             summary,
+            csrf_token => next_token.0,
             ..authorized_context(&env, &admin)
         },
     )
@@ -212,12 +236,23 @@ pub async fn post_cache(
 pub async fn delete_cache(
     env: Data<&Env>,
     SessionAdmin(admin): SessionAdmin,
+    next_token: &CsrfToken,
+    csrf_verifier: &CsrfVerifier,
+    Query(CacheParams { csrf_token }): Query<CacheParams>,
 ) -> poem::Result<Html<String>> {
+    if !csrf_verifier.is_valid(&csrf_token) {
+        tracing::error!("CSRF token is invalid in cache management");
+        return Err(poem::Error::from_status(
+            poem::http::StatusCode::UNAUTHORIZED,
+        ));
+    }
+
     let result = find_cache_files::<CacheFilesCleanup>(*env).await?;
     render_template(
         "admin/uploads/cache.html",
         context! {
             result,
+            csrf_token => next_token.0,
             ..authorized_context(&env, &admin)
         },
     )

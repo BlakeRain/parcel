@@ -259,6 +259,7 @@ pub struct GetShareQuery {
 pub async fn get_share(
     env: Data<&Env>,
     SessionUser(user): SessionUser,
+    csrf_token: &CsrfToken,
     Path(id): Path<Key<Upload>>,
     Query(GetShareQuery { immediate }): Query<GetShareQuery>,
 ) -> poem::Result<Html<String>> {
@@ -266,12 +267,10 @@ pub async fn get_share(
     check_permission(&env, &upload, Some(&user), UploadPermission::Share).await?;
 
     let team = if let Some(team_id) = upload.owner_team {
-        Team::get(&env.pool, team_id)
-            .await
-            .map_err(|err| {
-                tracing::error!(?err, team_id = %team_id, "Unable to get team by ID");
-                InternalServerError(err)
-            })?
+        Team::get(&env.pool, team_id).await.map_err(|err| {
+            tracing::error!(?err, team_id = %team_id, "Unable to get team by ID");
+            InternalServerError(err)
+        })?
     } else {
         None
     };
@@ -282,6 +281,7 @@ pub async fn get_share(
             upload,
             immediate,
             team,
+            csrf_token => csrf_token.0,
             ..authorized_context(&env, &user)
         },
     )

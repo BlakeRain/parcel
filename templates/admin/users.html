@@ -119,6 +119,7 @@
                     href="#"
                     title="{% if user.enabled %}Disable{% else %}Enable{% endif %} user"
                     hx-post="/admin/users/{{ user.id }}/{% if user.enabled %}disable{% else %}enable{% endif %}"
+                    hx-include="[name='csrf_token']"
                     hx-trigger="click"
                     hx-target="#user-list-container"
                     hx-select="#user-list-container"

@@ -119,9 +119,17 @@
             class="button hollow"
             title="Make upload {{ opposite }}"
             {% if team and not membership.can_edit %}disabled{% endif %}
-            hx-post="/uploads/{{ upload.id }}/public?public={{ not upload.public }}"
+            hx-post="/uploads/{{ upload.id }}/public"
+            hx-vals='{"public": {{ (not upload.public) | tojson }} }'
+            hx-include="[name='csrf_token']"
             hx-trigger="click"
-            hx-swap="none">
+            hx-swap="none"
+            {% if upload.public %}
+              title="Deny public access to this upload"
+            {% else %}
+              hx-confirm="Are you sure you want to allow public access to this upload?"
+              title="Allow public access to this upload"
+            {% endif %}>
             {% if upload.public %}
               <span class="icon-eye-off"></span>
             {% else %}
