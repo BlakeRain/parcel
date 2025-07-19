@@ -51,7 +51,7 @@ body.has-web-components .no-web-components {
       @apply text-blue-700 dark:text-blue-400;
     }
 
-    &.no-color, &.button {
+    &.no-color {
       @apply text-inherit;
 
       &:hover {
