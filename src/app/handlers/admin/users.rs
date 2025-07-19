@@ -7,7 +7,7 @@ use poem::{
     handler,
     http::StatusCode,
     session::Session,
-    web::{CsrfToken, CsrfVerifier, Data, Html, Path, Query, Redirect},
+    web::{CsrfToken, CsrfVerifier, Data, Form, Html, Path, Query, Redirect},
     IntoResponse, Response,
 };
 use serde::{Deserialize, Serialize};
@@ -16,7 +16,7 @@ use validator::{Validate, ValidationError, ValidationErrors};
 
 use crate::{
     app::{
-        extractors::{admin::SessionAdmin, form::Form},
+        extractors::admin::SessionAdmin,
         templates::{authorized_context, render_template},
     },
     env::Env,

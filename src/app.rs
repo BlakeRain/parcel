@@ -11,7 +11,6 @@ use crate::env::Env;
 
 mod extractors {
     pub mod admin;
-    pub mod form;
     pub mod user;
 }
 
