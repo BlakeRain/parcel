@@ -132,14 +132,25 @@ pub async fn post_new(
                 }
             }
         } else if field.name() == Some("file") {
-            let slug = nanoid::nanoid!();
             let filename = field
                 .file_name()
                 .map(ToString::to_string)
                 .unwrap_or_else(|| "unnamed.ext".to_string());
 
+            let (slug, path) = {
+                loop {
+                    let slug = nanoid::nanoid!();
+                    let path = env.cache_dir.join(&slug);
+
+                    if !path.exists() {
+                        break (slug, path);
+                    }
+
+                    tracing::info!(?slug, ?path, "Slug already exists, generating a new one");
+                }
+            };
+
             let mut field = field.into_async_read();
-            let path = env.cache_dir.join(&slug);
 
             {
                 let mut file = tokio::fs::File::create(&path).await.map_err(|err| {
