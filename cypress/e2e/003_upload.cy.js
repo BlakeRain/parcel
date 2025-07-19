@@ -14,7 +14,7 @@ describe("Uploading Files", () => {
 
     cy.get("#uploads-table").should(
       "contain",
-      "You have not uploaded any files",
+      "You have not uploaded any files"
     );
 
     cy.contains("button", "Upload").click();
@@ -44,7 +44,7 @@ describe("Uploading Files", () => {
 
     cy.get("#uploads-table").should(
       "contain",
-      "You have not uploaded any files",
+      "You have not uploaded any files"
     );
 
     cy.get("body").selectFile("cypress/uploads/test-file.txt", {
@@ -73,7 +73,7 @@ describe("Uploading Files", () => {
 
     cy.get("#uploads-table").should(
       "contain",
-      "You have not uploaded any files",
+      "You have not uploaded any files"
     );
 
     cy.get("body").selectFile("cypress/uploads/test-file.txt", {
@@ -102,7 +102,7 @@ describe("Uploading Files", () => {
 
     cy.get("#uploads-table").should(
       "contain",
-      "You have not uploaded any files",
+      "You have not uploaded any files"
     );
 
     cy.get("body").selectFile("cypress/uploads/test-file.txt", {
@@ -131,7 +131,7 @@ describe("Uploading Files", () => {
       cy.get("div:nth-child(7)").should("contain", "No");
       cy.get("div:nth-child(8)").should(
         "contain",
-        new Date().toISOString().split("T")[0],
+        new Date().toISOString().split("T")[0]
       );
     });
   });
@@ -265,7 +265,7 @@ describe("Uploading Files", () => {
       cy.get("div:nth-child(7)").should("contain", "No");
       cy.get("div:nth-child(8)").should(
         "contain",
-        new Date().toISOString().split("T")[0],
+        new Date().toISOString().split("T")[0]
       );
     });
 
@@ -277,7 +277,7 @@ describe("Uploading Files", () => {
       cy.get("div:nth-child(7)").should("contain", "No");
       cy.get("div:nth-child(8)").should(
         "contain",
-        new Date().toISOString().split("T")[0],
+        new Date().toISOString().split("T")[0]
       );
     });
   });

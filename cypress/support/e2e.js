@@ -46,13 +46,16 @@ Cypress.Commands.add("upload", ({ filename, owner }) => {
     message: "${filename} | ${owner}",
   });
 
-  cy.readFile(`cypress/uploads/${filename}`, "base64", {
-    log: true,
-  }).then((content) => {
-    cy.request("POST", "/debug/uploads", [{ filename, owner, content }]).then(
-      (response) => {
-        expect(response.status).to.eq(200);
-      },
-    );
-  });
+  return cy
+    .readFile(`cypress/uploads/${filename}`, "base64", {
+      log: true,
+    })
+    .then((content) => {
+      return cy
+        .request("POST", "/debug/uploads", [{ filename, owner, content }])
+        .then((response) => {
+          expect(response.status).to.eq(200);
+          return response.body[0];
+        });
+    });
 });
