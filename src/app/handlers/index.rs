@@ -49,12 +49,20 @@ pub async fn get_index(
         })?;
 
     // Get the first page of uploads for the user.
-    let uploads = UploadList::get_for_user(&env.pool, user.id, query.order, query.asc, 0, 50)
-        .await
-        .map_err(|err| {
-            tracing::error!(%user.id, ?err, "Unable to get uploads for user");
-            poem::error::InternalServerError(err)
-        })?;
+    let uploads = UploadList::get_for_user(
+        &env.pool,
+        user.id,
+        query.get_search(),
+        query.order,
+        query.asc,
+        0,
+        50,
+    )
+    .await
+    .map_err(|err| {
+        tracing::error!(%user.id, ?err, "Unable to get uploads for user");
+        poem::error::InternalServerError(err)
+    })?;
 
     render_template(
         "index.html",
@@ -101,12 +109,20 @@ pub async fn get_tab(
             poem::error::InternalServerError(err)
         })?;
 
-    let uploads = UploadList::get_for_user(&env.pool, user.id, query.order, query.asc, 0, 50)
-        .await
-        .map_err(|err| {
-            tracing::error!(%user.id, ?err, "Unable to get uploads for user");
-            poem::error::InternalServerError(err)
-        })?;
+    let uploads = UploadList::get_for_user(
+        &env.pool,
+        user.id,
+        query.get_search(),
+        query.order,
+        query.asc,
+        0,
+        50,
+    )
+    .await
+    .map_err(|err| {
+        tracing::error!(%user.id, ?err, "Unable to get uploads for user");
+        poem::error::InternalServerError(err)
+    })?;
 
     Ok(render_template(
         "tab.html",

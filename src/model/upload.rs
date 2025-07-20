@@ -519,6 +519,7 @@ impl UploadList {
     pub async fn get_for_user(
         pool: &SqlitePool,
         user: Key<User>,
+        search: Option<&str>,
         order: UploadOrder,
         asc: bool,
         offset: u32,
@@ -538,8 +539,13 @@ impl UploadList {
                 LEFT JOIN teams ON uploads.owner_team = teams.id \
                 LEFT JOIN users ON uploads.owner_user = users.id \
                 LEFT JOIN users AS uploader ON uploads.uploaded_by = uploader.id \
-                WHERE uploads.owner_user = $1 \
+                WHERE uploads.owner_user = $1 {} \
                 ORDER BY {} {} LIMIT {} OFFSET {}",
+            if let Some(search) = search {
+                format!("AND (uploads.filename LIKE '%{search}%')")
+            } else {
+                String::new()
+            },
             order.get_order_field(),
             if asc { "ASC" } else { "DESC" },
             limit,
@@ -553,6 +559,7 @@ impl UploadList {
     pub async fn get_for_team(
         pool: &SqlitePool,
         team: Key<Team>,
+        search: Option<&str>,
         order: UploadOrder,
         asc: bool,
         offset: u32,
@@ -572,8 +579,13 @@ impl UploadList {
                 LEFT JOIN teams ON uploads.owner_team = teams.id \
                 LEFT JOIN users ON uploads.owner_user = users.id \
                 LEFT JOIN users AS uploader ON uploads.uploaded_by = uploader.id \
-                WHERE uploads.owner_team = $1 \
+                WHERE uploads.owner_team = $1 {} \
                 ORDER BY {} {} LIMIT {} OFFSET {}",
+            if let Some(search) = search {
+                format!("AND (uploads.filename LIKE '%{search}%')")
+            } else {
+                String::new()
+            },
             order.get_order_field(),
             if asc { "ASC" } else { "DESC" },
             limit,

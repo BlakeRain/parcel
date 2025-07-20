@@ -65,12 +65,20 @@ pub async fn get_list(
         .await
         .map_err(InternalServerError)?;
 
-    let uploads = UploadList::get_for_team(&env.pool, team.id, query.order, query.asc, 0, 50)
-        .await
-        .map_err(|err| {
-            tracing::error!(%user.id, ?err, "Unable to get uploads for team");
-            InternalServerError(err)
-        })?;
+    let uploads = UploadList::get_for_team(
+        &env.pool,
+        team.id,
+        query.get_search(),
+        query.order,
+        query.asc,
+        0,
+        50,
+    )
+    .await
+    .map_err(|err| {
+        tracing::error!(%user.id, ?err, "Unable to get uploads for team");
+        InternalServerError(err)
+    })?;
 
     render_template(
         "uploads/list.html",
@@ -118,13 +126,20 @@ pub async fn get_page(
         return Err(poem::Error::from_status(StatusCode::FORBIDDEN));
     };
 
-    let uploads =
-        UploadList::get_for_team(&env.pool, team.id, query.order, query.asc, 50 * page, 50)
-            .await
-            .map_err(|err| {
-                tracing::error!(%team.id, ?err, "Unable to get uploads for team");
-                InternalServerError(err)
-            })?;
+    let uploads = UploadList::get_for_team(
+        &env.pool,
+        team.id,
+        query.get_search(),
+        query.order,
+        query.asc,
+        50 * page,
+        50,
+    )
+    .await
+    .map_err(|err| {
+        tracing::error!(%team.id, ?err, "Unable to get uploads for team");
+        InternalServerError(err)
+    })?;
 
     render_template(
         "uploads/page.html",

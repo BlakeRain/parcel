@@ -25,9 +25,22 @@ use crate::{
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ListQuery {
     #[serde(default)]
+    pub search: String,
+    #[serde(default)]
     pub order: UploadOrder,
     #[serde(default)]
     pub asc: bool,
+}
+
+impl ListQuery {
+    pub fn get_search(&self) -> Option<&str> {
+        let search = self.search.trim();
+        if search.is_empty() {
+            None
+        } else {
+            Some(search)
+        }
+    }
 }
 
 #[handler]
@@ -60,12 +73,20 @@ pub async fn get_list(
         .await
         .map_err(InternalServerError)?;
 
-    let uploads = UploadList::get_for_user(&env.pool, user.id, query.order, query.asc, 0, 50)
-        .await
-        .map_err(|err| {
-            tracing::error!(%user.id, ?err, "Unable to get uploads for user");
-            InternalServerError(err)
-        })?;
+    let uploads = UploadList::get_for_user(
+        &env.pool,
+        user.id,
+        query.get_search(),
+        query.order,
+        query.asc,
+        0,
+        50,
+    )
+    .await
+    .map_err(|err| {
+        tracing::error!(%user.id, ?err, "Unable to get uploads for user");
+        InternalServerError(err)
+    })?;
 
     render_template(
         "uploads/list.html",
@@ -155,13 +176,20 @@ pub async fn get_page(
         InternalServerError(err)
     })?;
 
-    let uploads =
-        UploadList::get_for_user(&env.pool, user.id, query.order, query.asc, 50 * page, 50)
-            .await
-            .map_err(|err| {
-                tracing::error!(%user.id, ?err, "Unable to get uploads for user");
-                InternalServerError(err)
-            })?;
+    let uploads = UploadList::get_for_user(
+        &env.pool,
+        user.id,
+        query.get_search(),
+        query.order,
+        query.asc,
+        50 * page,
+        50,
+    )
+    .await
+    .map_err(|err| {
+        tracing::error!(%user.id, ?err, "Unable to get uploads for user");
+        InternalServerError(err)
+    })?;
 
     render_template(
         "uploads/page.html",

@@ -1,46 +1,62 @@
 {% include "uploads/tabs.html" %}
-<form id="upload-list-container" method="POST" hx-swap-oob="true">
+<div id="upload-list-container" hx-swap-oob="true">
   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <div class="flex flex-col dark:bg-gray-800 border border-slate-400 dark:border-gray-700 rounded-md
     {% if not team %}rounded-tl-none{% endif %}">
     <div class="flex flex-col sm:flex-row gap-4 justify-between p-4">
       {% include "uploads/stats.html" %}
-      <div class="buttons">
-        <button
-          id="delete_selected"
-          type="button"
-          class="button order-2 sm:order-1"
-          hx-trigger="click"
-          {% if not team or membership.can_delete %}
-            hx-post="/uploads/delete"
-            hx-confirm="Are you sure you want to delete the selected files?"
-            hx-include="[name='csrf_token']"
-          {% endif %}
-          hx-swap="none"
-          disabled>
-          <span class="icon-trash-2"></span>
-          Delete
-        </button>
-        <button
-          id="upload-list-refresh"
-          type="button"
-          class="button order-1 sm:order-2"
-          hx-trigger="click,refresh"
-          hx-get="{% if team %}/teams/{{ team.id }}{% endif %}/uploads/list?order={{ query.order }}&asc={{ query.asc }}"
-          hx-swap="none">
-          <span class="icon-refresh-cw"></span>
-          Refresh
-        </button>
-        <button
-          type="button"
-          class="button"
-          hx-get="/uploads/new{% if team %}?team={{ team.id }}{% endif %}"
-          hx-trigger="click"
-          hx-target="body"
-          hx-swap="beforeend">
-          <span class="icon-upload"></span>
-          Upload
-        </button>
+      <div class="flex flex-col xl:flex-row gap-2">
+        <div class="order-2 xl:order-1">
+          <input
+            type="text"
+            autocomplete="off"
+            name="search"
+            id="upload-search"
+            class="field"
+            placeholder="Search uploads"
+            hx-get="{% if team %}/teams/{{ team.id }}{% endif %}/uploads/list?order={{ query.order }}&asc={{ query.asc }}"
+            value="{{ query.search }}"
+            hx-trigger="input changed delay:500ms, keyup[key=='Enter']"
+            hx-swap="none">
+        </div>
+        <div class="buttons order-1 xl:order-2">
+          <button
+            id="delete_selected"
+            type="button"
+            class="button order-2 sm:order-1"
+            hx-trigger="click"
+            {% if not team or membership.can_delete %}
+              hx-post="/uploads/delete"
+              hx-confirm="Are you sure you want to delete the selected files?"
+              hx-include="[name='csrf_token'], [name='selected']"
+            {% endif %}
+            hx-swap="none"
+            disabled>
+            <span class="icon-trash-2"></span>
+            Delete
+          </button>
+          <button
+            id="upload-list-refresh"
+            type="button"
+            class="button order-1 sm:order-2"
+            hx-trigger="click,refresh"
+            hx-get="{% if team %}/teams/{{ team.id }}{% endif %}/uploads/list?order={{ query.order }}&asc={{ query.asc }}"
+            hx-include="[name='search']"
+            hx-swap="none">
+            <span class="icon-refresh-cw"></span>
+            Refresh
+          </button>
+          <button
+            type="button"
+            class="button"
+            hx-get="/uploads/new{% if team %}?team={{ team.id }}{% endif %}"
+            hx-trigger="click"
+            hx-target="body"
+            hx-swap="beforeend">
+            <span class="icon-upload"></span>
+            Upload
+          </button>
+        </div>
       </div>
     </div>
     {% if stats.total == 0 %}
@@ -96,4 +112,4 @@
       </div>
     {% endif %}
   </div>
-</form>
+</div>
