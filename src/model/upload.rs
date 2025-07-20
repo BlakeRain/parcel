@@ -31,7 +31,8 @@ pub struct Upload {
     pub remote_addr: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(rename_all = "snake_case")]
 pub enum UploadOrder {
     #[serde(rename = "filename")]
     Filename,
@@ -41,14 +42,9 @@ pub enum UploadOrder {
     Downloads,
     #[serde(rename = "expiry_date")]
     ExpiryDate,
+    #[default]
     #[serde(rename = "uploaded_at")]
     UploadedAt,
-}
-
-impl Default for UploadOrder {
-    fn default() -> Self {
-        Self::UploadedAt
-    }
 }
 
 impl UploadOrder {

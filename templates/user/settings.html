@@ -66,7 +66,48 @@
           value="{{ auth.name }}"
           required
         />
-        <div class="buttons end">
+        <div class="flex flex-row gap-2">
+          <div class="grow">
+            <label for="default_order">Default sorting</label>
+            <select
+              class="field"
+              name="default_order"
+              id="default_order"
+              title="Default sort order for uploads">
+              <option value="filename" {% if auth.default_order == "filename" %}selected{% endif %}>
+                Sort by filename
+              </option>
+              <option value="size" {% if auth.default_order == "size" %}selected{% endif %}>
+                Sort by file size
+              </option>
+              <option value="downloads" {% if auth.default_order == "downloads" %}selected{% endif %}>
+                Sort by number of downloads
+              </option>
+              <option value="expiry_date" {% if auth.default_order == "expiry_date" %}selected{% endif %}>
+                Sort by expiry date
+              </option>
+              <option value="uploaded_at" {% if auth.default_order == "uploaded_at" %}selected{% endif %}>
+                Sort by upload date
+              </option>
+            </select>
+          </div>
+          <div>
+            <label for="default_asc">Default order</label>
+            <select
+              class="field"
+              name="default_asc"
+              id="default_asc"
+              title="Default sort order for uploads">
+              <option value="true" {% if auth.default_asc == true %}selected{% endif %}>
+                Ascending
+              </option>
+              <option value="false" {% if auth.default_asc == false %}selected{% endif %}>
+                Descending
+              </option>
+            </select>
+          </div>
+        </div>
+        <div class="buttons end mt-6">
           <button type="submit" class="button">
             <span class="icon-check"></span>
             Update settings
@@ -107,7 +148,7 @@
           id="confirm"
           placeholder="Confirm new password"
           required />
-        <div class="buttons end" style="margin-top: auto">
+        <div class="buttons end mt-6">
           <button type="submit" class="button">
             <span class="icon-key"></span>
             Change password

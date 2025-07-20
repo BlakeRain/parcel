@@ -5,7 +5,7 @@ use serde::Serialize;
 use sqlx::{FromRow, QueryBuilder, SqlitePool};
 use time::OffsetDateTime;
 
-use super::{password::StoredPassword, team::Team, types::Key};
+use super::{password::StoredPassword, team::Team, types::Key, upload::UploadOrder};
 
 #[derive(FromRow, Serialize)]
 pub struct User {
@@ -22,6 +22,8 @@ pub struct User {
     pub created_at: OffsetDateTime,
     pub created_by: Option<Key<User>>,
     pub last_access: Option<OffsetDateTime>,
+    pub default_order: UploadOrder,
+    pub default_asc: bool,
 }
 
 pub async fn requires_setup(pool: &SqlitePool) -> sqlx::Result<bool> {
@@ -35,8 +37,11 @@ pub async fn requires_setup(pool: &SqlitePool) -> sqlx::Result<bool> {
 impl User {
     pub async fn create(&self, pool: &SqlitePool) -> sqlx::Result<()> {
         sqlx::query(
-            "INSERT INTO users (id, username, name, password, enabled, admin,
-            \"limit\", created_at, created_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            "INSERT INTO users \
+            (id, username, name, password, enabled, admin, \
+             \"limit\", created_at, created_by, \
+             default_order, default_asc) \
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) \
             RETURNING id",
         )
         .bind(self.id)
@@ -48,6 +53,8 @@ impl User {
         .bind(self.limit)
         .bind(self.created_at)
         .bind(self.created_by)
+        .bind(self.default_order)
+        .bind(self.default_asc)
         .execute(pool)
         .await?;
 
@@ -73,6 +80,24 @@ impl User {
             .await?;
 
         self.name = name.to_string();
+        Ok(())
+    }
+
+    pub async fn set_default_order(
+        &mut self,
+        pool: &SqlitePool,
+        order: UploadOrder,
+        asc: bool,
+    ) -> sqlx::Result<()> {
+        sqlx::query("UPDATE users SET default_order = $1, default_asc = $2 WHERE id = $3")
+            .bind(order)
+            .bind(asc)
+            .bind(self.id)
+            .execute(pool)
+            .await?;
+
+        self.default_order = order;
+        self.default_asc = asc;
         Ok(())
     }
 
@@ -111,9 +136,13 @@ impl User {
         limit: Option<i64>,
     ) -> sqlx::Result<()> {
         sqlx::query(
-            "UPDATE users SET
-                    username = $1, name = $2, enabled = $3, admin = $4, \"limit\" = $5
-                    WHERE id = $6",
+            "UPDATE users SET \
+                username = $1, \
+                name = $2, \
+                enabled = $3, \
+                admin = $4, \
+                \"limit\" = $5 \
+            WHERE id = $6",
         )
         .bind(username)
         .bind(name)

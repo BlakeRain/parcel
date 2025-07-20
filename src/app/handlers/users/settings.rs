@@ -20,7 +20,7 @@ use crate::{
         templates::{authorized_context, render_template},
     },
     env::Env,
-    model::user::User,
+    model::{upload::UploadOrder, user::User},
     utils::SessionExt,
 };
 
@@ -50,6 +50,8 @@ pub struct SettingsForm {
     token: String,
     username: String,
     name: String,
+    default_order: UploadOrder,
+    default_asc: bool,
 }
 
 #[handler]
@@ -62,6 +64,8 @@ pub async fn post_settings(
         token,
         username,
         name,
+        default_order,
+        default_asc,
     }): Form<SettingsForm>,
 ) -> poem::Result<Redirect> {
     if !verifier.is_valid(&token) {
@@ -120,6 +124,11 @@ pub async fn post_settings(
             InternalServerError(err)
         })?;
     }
+
+    user.set_default_order(&env.pool, default_order, default_asc).await.map_err(|err| {
+        tracing::error!(%user.id, ?username, ?err, "Failed to set default order");
+        InternalServerError(err)
+    })?;
 
     session.set(
         "settings_success",

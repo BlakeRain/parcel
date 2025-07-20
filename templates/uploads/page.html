@@ -1,10 +1,14 @@
+{% set query_params = {} %}
+{% if query.order is string %}
+  {% set query_params = dict(query_params, order=query.order) %}
+{% endif %}
+{% if query.asc is boolean %}
+  {% set query_params = dict(query_params, asc=query.asc) %}
+{% endif %}
 {% for upload in uploads %}
 <div
   id="upload-row-{{ upload.id }}"
-  class="uploads-table-row"
-  data-page="{{ page }}"
-  data-order="{{ query.order }}"
-  data-asc="{{ query.asc }}">
+  class="uploads-table-row">
     <div class="text-center">
       <parcel-grouped-checkbox
         name="selected"
@@ -209,7 +213,7 @@
   <div
     class="uploads-table-sentinel"
     hx-trigger="revealed"
-    hx-get="{% if team %}/teams/{{ team.id }}{% endif %}/uploads/list/{{ page + 1 }}?order={{ query.order }}&asc={{ query.asc }}"
+    hx-get="{% if team %}/teams/{{ team.id }}{% endif %}/uploads/list/{{ page + 1 }}?{{ query_params | urlencode }}"
     hx-target="this"
     hx-swap="outerHTML">
   </div>

@@ -24,7 +24,7 @@ use crate::{
         password::StoredPassword,
         team::{Team, TeamMember, TeamSelect},
         types::Key,
-        upload::Upload,
+        upload::{Upload, UploadOrder},
         user::{User, UserList},
     },
     utils::{SessionExt, SizeUnit, ValidationErrorsExt},
@@ -219,6 +219,8 @@ pub async fn post_new(
         created_at: OffsetDateTime::now_utc(),
         created_by: Some(auth.id),
         last_access: None,
+        default_order: UploadOrder::UploadedAt,
+        default_asc: false,
     };
 
     user.create(&env.pool).await.map_err(|err| {

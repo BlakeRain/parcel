@@ -1,4 +1,11 @@
 {% include "uploads/tabs.html" %}
+{% set query_params = {} %}
+{% if query.order is string %}
+  {% set query_params = dict(query_params, order=query.order) %}
+{% endif %}
+{% if query.asc is boolean %}
+  {% set query_params = dict(query_params, asc=query.asc) %}
+{% endif %}
 <div id="upload-list-container" hx-swap-oob="true">
   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <div class="flex flex-col dark:bg-gray-800 border border-slate-400 dark:border-gray-700 rounded-md
@@ -14,7 +21,7 @@
             id="upload-search"
             class="field"
             placeholder="Search uploads"
-            hx-get="{% if team %}/teams/{{ team.id }}{% endif %}/uploads/list?order={{ query.order }}&asc={{ query.asc }}"
+            hx-get="{% if team %}/teams/{{ team.id }}{% endif %}/uploads/list?{{ query_params | urlencode }}"
             value="{{ query.search }}"
             hx-trigger="input changed delay:500ms, keyup[key=='Enter']"
             hx-swap="none">
@@ -40,7 +47,7 @@
             type="button"
             class="button order-1 sm:order-2"
             hx-trigger="click,refresh"
-            hx-get="{% if team %}/teams/{{ team.id }}{% endif %}/uploads/list?order={{ query.order }}&asc={{ query.asc }}"
+            hx-get="{% if team %}/teams/{{ team.id }}{% endif %}/uploads/list?{{ query_params | urlencode }}"
             hx-include="[name='search']"
             hx-swap="none">
             <span class="icon-refresh-cw"></span>
@@ -76,8 +83,10 @@
           </div>
           {% macro sort_heading(query, name, align, title) %}
             {% set qs = "order=" + name %}
-            {% if query.order == name %}
-              {% set qs = qs + "&asc=" + ("false" if query.asc else "true") %}
+            {% set order = query.order if query.order is string else auth.default_order %}
+            {% set asc = query.asc if query.asc is boolean else auth.default_asc %}
+            {% if order == name %}
+              {% set qs = qs + "&asc=" + ("false" if asc else "true") %}
             {% else %}
               {% set qs = qs + "&asc=true" %}
             {% endif %}
@@ -87,8 +96,8 @@
               hx-trigger="click"
               hx-swap="none">
               {{ title }}
-              {% if query.order == name %}
-                {% if query.asc %}
+              {% if order == name %}
+                {% if asc %}
                   <span class="icon-chevron-up"></span>
                 {% else %}
                   <span class="icon-chevron-down"></span>

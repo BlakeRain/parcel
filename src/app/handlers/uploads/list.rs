@@ -26,10 +26,8 @@ use crate::{
 pub struct ListQuery {
     #[serde(default)]
     pub search: String,
-    #[serde(default)]
-    pub order: UploadOrder,
-    #[serde(default)]
-    pub asc: bool,
+    pub order: Option<UploadOrder>,
+    pub asc: Option<bool>,
 }
 
 impl ListQuery {
@@ -77,8 +75,8 @@ pub async fn get_list(
         &env.pool,
         user.id,
         query.get_search(),
-        query.order,
-        query.asc,
+        query.order.unwrap_or(user.default_order),
+        query.asc.unwrap_or(user.default_asc),
         0,
         50,
     )
@@ -180,8 +178,8 @@ pub async fn get_page(
         &env.pool,
         user.id,
         query.get_search(),
-        query.order,
-        query.asc,
+        query.order.unwrap_or(user.default_order),
+        query.asc.unwrap_or(user.default_asc),
         50 * page,
         50,
     )

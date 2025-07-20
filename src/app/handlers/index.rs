@@ -53,8 +53,8 @@ pub async fn get_index(
         &env.pool,
         user.id,
         query.get_search(),
-        query.order,
-        query.asc,
+        query.order.unwrap_or(user.default_order),
+        query.asc.unwrap_or(user.default_asc),
         0,
         50,
     )
@@ -113,8 +113,8 @@ pub async fn get_tab(
         &env.pool,
         user.id,
         query.get_search(),
-        query.order,
-        query.asc,
+        query.order.unwrap_or(user.default_order),
+        query.asc.unwrap_or(user.default_asc),
         0,
         50,
     )

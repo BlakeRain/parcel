@@ -13,7 +13,7 @@
     @apply text-gray-900 dark:text-white;
   }
 
-  label + input {
+  label + input, label + select {
     @apply mt-2;
   }
 

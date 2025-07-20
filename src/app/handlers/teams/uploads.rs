@@ -69,8 +69,8 @@ pub async fn get_list(
         &env.pool,
         team.id,
         query.get_search(),
-        query.order,
-        query.asc,
+        query.order.unwrap_or(user.default_order),
+        query.asc.unwrap_or(user.default_asc),
         0,
         50,
     )
@@ -130,8 +130,8 @@ pub async fn get_page(
         &env.pool,
         team.id,
         query.get_search(),
-        query.order,
-        query.asc,
+        query.order.unwrap_or(user.default_order),
+        query.asc.unwrap_or(user.default_asc),
         50 * page,
         50,
     )

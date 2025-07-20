@@ -17,6 +17,7 @@ use crate::{
     model::{
         password::StoredPassword,
         types::Key,
+        upload::UploadOrder,
         user::{requires_setup, User},
     },
     utils::validate_slug,
@@ -124,6 +125,8 @@ pub async fn post_setup(
         created_at: now,
         created_by: None,
         last_access: Some(now),
+        default_order: UploadOrder::UploadedAt,
+        default_asc: false,
     };
 
     admin.create(&env.pool).await.map_err(|err| {
