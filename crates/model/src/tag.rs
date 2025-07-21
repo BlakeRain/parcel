@@ -112,24 +112,6 @@ impl Tag {
         Ok(tag)
     }
 
-    pub async fn get_for_owner(pool: &SqlitePool, owner: UploadOwner) -> sqlx::Result<Vec<Tag>> {
-        match owner {
-            UploadOwner::User(user_id) => Self::get_for_user(pool, user_id).await,
-            UploadOwner::Team(team_id) => Self::get_for_team(pool, team_id).await,
-        }
-    }
-
-    pub async fn get_for_owner_by_name(
-        pool: &SqlitePool,
-        owner: UploadOwner,
-        name: &str,
-    ) -> sqlx::Result<Option<Tag>> {
-        match owner {
-            UploadOwner::User(user_id) => Self::get_for_user_by_name(pool, user_id, name).await,
-            UploadOwner::Team(team_id) => Self::get_for_team_by_name(pool, team_id, name).await,
-        }
-    }
-
     pub async fn get_or_create_for_owner(
         pool: &SqlitePool,
         owner: UploadOwner,
