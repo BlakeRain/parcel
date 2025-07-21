@@ -45,27 +45,39 @@
           {{ settings_error }}
         </div>
       {% endif %}
-      <form method="POST" action="/user/settings" class="form" id="username-form">
+      <form method="POST" action="/user/settings" class="form gap-4 mt-8" id="username-form">
         <input type="hidden" name="token" value="{{ token }}">
-        <label for="username">Change your username</label>
-        <input
-          class="field"
-          type="text"
-          name="username"
-          id="username"
-          placeholder="Username"
-          value="{{ auth.username }}"
-          required />
-        <label for="name">Display name</label>
-        <input
-          type="text"
-          class="field"
-          name="name"
-          id="name"
-          placeholder="Display Name"
-          value="{{ auth.name }}"
-          required
-        />
+        <div>
+          <label for="username">Change your username</label>
+          <input
+            class="field"
+            type="text"
+            name="username"
+            id="username"
+            placeholder="Username"
+            value="{{ auth.username }}"
+            required />
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Your username is used to log in to your account. It must be unique and can only contain
+            letters, numbers, and underscores.
+          </p>
+        </div>
+        <div>
+          <label for="name">Display name</label>
+          <input
+            type="text"
+            class="field"
+            name="name"
+            id="name"
+            placeholder="Display Name"
+            value="{{ auth.name }}"
+            required
+          />
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Your display name is shown on your uploads and in your profile. It can contain any
+            characters.
+          </p>
+        </div>
         <div class="flex flex-row gap-2">
           <div class="grow">
             <label for="default_order">Default sorting</label>
