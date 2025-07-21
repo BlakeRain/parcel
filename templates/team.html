@@ -2,20 +2,12 @@
 {% block title %}{{ team.name }} Uploads{% endblock %}
 {% block content %}
   <div class="grow flex flex-col p-4 lg:mt-4 lg:px-4 lg:py-0">
+    {# Store the team identifier, which is retrieved by the upload code #}
     <script type="text/json" id="team-identifier">[{{ team.id | tojson }}]</script>
     {# We can inline the first page of the uploads list #}
     {% include "uploads/list.html" %}
   </div>
-  <div id="drop-indicator" class="drop-indicator invisible">
-    <div class="content">
-      <div class="flex flex-col gap-4">
-        <h1 class="text-2xl text-center">
-          <span class="icon-upload"></span>
-          Drop files here
-        </h1>
-      </div>
-    </div>
-  </div>
+  {% include "utils/drop-indicator.html" %}
 {% endblock %}
 {% block scripts %}
   <script type="module" src="{{ index_js | script_bundle | safe }}"></script>

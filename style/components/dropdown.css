@@ -6,7 +6,7 @@
   .dropdown-button {
     @apply flex items-center justify-center w-6 h-6;
     @apply rounded-full;
-    @apply cursor-pointer;
+    @apply cursor-pointer select-none;
     @apply hover:bg-neutral-100 text-neutral-800 hover:text-neutral-900;
     @apply dark:hover:bg-gray-700 dark:text-neutral-300 dark:hover:text-neutral-100;
   }
@@ -35,6 +35,17 @@
       > a {
         @apply block text-inherit hover:bg-neutral-200 dark:hover:bg-gray-600 px-4 py-2;
       }
+    }
+  }
+
+  .dropdown.nav-dropdown {
+    .nav-dropdown-button {
+      @apply flex flex-row gap-1 cursor-pointer select-none px-4 py-4;
+      @apply text-neutral-800 dark:text-neutral-200 hover:bg-slate-700/10;
+    }
+
+    .dropdown-menu {
+      @apply right-0 top-full left-auto w-max;
     }
   }
 }

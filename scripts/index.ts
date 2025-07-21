@@ -58,6 +58,7 @@ function hideDropIndicator(
   indicator.__dropIndicator.visible = false;
 }
 
+// Get the team identifier from the script element with id "team-identifier".
 function getTeamIdentifier(): string | null {
   const element = document.getElementById("team-identifier");
   if (!element) {
@@ -89,6 +90,14 @@ function getTeamIdentifier(): string | null {
   return identifier;
 }
 
+// Check if there is a `<parcel-upload-form>` in the DOM.
+//
+// We use this to gate our drag-and-drop trigger functionality when there is no upload form
+// present. If there is a form, then it will handle the drag-and-drop events for itself.
+function hasUploadForm(): boolean {
+  return document.querySelector("parcel-upload-form") !== null;
+}
+
 function setupDropIndicator() {
   if (document["__dropIndicatorInstalled"]) {
     console.log("Drop indicator already installed");
@@ -105,7 +114,7 @@ function setupDropIndicator() {
   document.body.addEventListener("dragenter", (event: DragEvent) => {
     // First we want to see if we already have a `<parcel-upload-form>` in the DOM. If we do, then we
     // don't need to do anything here, as the form handles this event.
-    if (document.querySelector("parcel-upload-form")) {
+    if (hasUploadForm()) {
       return;
     }
 
@@ -120,7 +129,7 @@ function setupDropIndicator() {
   document.body.addEventListener("dragleave", (event: DragEvent) => {
     // As with 'handleDragOver', we're not going to operate if we have a `<parcel-upload-form>` in the
     // DOM, as that'll handle the event.
-    if (document.querySelector("parcel-upload-form")) {
+    if (hasUploadForm()) {
       return;
     }
 
@@ -135,7 +144,7 @@ function setupDropIndicator() {
   document.body.addEventListener("drop", (event: DragEvent) => {
     // The user has dropped some files directly into the index page. First off, we want to see if
     // there is already a `<parcel-upload-form>` that can handle that for us.
-    if (document.querySelector("parcel-upload-form")) {
+    if (hasUploadForm()) {
       return;
     }
 
@@ -165,7 +174,7 @@ function setupDropIndicator() {
       )
       .then(() => {
         // Now we can get at the `<upload-form>` and tell it about our dropped files. However the
-        // event receiver will not mount immediately: whilst HTMX things things are on their way to
+        // event receiver will not mount immediately: whilst HTMX things are on their way to
         // being settled, we would still have to wait for the upload form to populate and connect
         // itself together.
 
@@ -175,6 +184,7 @@ function setupDropIndicator() {
           const receiver = document.querySelector(
             "parcel-upload-form > .event-receiver",
           );
+
           if (receiver) {
             window.clearInterval(interval);
             receiver.dispatchEvent(

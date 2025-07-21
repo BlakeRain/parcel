@@ -29,12 +29,7 @@ class Dropdown extends HTMLElement {
         this.dropdown.appendChild(this.firstChild);
       }
 
-      this.button = document.createElement("div");
-      this.button.className = "dropdown-button";
-
-      const icon = document.createElement("span");
-      icon.className = "icon-menu";
-      this.button.appendChild(icon);
+      this.button = this.createButton();
       this.appendChild(this.button);
       this.appendChild(this.dropdown);
     }
@@ -65,10 +60,44 @@ class Dropdown extends HTMLElement {
     this.dropdown.classList.remove("open");
     this.open = false;
   }
+
+  createButton(): HTMLDivElement {
+    const icon_name = this.getAttribute("icon") || "icon-menu";
+    const button = document.createElement("div");
+    button.className = "dropdown-button";
+
+    const icon = document.createElement("span");
+    icon.className = icon_name;
+    button.append(icon);
+
+    const label_text = this.getAttribute("label");
+    if (label_text) {
+      const label = document.createElement("span");
+      label.className = "dropdown-label";
+      label.textContent = label_text;
+      button.append(label);
+    }
+
+    return button;
+  }
+}
+
+class NavDropdown extends Dropdown {
+  connectedCallback() {
+    super.connectedCallback();
+    this.classList.add("nav-dropdown");
+  }
+
+  createButton(): HTMLDivElement {
+    const button = super.createButton();
+    button.className = "nav-dropdown-button";
+    return button;
+  }
 }
 
 export function register() {
   customElements.define("parcel-dropdown", Dropdown);
+  customElements.define("parcel-nav-dropdown", NavDropdown);
 
   window.addEventListener("click", () => {
     hideDropdowns();

@@ -15,6 +15,7 @@
     &:disabled {
       @apply text-white/75 dark:text-white/50;
       @apply bg-primary-700/50;
+      @apply cursor-auto;
     }
 
     &.success {
