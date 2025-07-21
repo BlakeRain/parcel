@@ -15,8 +15,23 @@ ADD . .
 RUN npm install
 RUN cargo build --target x86_64-unknown-linux-musl --release
 
-FROM scratch
-EXPOSE 3000
+# ------------------------------------------------------------------------------------------------
+# Build the final image
+
+FROM alpine:latest
+
+# Install dependencies, such as file identification and preview generation tools.
+RUN apk add --no-cache file imagemagick poppler-utils ffmpeg
+
+# Create a group and user
+RUN addgroup -S parcel && adduser -S parcel -G parcel
+
+# Prepare the working directory
+WORKDIR /app
 COPY --from=builder /usr/src/parcel/target/x86_64-unknown-linux-musl/release/parcel-server .
 COPY --from=builder /usr/src/parcel/static ./static
+
+# Set the user and run the application
+USER parcel
+EXPOSE 3000
 ENTRYPOINT ["./parcel-server"]
