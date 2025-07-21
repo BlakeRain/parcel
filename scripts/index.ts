@@ -222,10 +222,20 @@ function setupParcelChangeEvent() {
       const order = row.dataset.order;
       const asc = row.dataset.asc;
 
+      const params = new URLSearchParams();
+
+      if (order) {
+        params.set("order", order);
+      }
+
+      if (asc) {
+        params.set("asc", asc);
+      }
+
       htmx.ajax(
         "get",
         (team ? `/teams/${team}` : "") +
-          `/uploads/list/${page}?order=${order}&asc=${asc}`,
+          `/uploads/list/${page}?${params.toString()}`,
         {
           target: "#upload-row-" + event.detail.value,
           select: "#upload-row-" + event.detail.value,

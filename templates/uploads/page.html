@@ -8,7 +8,10 @@
 {% for upload in uploads %}
 <div
   id="upload-row-{{ upload.id }}"
-  class="uploads-table-row">
+  class="uploads-table-row"
+  data-page="{{ page }}"
+  {% if query.order is string %}data-order="{{ query.order }}"{% endif %}
+  {% if query.asc is boolean %}data-asc="{{ query.asc }}"{% endif %}>
     <div class="text-center">
       <parcel-grouped-checkbox
         name="selected"
