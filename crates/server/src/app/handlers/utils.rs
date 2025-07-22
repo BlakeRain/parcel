@@ -75,18 +75,17 @@ pub async fn delete_upload_cache(env: &Env, upload: &Upload) {
 }
 
 pub async fn delete_upload_cache_by_slug(env: &Env, slug: &str) {
-        let path = env.cache_dir.join(&slug);
-        tracing::info!(path = ?path, "Deleting cached upload");
-        if let Err(err) = tokio::fs::remove_file(&path).await {
-            tracing::error!(path = ?path, err = ?err, "Failed to delete cached upload");
-        }
+    let path = env.cache_dir.join(slug);
+    tracing::info!(path = ?path, "Deleting cached upload");
+    if let Err(err) = tokio::fs::remove_file(&path).await {
+        tracing::error!(path = ?path, err = ?err, "Failed to delete cached upload");
+    }
 
-        let preview_path = env.cache_dir.join(format!("{slug}.preview"));
-        if preview_path.exists() {
-            tracing::info!(path = ?preview_path, "Deleting cached upload preview");
-            if let Err(err) = tokio::fs::remove_file(&preview_path).await {
-                tracing::error!(path = ?preview_path, err = ?err, "Failed to delete cached upload preview");
-            }
+    let preview_path = env.cache_dir.join(format!("{slug}.preview"));
+    if preview_path.exists() {
+        tracing::info!(path = ?preview_path, "Deleting cached upload preview");
+        if let Err(err) = tokio::fs::remove_file(&preview_path).await {
+            tracing::error!(path = ?preview_path, err = ?err, "Failed to delete cached upload preview");
         }
-
+    }
 }
