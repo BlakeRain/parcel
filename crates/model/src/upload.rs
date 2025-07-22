@@ -29,6 +29,9 @@ pub struct Upload {
     pub uploaded_by: Option<Key<User>>,
     pub uploaded_at: OffsetDateTime,
     pub remote_addr: Option<String>,
+    pub mime_type: Option<String>,
+    pub has_preview: bool,
+    pub preview_error: Option<String>,
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, sqlx::Type)]
@@ -289,24 +292,83 @@ impl Upload {
     pub async fn set_password(&mut self, pool: &SqlitePool, password: &str) -> anyhow::Result<()> {
         let password = StoredPassword::new(password).context("failed to hash password")?;
 
-        sqlx::query("UPDATE uploads SET password = $1 WHERE id = $2")
+        let result = sqlx::query("UPDATE uploads SET password = $1 WHERE id = $2")
             .bind(&password)
             .bind(self.id)
             .execute(pool)
             .await
             .context("failed to update user password")?;
 
+        if result.rows_affected() == 0 {
+            anyhow::bail!("Upload not found");
+        }
+
         self.password = Some(password);
         Ok(())
     }
 
-    pub async fn delete(&self, pool: &SqlitePool) -> sqlx::Result<()> {
-        let count = sqlx::query("DELETE FROM uploads WHERE id = $1")
+    pub async fn set_mime_type(&mut self, pool: &SqlitePool, mime_type: &str) -> sqlx::Result<()> {
+        let result = sqlx::query("UPDATE uploads SET mime_type = $1 WHERE id = $2")
+            .bind(mime_type)
             .bind(self.id)
             .execute(pool)
             .await?;
 
-        if count.rows_affected() == 0 {
+        if result.rows_affected() == 0 {
+            return Err(sqlx::Error::RowNotFound);
+        }
+
+        self.mime_type = Some(mime_type.to_string());
+        Ok(())
+    }
+
+    pub async fn set_preview_error<E: Into<String>>(
+        &mut self,
+        pool: &SqlitePool,
+        error: E,
+    ) -> sqlx::Result<()> {
+        let error = error.into();
+
+        let result = sqlx::query("UPDATE uploads SET preview_error = $1 WHERE id = $2")
+            .bind(&error)
+            .bind(self.id)
+            .execute(pool)
+            .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(sqlx::Error::RowNotFound);
+        }
+
+        self.preview_error = Some(error);
+        Ok(())
+    }
+
+    pub async fn set_has_preview(
+        &mut self,
+        pool: &SqlitePool,
+        has_preview: bool,
+    ) -> sqlx::Result<()> {
+        let result = sqlx::query("UPDATE uploads SET has_preview = $1 WHERE id = $2")
+            .bind(has_preview)
+            .bind(self.id)
+            .execute(pool)
+            .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(sqlx::Error::RowNotFound);
+        }
+
+        self.has_preview = has_preview;
+        Ok(())
+    }
+
+    pub async fn delete(&self, pool: &SqlitePool) -> sqlx::Result<()> {
+        let result = sqlx::query("DELETE FROM uploads WHERE id = $1")
+            .bind(self.id)
+            .execute(pool)
+            .await?;
+
+        if result.rows_affected() == 0 {
             return Err(sqlx::Error::RowNotFound);
         }
 

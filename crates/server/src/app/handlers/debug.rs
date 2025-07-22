@@ -226,6 +226,9 @@ async fn post_uploads(
             uploaded_by: None,
             uploaded_at: OffsetDateTime::now_utc(),
             remote_addr: None,
+            mime_type: None,
+            has_preview: false,
+            preview_error: None,
         };
 
         upload.create(&env.pool).await.map_err(|err| {

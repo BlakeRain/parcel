@@ -20,7 +20,9 @@ use parcel_model::{
 use crate::{
     app::{
         extractors::user::SessionUser,
-        handlers::utils::{check_permission, get_upload_by_id, get_upload_by_slug},
+        handlers::utils::{
+            check_permission, delete_upload_cache, get_upload_by_id, get_upload_by_slug,
+        },
         templates::{authorized_context, default_context, render_template},
     },
     env::Env,
@@ -191,11 +193,7 @@ pub async fn delete_upload(
         InternalServerError(err)
     })?;
 
-    let path = env.cache_dir.join(&upload.slug);
-    tracing::info!(?path, %upload.id, "Deleting cached upload");
-    if let Err(err) = tokio::fs::remove_file(&path).await {
-        tracing::error!(?path, ?err, %upload.id, "Failed to delete cached upload");
-    }
+    delete_upload_cache(&env, &upload).await;
 
     let (stats, limit, team) = match (upload.owner_user, upload.owner_team) {
         (Some(user_id), None) => {

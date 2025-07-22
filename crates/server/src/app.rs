@@ -7,7 +7,7 @@ use poem::{
 };
 use poem_route_macro::define_routes;
 
-use crate::env::Env;
+use crate::{env::Env, workers::generate_previews::PreviewWorker};
 
 mod extractors {
     pub mod admin;
@@ -56,7 +56,11 @@ fn add_debug_routes(app: poem::Route) -> poem::Route {
     app
 }
 
-pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> anyhow::Result<impl IntoEndpoint> {
+pub fn create_app(
+    env: Env,
+    preview: PreviewWorker,
+    cookie_key: Option<&[u8]>,
+) -> anyhow::Result<impl IntoEndpoint> {
     let cookie_key = if let Some(key) = cookie_key {
         CookieKey::derive_from(key)
     } else {
@@ -129,6 +133,7 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> anyhow::Result<impl In
         .catch_error(errors::handle_404)
         .catch_all_error(errors::handle_500)
         .data(env)
+        .data(preview)
         .with(Cors::new())
         .with(Csrf::new().cookie_name("parcel-csrf"))
         .with(Tracing)

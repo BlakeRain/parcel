@@ -24,6 +24,7 @@ use parcel_model::{
 use crate::{
     app::{
         extractors::admin::SessionAdmin,
+        handlers::utils::delete_upload_cache_by_slug,
         templates::{authorized_context, render_template},
     },
     env::Env,
@@ -552,11 +553,7 @@ pub async fn delete_user(
         })?;
 
     for slug in upload_slugs {
-        let path = env.cache_dir.join(&slug);
-        tracing::info!(path = ?path, owner = %user_id, "Deleting cached upload");
-        if let Err(err) = tokio::fs::remove_file(&path).await {
-            tracing::error!(path = ?path, err = ?err, owner = %user_id, "Failed to delete cached upload");
-        }
+        delete_upload_cache_by_slug(&env, &slug).await;
     }
 
     user.delete(&env.pool).await.map_err(|err| {
