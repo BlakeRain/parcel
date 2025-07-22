@@ -84,13 +84,14 @@ pub fn create_app(
         "/uploads/list/:page"           handlers::uploads::page                 GET
         "/uploads/new"                  handlers::uploads::new                  GET POST
         "/uploads/:id"                  handlers::uploads::upload               GET      DELETE
+        "/uploads/:id/download"         handlers::uploads::download             GET POST
         "/uploads/:id/edit"             handlers::uploads::edit                 GET POST
         "/uploads/:id/edit/slug"        handlers::uploads::check_slug               POST
+        "/uploads/:id/preview"          handlers::uploads::preview              GET
         "/uploads/:id/public"           handlers::uploads::public                   POST
         "/uploads/:id/reset"            handlers::uploads::reset                    POST
         "/uploads/:id/share"            handlers::uploads::share                GET
         "/uploads/:id/transfer"         handlers::uploads::transfer             GET POST
-        "/uploads/:id/download"         handlers::uploads::download             GET POST
         "/uploads/:owner/:slug"         handlers::uploads::custom_upload        GET
         "/teams/:id"                    handlers::teams::team                   GET
         "/teams/:id/settings"           handlers::teams::settings::settings     GET POST

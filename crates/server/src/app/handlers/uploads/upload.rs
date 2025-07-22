@@ -2,7 +2,10 @@ use minijinja::context;
 use poem::{
     error::InternalServerError,
     handler,
-    http::StatusCode,
+    http::{
+        header::{CONTENT_LENGTH, CONTENT_TYPE},
+        StatusCode,
+    },
     session::Session,
     web::{CsrfToken, CsrfVerifier, Data, Html, Path, Query},
     IntoResponse,
@@ -289,4 +292,36 @@ pub async fn get_share(
         },
     )
     .await
+}
+
+#[handler]
+pub async fn get_preview(
+    env: Data<&Env>,
+    SessionUser(user): SessionUser,
+    Path(id): Path<Key<Upload>>,
+) -> poem::Result<poem::Response> {
+    let upload = get_upload_by_id(&env, id).await?;
+    check_permission(&env, &upload, Some(&user), UploadPermission::View).await?;
+
+    if !upload.has_preview {
+        tracing::warn!(%upload.id, "Upload does not have a preview");
+        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
+    }
+
+    let path = env.cache_dir.join(format!("{}.preview", upload.slug));
+    let file = tokio::fs::File::open(&path).await.map_err(|err| {
+        tracing::error!(%upload.id, ?err, ?path, "Unable to open file");
+        InternalServerError(err)
+    })?;
+
+    let meta = file.metadata().await.map_err(|err| {
+        tracing::error!(%upload.id, ?err, ?path, "Unable to get metadata for file");
+        InternalServerError(err)
+    })?;
+
+    Ok(poem::Response::builder()
+        .status(StatusCode::OK)
+        .header(CONTENT_TYPE, "image/png")
+        .header(CONTENT_LENGTH, meta.len())
+        .body(poem::Body::from_async_read(file)))
 }
