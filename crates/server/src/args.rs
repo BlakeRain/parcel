@@ -35,7 +35,7 @@ pub struct Args {
     pub plausible_script: Option<String>,
 
     /// Interval at which the preview generation worker checks for uploads to process.
-    #[arg(long, default_value = "30s", env)]
+    #[arg(long, default_value = "10m", env)]
     pub preview_generation_interval: humantime::Duration,
 
     /// Maximum size of an upload that can have a preview generated.

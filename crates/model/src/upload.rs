@@ -362,6 +362,17 @@ impl Upload {
         Ok(())
     }
 
+    pub async fn get_all_without_preview(pool: &SqlitePool, limit: u32) -> sqlx::Result<Vec<Self>> {
+        sqlx::query_as(
+            "SELECT * FROM uploads \
+            WHERE NOT has_preview AND preview_error IS NULL \
+            LIMIT $1",
+        )
+        .bind(limit as i64)
+        .fetch_all(pool)
+        .await
+    }
+
     pub async fn delete(&self, pool: &SqlitePool) -> sqlx::Result<()> {
         let result = sqlx::query("DELETE FROM uploads WHERE id = $1")
             .bind(self.id)
