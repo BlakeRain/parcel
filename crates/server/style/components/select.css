@@ -1,7 +1,7 @@
 @layer components {
   .parcel-select {
     @apply relative flex flex-row gap-1 cursor-pointer;
-    @apply p-2.5 sm:text-sm border rounded-lg;
+    @apply px-5 py-2 sm:text-sm border rounded-lg;
     @apply bg-gray-50 border-gray-300 text-gray-900;
     @apply dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white;
 
@@ -22,6 +22,21 @@
       .parcel-select-options {
         @apply flex;
       }
+    }
+
+    .parcel-selections {
+      @apply text-ellipsis overflow-hidden whitespace-nowrap ml-1;
+
+      > span.option {
+        @apply text-primary-800 dark:text-primary-300;
+
+        & + span.option:before {
+          content: ', ';
+
+          @apply text-gray-900 dark:text-white;
+        }
+      }
+
     }
   }
 
