@@ -304,23 +304,32 @@ impl PreviewerCommand {
     }
 }
 
+const SCAN_MAX_SIZE: u32 = 10;
+
 async fn scan_for_uploads(config: Arc<PreviewConfig>, env: Env) -> anyhow::Result<()> {
-    let uploads = Upload::get_all_without_preview(&env.pool, 10).await?;
-    if uploads.is_empty() {
-        tracing::info!("No uploads found that need preview generation");
-        return Ok(());
+    let mut offset = 0;
+
+    loop {
+        let uploads = Upload::get_all_without_preview(&env.pool, offset, SCAN_MAX_SIZE).await?;
+        if uploads.is_empty() {
+            tracing::info!("No uploads found that need preview generation");
+            return Ok(());
+        }
+
+        let count = uploads.len() as u32;
+        tracing::info!("Found {count} uploads that need preview generation");
+
+        for upload in uploads {
+            generate_preview(&config, &env, upload).await;
+        }
+
+        if count < SCAN_MAX_SIZE {
+            tracing::info!("Processed all uploads that needed preview generation");
+            return Ok(());
+        }
+
+        offset += count;
     }
-
-    tracing::info!(
-        "Found {} uploads that need preview generation",
-        uploads.len()
-    );
-
-    for upload in uploads {
-        generate_preview(&config, &env, upload).await;
-    }
-
-    Ok(())
 }
 
 async fn generate_previews(
