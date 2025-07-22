@@ -2,7 +2,7 @@ use poem::{
     error::InternalServerError,
     handler,
     http::{
-        header::{CONTENT_DISPOSITION, CONTENT_LENGTH},
+        header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE},
         StatusCode,
     },
     session::Session,
@@ -49,17 +49,21 @@ async fn send_download(
             InternalServerError(err)
         })?;
 
-    tracing::info!(%upload.id, ?meta,
-                   "Sending file to client");
+    tracing::info!(%upload.id, ?meta, "Sending file to client");
 
-    Ok(Response::builder()
+    let mut builder = Response::builder()
         .status(StatusCode::OK)
         .header(
             CONTENT_DISPOSITION,
             format!("attachment; filename=\"{}\"", upload.filename),
         )
-        .header(CONTENT_LENGTH, meta.len())
-        .body(Body::from_async_read(file)))
+        .header(CONTENT_LENGTH, meta.len());
+
+    if let Some(ref mime_type) = upload.mime_type {
+        builder = builder.header(CONTENT_TYPE, mime_type);
+    }
+
+    Ok(builder.body(Body::from_async_read(file)))
 }
 
 #[handler]
