@@ -9,6 +9,7 @@ RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesourc
 RUN apt-get update -y
 RUN apt-get install -y nodejs
 
+# Build the Rust application
 RUN mkdir -p /usr/src/parcel
 WORKDIR /usr/src/parcel
 ADD . .
@@ -30,6 +31,7 @@ RUN addgroup -S parcel && adduser -S parcel -G parcel
 WORKDIR /app
 COPY --from=builder /usr/src/parcel/target/x86_64-unknown-linux-musl/release/parcel-server .
 COPY --from=builder /usr/src/parcel/static ./static
+COPY --from=builder /usr/src/parcel/etc/previewers.json ./etc/previewers.json
 
 # Set the user and run the application
 USER parcel
