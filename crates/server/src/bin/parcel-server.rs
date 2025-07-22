@@ -22,6 +22,8 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let cookie_key = args.get_cookie_key().context("failed to get cookie key")?;
+
+    tracing::info!("Creating environment");
     let env = Env::new(&args).await?;
 
     tracing::info!("Starting preview generation worker");
