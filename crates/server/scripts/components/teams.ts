@@ -1,46 +1,45 @@
 import { createContext, FunctionComponent } from "preact";
 import { useContext, useMemo, useReducer } from "preact/hooks";
 import { html } from "htm/preact";
-import register from "preact-custom-element";
+import { default as registerElement } from "preact-custom-element";
 import { loadFromScript } from "../utils";
 
-interface Team {
-  id: string;
-  name: string;
-}
-
-const TeamsContext = createContext<Team[]>([]);
-
-const WithTeams: FunctionComponent<{ selector: string }> = ({
-  selector,
-  children,
-}) => {
-  const teams = useMemo(() => loadFromScript<Team[]>(selector), [selector]);
-
-  return html`
-    <${TeamsContext.Provider} value=${teams}>${children}</${TeamsContext.Provider}>
-  `;
-};
-
-type TeamPermission = "edit" | "delete";
+type TargetId = string;
+type TeamPermission = "edit" | "delete" | "config";
 
 type TeamPermissions = {
   [key in TeamPermission]: boolean;
 };
 
+interface Target {
+  id: TargetId;
+  name: string;
+}
+
+const TargetsContext = createContext<Target[]>([]);
+
+const WithTargets: FunctionComponent<{ selector: string }> = ({
+  selector,
+  children,
+}) => {
+  const teams = useMemo(() => loadFromScript<Target[]>(selector), [selector]);
+
+  return html`<${TargetsContext.Provider} value=${teams}>${children}<//>`;
+};
+
 interface State {
-  permissions: Map<string, TeamPermissions>;
+  permissions: Map<TargetId, TeamPermissions>;
 }
 
 type StateAction =
-  | { type: "add"; id: string }
-  | { type: "remove"; id: string }
-  | { type: "set"; id: string; permission: TeamPermission }
-  | { type: "clear"; id: string; permission: TeamPermission };
+  | { type: "add"; id: TargetId }
+  | { type: "remove"; id: TargetId }
+  | { type: "set"; id: TargetId; permission: TeamPermission }
+  | { type: "clear"; id: TargetId; permission: TeamPermission };
 
 function createInitialState(selector?: string): State {
   const permissions = selector
-    ? loadFromScript<{ [key: string]: TeamPermissions }>(selector)
+    ? loadFromScript<{ [key: TargetId]: TeamPermissions }>(selector)
     : {};
   return { permissions: new Map(Object.entries(permissions)) };
 }
@@ -49,7 +48,7 @@ function reduceState(state: State, action: StateAction): State {
   switch (action.type) {
     case "add": {
       const permissions = new Map(state.permissions);
-      permissions.set(action.id, { edit: false, delete: false });
+      permissions.set(action.id, { edit: false, delete: false, config: false });
       return { permissions };
     }
 
@@ -98,7 +97,7 @@ const WithState: FunctionComponent<{ selector?: string }> = ({
 }) => {
   const [state, dispatch] = useReducer(
     reduceState,
-    createInitialState(selector),
+    createInitialState(selector)
   );
 
   return html`
@@ -117,30 +116,38 @@ const HiddenField: FunctionComponent<{ name?: string }> = ({ name }) => {
   `;
 };
 
-const TeamRow: FunctionComponent<{ team: Team }> = ({ team }) => {
+const TargetRow: FunctionComponent<{ target: Target; enabling: boolean }> = ({
+  target,
+  enabling,
+}) => {
   const { state, dispatch } = useContext(StateContext);
-  const permissions = state.permissions.get(team.id);
+  const permissions = state.permissions.get(target.id);
+
+  const enable = enabling
+    ? html`
+        <input
+          id="target-${target.id}"
+          type="checkbox"
+          style="margin: 0;"
+          checked=${typeof permissions !== "undefined"}
+          onChange=${(event: InputEvent) => {
+            if ((event.target as HTMLInputElement).checked) {
+              dispatch({ type: "add", id: target.id });
+            } else {
+              dispatch({ type: "remove", id: target.id });
+            }
+          }}
+        />
+      `
+    : html`<div></div>`;
 
   return html`
-    <input
-      id="team-${team.id}"
-      type="checkbox"
-      style="margin: 0;"
-      checked=${typeof permissions !== "undefined"}
-      onChange=${(event: InputEvent) => {
-        const target = event.target as HTMLInputElement;
-        if (target.checked) {
-          dispatch({ type: "add", id: team.id });
-        } else {
-          dispatch({ type: "remove", id: team.id });
-        }
-      }}
-    />
+    ${enable}
     <label
-      for="team-${team.id}"
+      for="target-${target.id}"
       class="${permissions ? "" : "opacity-75 italic"}"
       style="margin: 0;"
-      >${team.name}</label
+      >${target.name}</label
     >
     <input
       type="checkbox"
@@ -148,11 +155,10 @@ const TeamRow: FunctionComponent<{ team: Team }> = ({ team }) => {
       disabled=${!permissions}
       checked=${permissions?.edit}
       onChange=${(event: InputEvent) => {
-        const target = event.target as HTMLInputElement;
-        if (target.checked) {
-          dispatch({ type: "set", id: team.id, permission: "edit" });
+        if ((event.target as HTMLInputElement).checked) {
+          dispatch({ type: "set", id: target.id, permission: "edit" });
         } else {
-          dispatch({ type: "clear", id: team.id, permission: "edit" });
+          dispatch({ type: "clear", id: target.id, permission: "edit" });
         }
       }}
     />
@@ -162,53 +168,93 @@ const TeamRow: FunctionComponent<{ team: Team }> = ({ team }) => {
       disabled=${!permissions || !permissions.edit}
       checked=${permissions?.delete}
       onChange=${(event: InputEvent) => {
-        const target = event.target as HTMLInputElement;
-        if (target.checked) {
-          dispatch({ type: "set", id: team.id, permission: "delete" });
+        if ((event.target as HTMLInputElement).checked) {
+          dispatch({ type: "set", id: target.id, permission: "delete" });
         } else {
-          dispatch({ type: "clear", id: team.id, permission: "delete" });
+          dispatch({ type: "clear", id: target.id, permission: "delete" });
+        }
+      }}
+    />
+    <input
+      type="checkbox"
+      style="margin: 0;"
+      disabled=${!permissions}
+      checked=${permissions?.config}
+      onChange=${(event: InputEvent) => {
+        if ((event.target as HTMLInputElement).checked) {
+          dispatch({ type: "set", id: target.id, permission: "config" });
+        } else {
+          dispatch({ type: "clear", id: target.id, permission: "config" });
         }
       }}
     />
   `;
 };
 
-const TeamRows: FunctionComponent = () => {
-  const teams = useContext(TeamsContext);
-  return html` ${teams.map((team) => html`<${TeamRow} team=${team} />`)} `;
+const TargetRows: FunctionComponent<{ enabling: boolean }> = ({ enabling }) => {
+  const targets = useContext(TargetsContext);
+  return html`
+    ${targets.map(
+      (target) => html`<${TargetRow} target=${target} enabling=${enabling} />`
+    )}
+  `;
 };
 
-const TeamHeadings: FunctionComponent = () => {
+const TargetHeadings: FunctionComponent<{ noun: string }> = ({ noun }) => {
   return html`
     <span class="font-medium text-sm text-gray-900 dark:text-white col-start-2"
-      >Team</span
+      >${noun}</span
     >
     <span class="font-medium text-sm text-gray-900 dark:text-white">Edit</span>
     <span class="font-medium text-sm text-gray-900 dark:text-white"
       >Delete</span
     >
+    <span class="font-medium text-sm text-gray-900 dark:text-white"
+      >Config</span
+    >
+  `;
+};
+
+const TableContainer: FunctionComponent<{ class?: string }> = ({
+  children,
+  ...props
+}) => {
+  return html`
+    <div
+      class="sm:text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 grid grid-cols-[max-content_1fr_repeat(3,max-content)] items-center gap-1 ${props.class}"
+    >
+      ${children}
+    </div>
   `;
 };
 
 const ParcelTeams: FunctionComponent<{
   name: string;
+  noun: string;
+  enabling?: boolean;
   class?: string;
-  teams?: string;
-  membership?: string;
+  targets?: string;
+  permissions?: string;
 }> = (props) => {
   return html`
-    <${WithTeams} selector=${props.teams}>
-      <${WithState} selector=${props.membership}>
+    <${WithTargets} selector=${props.targets}>
+      <${WithState} selector=${props.permissions}>
         <${HiddenField} name=${props.name} />
-        <div
-          class="sm:text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 grid grid-cols-[max-content_1fr_repeat(2,max-content)] items-center gap-1 ${props.class}"
-        >
-          <${TeamHeadings} />
-          <${TeamRows} />
-        </div>
+        <${TableContainer} class=${props.class}>
+          <${TargetHeadings} noun=${props.noun} />
+          <${TargetRows} enabling=${props.enabling || false} />
+        <//>
       <//>
     <//>
   `;
 };
 
-register(ParcelTeams, "parcel-teams", ["name", "class", "teams", "membership"]);
+export function register() {
+  registerElement(ParcelTeams, "parcel-teams", [
+    "name",
+    "class",
+    "enabling",
+    "targets",
+    "permissions",
+  ]);
+}

@@ -83,13 +83,13 @@
               {% endfor %} ]
           </script>
           {% if form or user %}
-            <script type="text/json" id="membership-data">
+            <script type="text/json" id="permissions-data">
               {% if form -%}
                 {{ form.teams | safe }}
               {%- elif user -%}
                 {{ "{" }} {% for member in membership %}
                   "{{ member.team }}":
-                    {{ dict(edit=member.can_edit, delete=member.can_delete) | tojson }}
+                    {{ dict(edit=member.can_edit, delete=member.can_delete, config=member.can_config) | tojson }}
                   {%- if not loop.last -%},{%- endif -%}
                 {% endfor %} {{ "}" }}
               {%- endif %}
@@ -97,8 +97,10 @@
           {% endif %}
           <parcel-teams
             name="teams"
-            teams="#teams-data"
-            {% if form or user %}membership="#membership-data"{% endif %}
+            noun="Team"
+            enabling="true"
+            targets="#teams-data"
+            {% if form or user %}permissions="#permissions-data"{% endif %}
             class="mt-2"></parcel-teams>
         </div>
       </div>
