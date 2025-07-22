@@ -66,9 +66,11 @@ impl Env {
 
         let cache_dir = cache_dir.clone();
         if !cache_dir.exists() {
+            tracing::warn!("Cache directory {cache_dir:?} does not exist; creating it");
             std::fs::create_dir_all(&cache_dir)?;
         }
 
+        tracing::info!(?db, "Creating SQLite connection pool");
         let opts = SqliteConnectOptions::from_str(db)?
             .create_if_missing(true)
             .journal_mode(SqliteJournalMode::Wal)
@@ -76,6 +78,8 @@ impl Env {
             .pragma("journal_size_limit", "6144000")
             .pragma("mmap_size", "268435456");
         let pool = SqlitePool::connect_with(opts).await?;
+
+        tracing::info!("Running database migrations");
         MIGRATOR.run(&pool).await?;
 
         let analytics_domain = analytics_domain.clone();

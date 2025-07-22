@@ -1,2 +1,5 @@
 # Ignore the Rust target directory
 target/
+
+# Ignore the Node.js modules directory
+node_modules/
