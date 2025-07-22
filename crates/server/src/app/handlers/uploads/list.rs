@@ -17,7 +17,7 @@ use parcel_model::{
 use crate::{
     app::{
         extractors::user::SessionUser,
-        handlers::utils::check_permission,
+        handlers::utils::{check_permission, delete_upload_cache},
         templates::{authorized_context, render_template},
     },
     env::Env,
@@ -153,11 +153,7 @@ pub async fn post_delete(
             InternalServerError(err)
         })?;
 
-        let path = env.cache_dir.join(&upload.slug);
-        tracing::info!(?path, %id, "Deleting cached upload");
-        if let Err(err) = tokio::fs::remove_file(&path).await {
-            tracing::error!(?path, ?err, %id, "Failed to delete cached upload");
-        }
+        delete_upload_cache(&env, &upload).await;
     }
 
     Ok(Html("").with_header("HX-Refresh", "true"))

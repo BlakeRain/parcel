@@ -14,6 +14,10 @@ pub struct Args {
     #[arg(long, default_value = "sqlite://parcel.db", env)]
     pub db: String,
 
+    /// Directory in which to store the configuration files.
+    #[arg(long, default_value = "./etc", env)]
+    pub config_dir: PathBuf,
+
     /// Directory in which to store the file cache.
     #[arg(long, default_value = "./cache", env)]
     pub cache_dir: PathBuf,
@@ -29,6 +33,14 @@ pub struct Args {
     /// Plausible analytics script URL.
     #[arg(long, env)]
     pub plausible_script: Option<String>,
+
+    /// Interval at which the preview generation worker checks for uploads to process.
+    #[arg(long, default_value = "30s", env)]
+    pub preview_generation_interval: humantime::Duration,
+
+    /// Maximum size of an upload that can have a preview generated.
+    #[arg(long, env)]
+    pub max_preview_size: Option<u64>,
 }
 
 impl Args {

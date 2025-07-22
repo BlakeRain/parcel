@@ -17,6 +17,7 @@ use crate::{
         templates::{authorized_context, render_template},
     },
     env::Env,
+    workers::generate_previews::PreviewWorker,
 };
 
 #[derive(Debug, Deserialize)]
@@ -75,6 +76,7 @@ pub async fn get_new(
 #[handler]
 pub async fn post_new(
     env: Data<&Env>,
+    preview: Data<&PreviewWorker>,
     RealIp(ip): RealIp,
     SessionUser(user): SessionUser,
     csrf_verifier: &CsrfVerifier,
@@ -213,7 +215,7 @@ pub async fn post_new(
     let owner_team = team.as_ref().map(|team| team.id);
     let remote_addr = ip.as_ref().map(ToString::to_string);
 
-    sqlx::query(
+    let upload_ids: Vec<Key<Upload>> = sqlx::query_scalar(
         "\
         WITH data AS ( \
             SELECT value ->> 'id' AS id, \
@@ -228,7 +230,8 @@ pub async fn post_new(
         SELECT data.id, data.slug, data.filename, data.size, 0, 0, \
                $2, $3, \
                $4, $5, $6 \
-        FROM data",
+        FROM data \
+        RETURNING id",
     )
     .bind(serde_json::to_string(&uploads).expect("JSON serialization failed"))
     .bind(owner_user)
@@ -236,12 +239,19 @@ pub async fn post_new(
     .bind(OffsetDateTime::now_utc())
     .bind(user.id)
     .bind(remote_addr)
-    .execute(&env.pool)
+    .fetch_all(&env.pool)
     .await
     .map_err(|err| {
         tracing::error!(?err, "Unable to insert uploads");
         InternalServerError(err)
     })?;
+
+    preview
+        .generate_previews(upload_ids)
+        .await
+        .inspect_err(|err| {
+            tracing::error!(?err, "Failed to send preview generation command");
+        })?;
 
     Ok(Json(()))
 }
