@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use esbuild_bundle::javascript;
 use minijinja::context;
 use poem::{
     error::InternalServerError,
@@ -47,7 +46,6 @@ pub async fn get_users(
         context! {
             users,
             csrf_token => csrf_token.0,
-            teams_js => javascript!("$CARGO_MANIFEST_DIR/scripts/components/teams.ts"),
             ..authorized_context(&env, &admin)
         },
     )
@@ -98,6 +96,7 @@ pub struct NewUserForm {
 struct TeamPermissionStruct {
     edit: bool,
     delete: bool,
+    config: bool,
 }
 
 impl From<TeamMember> for TeamPermissionStruct {
@@ -105,6 +104,7 @@ impl From<TeamMember> for TeamPermissionStruct {
         Self {
             edit: perm.can_edit,
             delete: perm.can_delete,
+            config: perm.can_config,
         }
     }
 }
@@ -233,13 +233,19 @@ pub async fn post_new(
 
     for (team_id, permissions) in teams {
         tracing::info!(%team_id, user_id = %user.id, "Adding user to team");
-        user.join_team(&env.pool, team_id, permissions.edit, permissions.delete)
-            .await
-            .map_err(|err| {
-                tracing::error!(err = ?err, user_id = %user.id, %team_id,
+        user.join_team(
+            &env.pool,
+            team_id,
+            permissions.edit,
+            permissions.delete,
+            permissions.config,
+        )
+        .await
+        .map_err(|err| {
+            tracing::error!(err = ?err, user_id = %user.id, %team_id,
                             "Failed to add user to team");
-                InternalServerError(err)
-            })?;
+            InternalServerError(err)
+        })?;
     }
 
     Ok(Redirect::see_other("/admin/users").into_response())
@@ -493,13 +499,19 @@ pub async fn post_user(
     // Add the user to the teams they were selected for.
     for (team_id, permissions) in teams {
         tracing::info!(%team_id, user_id = %user_id, "Adding user to team");
-        user.join_team(&env.pool, team_id, permissions.edit, permissions.delete)
-            .await
-            .map_err(|err| {
-                tracing::error!(err = ?err, user_id = %user_id, %team_id,
+        user.join_team(
+            &env.pool,
+            team_id,
+            permissions.edit,
+            permissions.delete,
+            permissions.config,
+        )
+        .await
+        .map_err(|err| {
+            tracing::error!(err = ?err, user_id = %user_id, %team_id,
                                 "Failed to add user to team");
-                InternalServerError(err)
-            })?;
+            InternalServerError(err)
+        })?;
     }
 
     Ok(Redirect::see_other("/admin/users").into_response())

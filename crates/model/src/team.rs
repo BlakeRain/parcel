@@ -19,6 +19,7 @@ pub struct Team {
 pub enum TeamPermission {
     Edit,
     Delete,
+    Config,
 }
 
 impl Team {
@@ -127,14 +128,41 @@ impl Team {
 pub struct TeamMember {
     pub team: Key<Team>,
     pub user: Key<User>,
+    pub name: String,
     pub can_edit: bool,
     pub can_delete: bool,
+    pub can_config: bool,
 }
 
 impl TeamMember {
     pub async fn get_for_user(pool: &SqlitePool, user: Key<User>) -> sqlx::Result<Vec<TeamMember>> {
-        sqlx::query_as("SELECT * FROM team_members WHERE user = $1")
+        sqlx::query_as(
+            "SELECT team_members.team, \
+            team_members.user, \
+            users.name, \
+            team_members.can_edit, \
+            team_members.can_delete, \
+            team_members.can_config \
+            FROM team_members \
+            LEFT JOIN users ON users.id = team_members.user \
+            WHERE team_members.user = $1")
             .bind(user)
+            .fetch_all(pool)
+            .await
+    }
+
+    pub async fn get_for_team(pool: &SqlitePool, team: Key<Team>) -> sqlx::Result<Vec<Self>> {
+        sqlx::query_as(
+            "SELECT team_members.team, \
+            team_members.user, \
+            users.name, \
+            team_members.can_edit, \
+            team_members.can_delete, \
+            team_members.can_config \
+            FROM team_members \
+            LEFT JOIN users ON users.id = team_members.user \
+            WHERE team_members.team = $1")
+            .bind(team)
             .fetch_all(pool)
             .await
     }
@@ -144,7 +172,16 @@ impl TeamMember {
         user: Key<User>,
         team: Key<Team>,
     ) -> sqlx::Result<Option<Self>> {
-        sqlx::query_as("SELECT * FROM team_members WHERE user = $1 AND team = $2")
+        sqlx::query_as(
+            "SELECT team_members.team, \
+            team_members.user, \
+            users.name, \
+            team_members.can_edit, \
+            team_members.can_delete, \
+            team_members.can_config \
+            FROM team_members \
+            LEFT JOIN users ON users.id = team_members.user \
+            WHERE team_members.user = $1 AND team_members.team = $2")
             .bind(user)
             .bind(team)
             .fetch_optional(pool)
