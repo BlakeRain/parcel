@@ -102,9 +102,10 @@ pub async fn start_worker(env: Env) -> anyhow::Result<(PreviewWorker, JoinHandle
                 },
 
                 _ = tokio::time::sleep(env.preview_generation_interval) => {
-                    // if let Err(e) = env.scan_for_uploads_to_generate_previews().await {
-                    //     tracing::error!("Failed to scan for uploads to generate previews: {}", e);
-                    // }
+                    let config = Arc::clone(&config);
+                    if let Err(e) = scan_for_uploads(config, env.clone()).await {
+                        tracing::error!("Failed to scan for uploads to generate previews: {}", e);
+                    }
                 },
             }
         }
@@ -301,6 +302,25 @@ impl PreviewerCommand {
 
         true
     }
+}
+
+async fn scan_for_uploads(config: Arc<PreviewConfig>, env: Env) -> anyhow::Result<()> {
+    let uploads = Upload::get_all_without_preview(&env.pool, 10).await?;
+    if uploads.is_empty() {
+        tracing::info!("No uploads found that need preview generation");
+        return Ok(());
+    }
+
+    tracing::info!(
+        "Found {} uploads that need preview generation",
+        uploads.len()
+    );
+
+    for upload in uploads {
+        generate_preview(&config, &env, upload).await;
+    }
+
+    Ok(())
 }
 
 async fn generate_previews(
