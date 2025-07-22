@@ -362,12 +362,18 @@ impl Upload {
         Ok(())
     }
 
-    pub async fn get_all_without_preview(pool: &SqlitePool, limit: u32) -> sqlx::Result<Vec<Self>> {
+    pub async fn get_all_without_preview(
+        pool: &SqlitePool,
+        offset: u32,
+        limit: u32,
+    ) -> sqlx::Result<Vec<Self>> {
         sqlx::query_as(
             "SELECT * FROM uploads \
             WHERE NOT has_preview AND preview_error IS NULL \
-            LIMIT $1",
+            OFFSET $1 \
+            LIMIT $2",
         )
+        .bind(offset as i64)
         .bind(limit as i64)
         .fetch_all(pool)
         .await
