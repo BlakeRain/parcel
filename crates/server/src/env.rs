@@ -1,4 +1,4 @@
-use std::{path::PathBuf, str::FromStr, sync::Arc};
+use std::{path::PathBuf, str::FromStr, sync::Arc, time::Duration};
 
 use sqlx::{
     sqlite::{SqliteConnectOptions, SqliteJournalMode},
@@ -30,21 +30,40 @@ impl std::ops::Deref for Env {
 
 pub struct Inner {
     pub pool: SqlitePool,
+    pub config_dir: PathBuf,
     pub cache_dir: PathBuf,
     pub analytics_domain: Option<String>,
     pub plausible_script: Option<String>,
+
+    /// The interval at which the preview generation worker checks for uploads to process.
+    pub preview_generation_interval: Duration,
+
+    /// The maximum size of an upload that can have a preview generated.
+    ///
+    /// If an upload is larger than this size, it will not have a preview generated. We don't
+    /// record any `preview_error` though, as this is not really an error condition, and the user
+    /// might change this value later.
+    pub max_preview_size: Option<u64>,
 }
 
 impl Env {
     pub async fn new(
         Args {
             db,
+            config_dir,
             cache_dir,
             analytics_domain,
             plausible_script,
+            preview_generation_interval,
+            max_preview_size,
             ..
         }: &Args,
     ) -> sqlx::Result<Self> {
+        let config_dir = config_dir.clone();
+        if !config_dir.exists() {
+            tracing::warn!("Config directory {config_dir:?} does not exist");
+        }
+
         let cache_dir = cache_dir.clone();
         if !cache_dir.exists() {
             std::fs::create_dir_all(&cache_dir)?;
@@ -61,11 +80,16 @@ impl Env {
 
         let analytics_domain = analytics_domain.clone();
         let plausible_script = plausible_script.clone();
+        let preview_generation_interval = Duration::from(*preview_generation_interval);
+        let max_preview_size = *max_preview_size;
         let inner = Inner {
             pool,
+            config_dir,
             cache_dir,
             analytics_domain,
             plausible_script,
+            preview_generation_interval,
+            max_preview_size,
         };
         let inner = Arc::new(inner);
 

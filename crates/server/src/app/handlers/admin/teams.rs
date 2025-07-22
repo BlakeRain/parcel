@@ -20,6 +20,7 @@ use parcel_model::{
 use crate::{
     app::{
         extractors::admin::SessionAdmin,
+        handlers::utils::delete_upload_cache_by_slug,
         templates::{authorized_context, render_template},
     },
     env::Env,
@@ -436,11 +437,7 @@ pub async fn delete_team(
         })?;
 
     for slug in upload_slugs {
-        let path = env.cache_dir.join(&slug);
-        tracing::info!(?path, owner = %team_id, "Deleting cached upload");
-        if let Err(err) = tokio::fs::remove_file(&path).await {
-            tracing::error!(?path, ?err, %team_id, "Failed to delete cached upload");
-        }
+        delete_upload_cache_by_slug(&env, &slug).await;
     }
 
     team.delete(&env.pool).await.map_err(|err| {
