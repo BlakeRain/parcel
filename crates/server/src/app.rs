@@ -7,7 +7,7 @@ use poem::{
 };
 use poem_route_macro::define_routes;
 
-use crate::env::Env;
+use crate::{env::Env, workers::generate_previews::PreviewWorker};
 
 mod extractors {
     pub mod admin;
@@ -56,7 +56,11 @@ fn add_debug_routes(app: poem::Route) -> poem::Route {
     app
 }
 
-pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> anyhow::Result<impl IntoEndpoint> {
+pub fn create_app(
+    env: Env,
+    preview: PreviewWorker,
+    cookie_key: Option<&[u8]>,
+) -> anyhow::Result<impl IntoEndpoint> {
     let cookie_key = if let Some(key) = cookie_key {
         CookieKey::derive_from(key)
     } else {
@@ -80,13 +84,14 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> anyhow::Result<impl In
         "/uploads/list/:page"           handlers::uploads::page                 GET
         "/uploads/new"                  handlers::uploads::new                  GET POST
         "/uploads/:id"                  handlers::uploads::upload               GET      DELETE
+        "/uploads/:id/download"         handlers::uploads::download             GET POST
         "/uploads/:id/edit"             handlers::uploads::edit                 GET POST
         "/uploads/:id/edit/slug"        handlers::uploads::check_slug               POST
+        "/uploads/:id/preview"          handlers::uploads::preview              GET
         "/uploads/:id/public"           handlers::uploads::public                   POST
         "/uploads/:id/reset"            handlers::uploads::reset                    POST
         "/uploads/:id/share"            handlers::uploads::share                GET
         "/uploads/:id/transfer"         handlers::uploads::transfer             GET POST
-        "/uploads/:id/download"         handlers::uploads::download             GET POST
         "/uploads/:owner/:slug"         handlers::uploads::custom_upload        GET
         "/teams/:id"                    handlers::teams::team                   GET
         "/teams/:id/tab"                handlers::teams::tab                    GET
@@ -127,6 +132,7 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> anyhow::Result<impl In
         .catch_error(errors::handle_404)
         .catch_all_error(errors::handle_500)
         .data(env)
+        .data(preview)
         .with(Cors::new())
         .with(Csrf::new().cookie_name("parcel-csrf"))
         .with(Tracing)

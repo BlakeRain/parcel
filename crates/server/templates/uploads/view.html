@@ -15,9 +15,13 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
       <div class="flex flex-row gap-2 mb-auto">
-        <div class="text-8xl text-slate-400 hidden md:block">
-          <span class="icon-download group-hover:text-blue-600 dark:group-hover:text-blue-500"></span>
-        </div>
+        {% if upload.has_preview %}
+          <img src="/uploads/{{ upload.id }}/preview" class="w-64 object-cover rounded-md">
+        {% else %}
+          <div class="text-8xl text-slate-400 hidden md:block">
+            <span class="icon-download group-hover:text-blue-600 dark:group-hover:text-blue-500"></span>
+          </div>
+        {% endif %}
         <div>
           <h1 class="heading group-hover:text-blue-600 dark:group-hover:text-blue-500">
             {{ upload.filename }}
@@ -58,6 +62,13 @@
           {% if upload.expiry_date %}
             <div class="{% if expired %}text-danger{% else %}text-success{% endif %}">
               Upload expires {{ upload.expiry_date | datetime_offset }}
+            </div>
+          {% endif %}
+
+          {% if owner and upload.preview_error %}
+            <div class="text-danger">
+              <span class="icon-triangle-alert"></span>
+              {{ upload.preview_error }}
             </div>
           {% endif %}
         </div>

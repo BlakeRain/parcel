@@ -3,7 +3,7 @@ use clap::Parser;
 use poem::{listener::TcpListener, Server};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use parcel_server::{app::create_app, args::Args, env::Env};
+use parcel_server::{app::create_app, args::Args, env::Env, workers};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -22,11 +22,26 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let cookie_key = args.get_cookie_key().context("failed to get cookie key")?;
+
+    tracing::info!("Creating environment");
     let env = Env::new(&args).await?;
-    let app = create_app(env, cookie_key.as_deref()).context("failed to create application")?;
+
+    tracing::info!("Starting preview generation worker");
+    let (preview, worker) = workers::generate_previews::start_worker(env.clone()).await?;
+
+    let app = create_app(env, preview.clone(), cookie_key.as_deref())
+        .context("failed to create application")?;
     Server::new(TcpListener::bind("0.0.0.0:3000"))
         .run(app)
         .await?;
+
+    preview
+        .stop()
+        .await
+        .context("failed to stop preview worker")?;
+    worker
+        .await
+        .context("failed to join preview generation worker")?;
 
     Ok(())
 }
