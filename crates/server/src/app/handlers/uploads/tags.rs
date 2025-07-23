@@ -5,6 +5,12 @@ use poem::{
     web::{CsrfToken, CsrfVerifier, Data, Form, Html, Path},
 };
 
+use parcel_model::{
+    tag::Tag,
+    types::Key,
+    upload::{Upload, UploadPermission},
+};
+
 use crate::{
     app::{
         errors::CsrfError,
@@ -13,11 +19,6 @@ use crate::{
         templates::{authorized_context, render_template},
     },
     env::Env,
-    model::{
-        tag::Tag,
-        types::Key,
-        upload::{Upload, UploadPermission},
-    },
 };
 
 #[poem::handler]
