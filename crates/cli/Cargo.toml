@@ -1,0 +1,21 @@
+[package]
+name = "parcel-cli"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[[bin]]
+name = "parcel"
+
+[dependencies]
+anyhow.workspace = true
+base64.workspace = true
+clap.workspace = true
+humansize.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+time.workspace = true
+time-humanize.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true

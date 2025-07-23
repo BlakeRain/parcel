@@ -17,6 +17,6 @@ RUN cargo build --target x86_64-unknown-linux-musl --release
 
 FROM scratch
 EXPOSE 3000
-COPY --from=builder /usr/src/parcel/target/x86_64-unknown-linux-musl/release/parcel .
+COPY --from=builder /usr/src/parcel/target/x86_64-unknown-linux-musl/release/parcel-server .
 COPY --from=builder /usr/src/parcel/static ./static
-ENTRYPOINT ["./parcel"]
+ENTRYPOINT ["./parcel-server"]

@@ -1,6 +1,0 @@
-{
-  "bundle_path": "static/scripts/bundles",
-  "esbuild": {
-    "type": "npx"
-  }
-}

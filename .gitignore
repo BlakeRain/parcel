@@ -17,24 +17,9 @@ Cargo.lock
 # MSVC Windows builds of rustc generate these, which store debugging information
 *.pdb
 
-# Ignore node_modules and NodeJS lock file(s).
-node_modules/
-package-lock.json
-yarn.lock
+# Ignore Neovim files
+.session.vim
 
 # Ignore the cache directory and the database created by the app
 cache/
 parcel.db*
-
-# Ignore the generated CSS and the copied HTMX and Hyperscript bundles
-static/main.css
-static/icons/
-static/scripts/bundles/
-static/scripts/vendor/
-
-# Ignore Cypress cache and screenshots
-cypress/screenshots/
-cypress/downloads/
-
-# Ignore Neovim files
-.session.vim
