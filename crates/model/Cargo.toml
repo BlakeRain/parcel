@@ -1,0 +1,16 @@
+[package]
+name = "parcel-model"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[dependencies]
+anyhow.workspace = true
+argon2.workspace = true
+pbkdf2.workspace = true
+rand_core.workspace = true
+serde.workspace = true
+sqlx.workspace = true
+time.workspace = true
+tracing.workspace = true
+uuid.workspace = true

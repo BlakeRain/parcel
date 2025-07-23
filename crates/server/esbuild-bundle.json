@@ -1,0 +1,7 @@
+{
+  "bundle_path": "$CARGO_MANIFEST_DIR/static/scripts/bundles",
+  "working_dir": "$CARGO_MANIFEST_DIR",
+  "esbuild": {
+    "type": "npx"
+  }
+}

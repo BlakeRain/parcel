@@ -1,0 +1,21 @@
+{
+  "name": "parcel-cypress",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "typescript": "^5.8.3"
+  },
+  "devDependencies": {
+    "cypress": "^14.5.2",
+    "start-server-and-test": "^2.0.12"
+  },
+  "scripts": {
+    "cy:open": "cypress open",
+    "cy:run": "cypress run",
+    "ci:serve:debug": "cd .. && cargo run --bin parcel-server",
+    "ci:serve:release": "cd .. && cargo run --bin parcel-server --release",
+    "ci:debug": "start-server-and-test ci:serve:debug http://127.0.0.1:3000 cy:run",
+    "ci:release": "start-server-and-test ci:serve:release http://127.0.0.1:3000 cy:run"
+  }
+}
+
