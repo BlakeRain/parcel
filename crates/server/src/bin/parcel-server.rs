@@ -3,7 +3,7 @@ use clap::Parser;
 use poem::{listener::TcpListener, Server};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use parcel_server::{app::create_app, args::Args, env::Env};
+use parcel_server::{app::create_app, args::Args, env::Env, workers};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

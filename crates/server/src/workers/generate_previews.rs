@@ -28,10 +28,9 @@ use anyhow::Context;
 use serde::Deserialize;
 use tokio::{io::AsyncReadExt, process::Command, sync::mpsc::Sender, task::JoinHandle};
 
-use crate::{
-    env::Env,
-    model::{types::Key, upload::Upload},
-};
+use parcel_model::{types::Key, upload::Upload};
+
+use crate::env::Env;
 
 pub enum PreviewGenerationCommand {
     GeneratePreview(Vec<Key<Upload>>),
