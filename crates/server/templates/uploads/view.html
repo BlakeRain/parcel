@@ -64,6 +64,13 @@
               Upload expires {{ upload.expiry_date | datetime_offset }}
             </div>
           {% endif %}
+
+          {% if upload.preview_error %}
+            <div class="text-danger">
+              <span class="icon-triangle-alert"></span>
+              {{ upload.preview_error }}
+            </div>
+          {% endif %}
         </div>
       </div>
 
