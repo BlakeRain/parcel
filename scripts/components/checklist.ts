@@ -3,6 +3,7 @@ class CheckboxGroup extends HTMLElement {
   private _dirty: boolean = true;
   private _hasAnyChecked: boolean = false;
   private _hasAllChecked: boolean = false;
+  private _changed: ((event: CustomEvent) => void) | null = null;
   public lastChecked: GroupedCheckbox | null = null;
 
   static get observedAttributes() {
@@ -44,17 +45,30 @@ class CheckboxGroup extends HTMLElement {
       this.dispatchChangedEvent();
     });
 
-    const shadow = this.attachShadow({ mode: "open" });
-    shadow.appendChild(this._checkbox);
+    if (!this.shadowRoot) {
+      this.attachShadow({ mode: "open" });
+    }
+
+    this.shadowRoot.appendChild(this._checkbox);
 
     if (this.hasAttribute("onchanged")) {
       const handler_script = this.getAttribute("onchanged");
-      const func = new Function("event", handler_script).bind(this);
-      this.addEventListener("changed", func);
+      this._changed = new Function("event", handler_script).bind(this);
+      this.addEventListener("changed", this._changed);
     }
   }
 
-  disconnectedCallback() {}
+  disconnectedCallback() {
+    if (this._checkbox) {
+      this._checkbox.removeEventListener("click", this.updateCheckbox);
+      this._checkbox.remove();
+      this._checkbox = null;
+    }
+
+    if (this._changed) {
+      this.removeEventListener("changed", this._changed);
+    }
+  }
 
   markDirty() {
     this._dirty = true;

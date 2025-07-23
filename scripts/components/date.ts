@@ -13,12 +13,21 @@ class TimeElement extends HTMLElement {
       return;
     }
 
+    if (!this.shadowRoot) {
+      this.attachShadow({ mode: "open" });
+    }
+
     const value = new Date(valueAttribute);
-    const shadow = this.attachShadow({ mode: "open" });
     const span = document.createElement("span");
     span.title = this.formatTitle(value);
     this.formatContent(span, value);
-    shadow.appendChild(span);
+    this.shadowRoot.appendChild(span);
+  }
+
+  disconnectedCallback() {
+    if (this.shadowRoot) {
+      this.shadowRoot.removeChild(this.shadowRoot.firstChild);
+    }
   }
 
   formatTitle(_value: Date): string {
