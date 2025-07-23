@@ -13,7 +13,14 @@
     <div class="flex flex-col sm:flex-row gap-4 justify-between p-4">
       {% include "uploads/stats.html" %}
       <div class="flex flex-col xl:flex-row gap-2">
-        <div class="relative order-2 xl:order-1">
+        <script id="tag-filter-options" type="application/json">
+          [{% for tag in tags %}{{ dict(value=tag.name, label=tag.name) | tojson }}{% if not loop.last %},{% endif %}{% endfor %}]
+        </script>
+        <script id="tag-filter-values" type="application/json">
+          []
+        </script>
+        <parcel-select class="min-w-60 order-3 xl:order-1" noun="tag" options="#tag-filter-options" values="#tag-filter-values"></parcel-select>
+        <div class="relative order-2 xl:order-2">
           <input
             type="text"
             autocomplete="off"
@@ -36,7 +43,7 @@
             &times;
           </button>
         </div>
-        <div class="buttons order-1 xl:order-2">
+        <div class="buttons order-1 xl:order-3">
           <button
             id="delete_selected"
             type="button"

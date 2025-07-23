@@ -6,6 +6,7 @@ use poem::{
 };
 
 use parcel_model::{
+    tag::Tag,
     team::{HomeTab, TeamTab},
     upload::{UploadList, UploadStats},
 };
@@ -65,6 +66,12 @@ pub async fn get_index(
         poem::error::InternalServerError(err)
     })?;
 
+    // Get the tags for the user.
+    let tags = Tag::get_for_user(&env.pool, user.id).await.map_err(|err| {
+        tracing::error!(%user.id, ?err, "Unable to get tags for user");
+        poem::error::InternalServerError(err)
+    })?;
+
     render_template(
         "index.html",
         minijinja::context! {
@@ -72,6 +79,7 @@ pub async fn get_index(
             home,
             tabs,
             stats,
+            tags,
             uploads,
             csrf_token => csrf_token.0,
             page => 0,

@@ -240,7 +240,7 @@ describe("File List", () => {
     );
 
     cy.get("#uploads-table .dropdown-button").click();
-    cy.get("a[hx-get$='/edit']").click();
+    cy.get("a[title='Edit upload settings']").click();
 
     cy.get(".modal > .content").should("be.visible");
     cy.get(".modal > .content input[name='filename']")
@@ -278,7 +278,7 @@ describe("File List", () => {
 
     cy.get("#uploads-table .dropdown-button").click();
     cy.get("a[hx-post$='/public']").should("contain", "Make public");
-    cy.get("a[hx-get$='/edit']").click();
+    cy.get("a[title='Edit upload settings']").click();
 
     cy.get(".modal > .content").should("be.visible");
     cy.get(".modal > .content input[name='public'")
@@ -294,7 +294,7 @@ describe("File List", () => {
 
     cy.get("#uploads-table .dropdown-button").click();
     cy.get("a[hx-post$='/public']").should("contain", "Make private");
-    cy.get("a[hx-get$='/edit']").click();
+    cy.get("a[title='Edit upload settings']").click();
 
     cy.get(".modal > .content").should("be.visible");
     cy.get(".modal > .content input[name='public'")
@@ -331,7 +331,7 @@ describe("File List", () => {
     // Set a download limit of 10
 
     cy.get("#uploads-table .dropdown-button").click();
-    cy.get("a[hx-get$='/edit']").click();
+    cy.get("a[title='Edit upload settings']").click();
 
     cy.get(".modal > .content").should("be.visible");
     cy.get(".modal > .content input[name='limit']").should("be.disabled");
@@ -399,7 +399,7 @@ describe("File List", () => {
     // Change the download limit to 20
 
     cy.get("#uploads-table .dropdown-button").click();
-    cy.get("a[hx-get$='/edit']").click();
+    cy.get("a[title='Edit upload settings']").click();
 
     cy.get(".modal > .content").should("be.visible");
     cy.get(".modal > .content input[name='limit_check']").should("be.checked");
@@ -418,7 +418,7 @@ describe("File List", () => {
     // Remove the download limit
 
     cy.get("#uploads-table .dropdown-button").click();
-    cy.get("a[hx-get$='/edit']").click();
+    cy.get("a[title='Edit upload settings']").click();
 
     cy.get(".modal > .content").should("be.visible");
     cy.get(".modal > .content input[name='limit_check']")
@@ -456,7 +456,7 @@ describe("File List", () => {
     // Set a download expiry of 3 days
 
     cy.get("#uploads-table .dropdown-button").click();
-    cy.get("a[hx-get$='/edit']").click();
+    cy.get("a[title='Edit upload settings']").click();
 
     const today = new Date();
     const in7Days = new Date();
@@ -481,7 +481,7 @@ describe("File List", () => {
     // Remove the download expiry
 
     cy.get("#uploads-table .dropdown-button").click();
-    cy.get("a[hx-get$='/edit']").click();
+    cy.get("a[title='Edit upload settings']").click();
 
     cy.get(".modal > .content").should("be.visible");
     cy.get(".modal > .content input[name='expiry_check']")
