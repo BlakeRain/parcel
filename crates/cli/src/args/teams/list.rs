@@ -1,5 +1,7 @@
 use clap::Parser;
 
+use crate::context::Context;
+
 #[derive(Debug, Parser)]
 pub struct ListTeamsCommand {
     /// The host to list teams for
@@ -10,3 +12,8 @@ pub struct ListTeamsCommand {
     pub host: Option<String>,
 }
 
+impl ListTeamsCommand {
+    pub async fn run(self, _context: Context) -> anyhow::Result<()> {
+        Ok(())
+    }
+}

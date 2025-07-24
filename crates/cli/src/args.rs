@@ -1,4 +1,6 @@
-use clap::{builder::styling, Parser, Subcommand, ValueEnum};
+use std::path::PathBuf;
+
+use clap::{builder::styling, Parser, Subcommand};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -32,6 +34,11 @@ const STYLES: styling::Styles = styling::Styles::styled()
     styles = STYLES,
 )]
 pub struct Args {
+    /// The location of the Parcel configuration file
+    #[arg(long)]
+    pub config: Option<PathBuf>,
+
+    /// The command to run
     #[command(subcommand)]
     command: ParcelCommand,
 }

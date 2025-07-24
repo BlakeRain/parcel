@@ -17,7 +17,20 @@ serde_json.workspace = true
 thiserror.workspace = true
 time.workspace = true
 time-humanize.workspace = true
+toml.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 
+config = { version = "0.15", default-features = false, features = ["toml"] }
+fs-err = { version = "3.1" }
 indicatif = { version = "0.18" }
+shellexpand = { version = "3.1" }
+
+[dependencies.reqwest]
+version = "0.12"
+default-features = false
+features = ["json", "rustls-tls-native-roots"]
+
+[profile.dist]
+inherits = "release"
+lto = "thin"
