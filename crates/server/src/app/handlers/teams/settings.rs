@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use poem::{
     error::InternalServerError,
     http::StatusCode,
@@ -17,6 +19,7 @@ use crate::{
     app::{
         errors::CsrfError,
         extractors::user::SessionUser,
+        handlers::admin::users::TeamPermissionStruct,
         templates::{authorized_context, render_template},
     },
     env::Env,
@@ -185,6 +188,53 @@ pub async fn post_settings(
         })?;
 
     tracing::info!(team = %team.id, ?team.name, ?team.slug, "Updated team settings");
+
+    let members: HashMap<Key<User>, TeamPermissionStruct> = serde_json::from_str(&members)
+        .map_err(|err| {
+            tracing::error!(?err, "Failed to parse team members JSON");
+            InternalServerError(err)
+        })?;
+
+    for (user_id, permissions) in members {
+        tracing::info!(
+            team = %team.id,
+            user = %user_id,
+            ?permissions,
+            "Setting permissions for team member"
+        );
+
+        // Don't let team managers accidently add new members by forming POST requests.
+        let is_member = team.is_member(&env.pool, user_id)
+            .await
+            .map_err(|err| {
+                tracing::error!(?err, %user_id, "Failed to check if user is active");
+                InternalServerError(err)
+            })?;
+
+        if !is_member {
+            tracing::error!(
+                user = %user_id,
+                team = %team.id,
+                "Attempt to set permissions for non-member user"
+            );
+
+            return Err(poem::Error::from_status(StatusCode::FORBIDDEN));
+        }
+
+        TeamMember::set_user_permissions(
+            &env.pool,
+            team.id,
+            user_id,
+            permissions.edit,
+            permissions.delete,
+            permissions.config,
+        )
+        .await
+        .map_err(|err| {
+            tracing::error!(?err, "Failed to set team member permissions");
+            InternalServerError(err)
+        })?;
+    }
 
     Ok(Html("")
         .with_header("HX-Redirect", format!("/teams/{}", team.slug))

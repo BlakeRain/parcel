@@ -22,9 +22,10 @@ const WithTargets: FunctionComponent<{ selector: string }> = ({
   selector,
   children,
 }) => {
-  const teams = useMemo(() => loadFromScript<Target[]>(selector), [selector]);
+  const targets = useMemo(() => loadFromScript<Target[]>(selector), [selector]);
+  targets.sort((a, b) => a.name.localeCompare(b.name));
 
-  return html`<${TargetsContext.Provider} value=${teams}>${children}<//>`;
+  return html`<${TargetsContext.Provider} value=${targets}>${children}<//>`;
 };
 
 interface State {
@@ -116,10 +117,11 @@ const HiddenField: FunctionComponent<{ name?: string }> = ({ name }) => {
   `;
 };
 
-const TargetRow: FunctionComponent<{ target: Target; enabling: boolean }> = ({
-  target,
-  enabling,
-}) => {
+const TargetRow: FunctionComponent<{
+  target: Target;
+  enabling: boolean;
+  self?: string;
+}> = ({ target, enabling, self }) => {
   const { state, dispatch } = useContext(StateContext);
   const permissions = state.permissions.get(target.id);
 
@@ -147,8 +149,13 @@ const TargetRow: FunctionComponent<{ target: Target; enabling: boolean }> = ({
       for="target-${target.id}"
       class="${permissions ? "" : "opacity-75 italic"}"
       style="margin: 0;"
-      >${target.name}</label
-    >
+      >${target.name}
+      ${self && target.id === self
+        ? html`<span class="text-primary-400 dark:text-primary-500 ml-1">
+            (You)</span
+          >`
+        : null}
+    </label>
     <input
       type="checkbox"
       style="margin: 0;"
@@ -191,11 +198,19 @@ const TargetRow: FunctionComponent<{ target: Target; enabling: boolean }> = ({
   `;
 };
 
-const TargetRows: FunctionComponent<{ enabling: boolean }> = ({ enabling }) => {
+const TargetRows: FunctionComponent<{ enabling: boolean; self?: string }> = ({
+  enabling,
+  self,
+}) => {
   const targets = useContext(TargetsContext);
   return html`
     ${targets.map(
-      (target) => html`<${TargetRow} target=${target} enabling=${enabling} />`
+      (target) =>
+        html`<${TargetRow}
+          target=${target}
+          enabling=${enabling}
+          self=${self}
+        />`
     )}
   `;
 };
@@ -231,8 +246,9 @@ const TableContainer: FunctionComponent<{ class?: string }> = ({
 const ParcelTeams: FunctionComponent<{
   name: string;
   noun: string;
-  enabling?: boolean;
   class?: string;
+  enabling?: boolean;
+  self?: string;
   targets?: string;
   permissions?: string;
 }> = (props) => {
@@ -242,7 +258,10 @@ const ParcelTeams: FunctionComponent<{
         <${HiddenField} name=${props.name} />
         <${TableContainer} class=${props.class}>
           <${TargetHeadings} noun=${props.noun} />
-          <${TargetRows} enabling=${props.enabling || false} />
+          <${TargetRows}
+            enabling=${props.enabling || false}
+            self=${props.self}
+          />
         <//>
       <//>
     <//>
@@ -254,6 +273,7 @@ export function register() {
     "name",
     "class",
     "enabling",
+    "self",
     "targets",
     "permissions",
   ]);
