@@ -1,0 +1,25 @@
+<div id="team-slug-field" hx-target="this" hx-disinherit="hx-select" hx-swap="outerHTML" class="mt-2">
+  <input
+    class="field"
+    type="text"
+    id="slug"
+    name="slug"
+    hx-post="/teams/{{ team.id }}/settings/slug"
+    {% if form %}
+      value="{{ form.slug }}"
+    {% elif team %}
+      value="{{ team.slug }}"
+    {% endif %}
+    placeholder="url-slug"
+    minlength="3"
+    maxlength="100"
+    pattern="[\w\-]{3,}"
+    required>
+  <p class="text-xs text-gray-500 dark:text-gray-300 mt-1">
+    This is the URL slug that is used to access your team's page. This must be at least three
+    characters in length, and can only include letters, numbers, hyphens, and underscores.
+  </p>
+  {% if exists %}
+    <div class="h-4 text-danger">This slug is already in use</div>
+  {% endif %}
+</div>
