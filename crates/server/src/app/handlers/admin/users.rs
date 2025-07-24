@@ -93,10 +93,10 @@ pub struct NewUserForm {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct TeamPermissionStruct {
-    edit: bool,
-    delete: bool,
-    config: bool,
+pub struct TeamPermissionStruct {
+    pub edit: bool,
+    pub delete: bool,
+    pub config: bool,
 }
 
 impl From<TeamMember> for TeamPermissionStruct {

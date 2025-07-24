@@ -122,6 +122,16 @@ impl Team {
 
         query.build_query_scalar().fetch_one(pool).await
     }
+
+    pub async fn is_member(&self, pool: &SqlitePool, user: Key<User>) -> sqlx::Result<bool> {
+        let result = sqlx::query("SELECT 1 FROM team_members WHERE team = $1 AND user = $2")
+            .bind(self.id)
+            .bind(user)
+            .fetch_optional(pool)
+            .await?;
+
+        Ok(result.is_some())
+    }
 }
 
 #[derive(Debug, FromRow, Serialize)]
@@ -145,10 +155,11 @@ impl TeamMember {
             team_members.can_config \
             FROM team_members \
             LEFT JOIN users ON users.id = team_members.user \
-            WHERE team_members.user = $1")
-            .bind(user)
-            .fetch_all(pool)
-            .await
+            WHERE team_members.user = $1",
+        )
+        .bind(user)
+        .fetch_all(pool)
+        .await
     }
 
     pub async fn get_for_team(pool: &SqlitePool, team: Key<Team>) -> sqlx::Result<Vec<Self>> {
@@ -161,10 +172,11 @@ impl TeamMember {
             team_members.can_config \
             FROM team_members \
             LEFT JOIN users ON users.id = team_members.user \
-            WHERE team_members.team = $1")
-            .bind(team)
-            .fetch_all(pool)
-            .await
+            WHERE team_members.team = $1",
+        )
+        .bind(team)
+        .fetch_all(pool)
+        .await
     }
 
     pub async fn get_for_user_and_team(
@@ -181,11 +193,36 @@ impl TeamMember {
             team_members.can_config \
             FROM team_members \
             LEFT JOIN users ON users.id = team_members.user \
-            WHERE team_members.user = $1 AND team_members.team = $2")
-            .bind(user)
-            .bind(team)
-            .fetch_optional(pool)
-            .await
+            WHERE team_members.user = $1 AND team_members.team = $2",
+        )
+        .bind(user)
+        .bind(team)
+        .fetch_optional(pool)
+        .await
+    }
+
+    pub async fn set_user_permissions(
+        pool: &SqlitePool,
+        team: Key<Team>,
+        user: Key<User>,
+        can_edit: bool,
+        can_delete: bool,
+        can_config: bool,
+    ) -> sqlx::Result<()> {
+        sqlx::query(
+            "INSERT INTO team_members (team, user, can_edit, can_delete, can_config) \
+            VALUES ($1, $2, $3, $4, $5) \
+            ON CONFLICT (team, user) DO UPDATE SET \
+            can_edit = $3, can_delete = $4, can_config = $5",
+        )
+        .bind(team)
+        .bind(user)
+        .bind(can_edit)
+        .bind(can_delete)
+        .bind(can_config)
+        .execute(pool)
+        .await?;
+        Ok(())
     }
 }
 

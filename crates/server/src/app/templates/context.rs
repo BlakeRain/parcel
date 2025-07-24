@@ -33,7 +33,6 @@ fn create_build_info() -> Value {
     context! {
         profile => env!("CARGO_PROFILE"),
         version => env!("CARGO_PKG_VERSION"),
-        date => env!("CARGO_BUILD_DATE")
     }
 }
 
