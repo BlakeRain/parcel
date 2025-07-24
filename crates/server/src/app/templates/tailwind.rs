@@ -79,10 +79,7 @@ impl TailwindRebuilder {
         })?;
 
         for path in paths {
-            watcher.watch(
-                &working_dir.join(path),
-                notify::RecursiveMode::Recursive,
-            )?;
+            watcher.watch(&working_dir.join(path), notify::RecursiveMode::Recursive)?;
         }
 
         let inner = Arc::new(Inner { watcher });
