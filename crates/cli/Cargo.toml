@@ -19,3 +19,5 @@ time.workspace = true
 time-humanize.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
+
+indicatif = { version = "0.18" }
