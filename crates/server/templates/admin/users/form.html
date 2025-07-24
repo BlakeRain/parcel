@@ -82,19 +82,19 @@
               {%- if not loop.last -%},{%- endif -%}
               {% endfor %} ]
           </script>
-          {% if form or user %}
-            <script type="text/json" id="permissions-data">
-              {% if form -%}
-                {{ form.teams | safe }}
-              {%- elif user -%}
-                {{ "{" }} {% for member in membership %}
-                  "{{ member.team }}":
-                    {{ dict(edit=member.can_edit, delete=member.can_delete, config=member.can_config) | tojson }}
-                  {%- if not loop.last -%},{%- endif -%}
-                {% endfor %} {{ "}" }}
-              {%- endif %}
-            </script>
-          {% endif %}
+          <script type="text/json" id="permissions-data">
+            {% if form -%}
+              {{ form.teams | safe }}
+            {%- elif user -%}
+              {{ "{" }} {% for member in membership %}
+                "{{ member.team }}":
+                  {{ dict(edit=member.can_edit, delete=member.can_delete, config=member.can_config) | tojson }}
+                {%- if not loop.last -%},{%- endif -%}
+              {% endfor %} {{ "}" }}
+            {% else -%}
+              {{ "{" }} {{ "}" }}
+            {%- endif %}
+          </script>
           <parcel-teams
             name="teams"
             noun="Team"
