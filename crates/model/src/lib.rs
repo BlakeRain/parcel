@@ -1,3 +1,4 @@
+pub mod api_key;
 pub mod migration;
 pub mod password;
 pub mod team;
