@@ -52,12 +52,33 @@ pub enum ApiUploadSort {
     UploadedAt,
 }
 
+impl std::fmt::Display for ApiUploadSort {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ApiUploadSort::Filename => write!(f, "filename"),
+            ApiUploadSort::Size => write!(f, "size"),
+            ApiUploadSort::Downloads => write!(f, "downloads"),
+            ApiUploadSort::ExpiryDate => write!(f, "expiryDate"),
+            ApiUploadSort::UploadedAt => write!(f, "uploadedAt"),
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ApiUploadOrder {
     #[serde(rename = "asc")]
     Asc,
     #[serde(rename = "desc")]
     Desc,
+}
+
+impl std::fmt::Display for ApiUploadOrder {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ApiUploadOrder::Asc => write!(f, "asc"),
+            ApiUploadOrder::Desc => write!(f, "desc"),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
