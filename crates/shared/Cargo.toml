@@ -1,0 +1,10 @@
+[package]
+name = "parcel-shared"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[dependencies]
+serde.workspace = true
+time.workspace = true
+uuid.workspace = true
