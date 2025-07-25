@@ -2,8 +2,10 @@
 resolver = "2"
 members = [
     "crates/cli",
+    "crates/client",
     "crates/model",
     "crates/server",
+    "crates/shared",
 ]
 
 [workspace.package]
@@ -34,7 +36,9 @@ tracing = { version = "0.1", features = ["log"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1.11", features = ["v4", "serde"] }
 
+parcel-client = { path = "crates/client" }
 parcel-model = { path = "crates/model" }
+parcel-shared = { path = "crates/shared" }
 
 [profile.release]
 opt-level = 3

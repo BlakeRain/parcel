@@ -34,6 +34,7 @@ tracing-subscriber.workspace = true
 uuid.workspace = true
 
 parcel-model.workspace = true
+parcel-shared.workspace = true
 
 fast_qr = { version = "0.13", features = ["svg"] }
 mime = { version = "0.3" }
