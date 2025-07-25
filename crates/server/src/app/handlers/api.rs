@@ -8,7 +8,9 @@ mod teams;
 mod uploads;
 
 pub use teams::{get_team, get_teams};
-pub use uploads::{get_uploads, get_team_uploads, get_upload, put_upload, post_upload, delete_upload};
+pub use uploads::{
+    delete_upload, get_team_uploads, get_upload, get_uploads, post_upload, put_upload,
+};
 
 #[poem::handler]
 pub async fn get_me(env: Data<&Env>, api_key: BearerApiKey) -> poem::Result<Json<ApiMeResponse>> {
