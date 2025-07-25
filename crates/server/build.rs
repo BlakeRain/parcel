@@ -1,7 +1,6 @@
 use std::process::Command;
 
 fn main() {
-    let build_date = build_data::format_date(build_data::now()).expect("build date");
     let profile = std::env::var("PROFILE").expect("PROFILE");
     let is_debug = profile == "debug";
 
@@ -123,5 +122,4 @@ fn main() {
     println!("cargo:rerun-if-changed=tsconfig.json");
 
     println!("cargo:rustc-env=CARGO_PROFILE={profile}");
-    println!("cargo:rustc-env=CARGO_BUILD_DATE={build_date}");
 }

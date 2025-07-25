@@ -4,6 +4,7 @@ import { register as register_clipboard } from "./components/clipboard";
 import { register as register_date } from "./components/date";
 import { register as register_modal } from "./components/modal";
 import { register as register_select } from "./components/select";
+import { register as register_teams } from "./components/teams";
 import { register as register_dropdown } from "./components/dropdown";
 
 function init() {
@@ -20,6 +21,7 @@ function init() {
   register_date();
   register_modal();
   register_select();
+  register_teams();
   register_dropdown();
 
   document.addEventListener("click", (event) => {

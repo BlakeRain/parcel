@@ -22,6 +22,7 @@ use crate::{
 
 use super::uploads::ListQuery;
 
+pub mod settings;
 pub mod uploads;
 
 #[handler]

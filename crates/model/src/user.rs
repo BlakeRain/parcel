@@ -260,14 +260,18 @@ impl User {
         team: Key<Team>,
         can_edit: bool,
         can_delete: bool,
+        can_config: bool,
     ) -> sqlx::Result<()> {
         sqlx::query(
-            "INSERT INTO team_members (team, user, can_edit, can_delete) VALUES ($1, $2, $3, $4)",
+            "INSERT INTO team_members \
+            (team, user, can_edit, can_delete, can_config) \
+            VALUES ($1, $2, $3, $4, $5)",
         )
         .bind(team)
         .bind(self.id)
         .bind(can_edit)
         .bind(can_delete)
+        .bind(can_config)
         .execute(pool)
         .await?;
         Ok(())

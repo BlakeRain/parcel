@@ -4,7 +4,7 @@
     <span>Your Uploads</span>
     <span class="label">{{ home.count }}</span>
   </a>
-  {% for tab in tabs %}
+  {% for tab in tabs | sort(attribute="name") %}
     <a
       class="tab{% if team and tab.id == team.id %} active{% endif %}"
       hx-get="/teams/{{ tab.slug }}/tab"

@@ -4,11 +4,7 @@
     type="text"
     id="slug"
     name="slug"
-    {% if team %}
-      hx-post="/admin/teams/{{ team.id }}/slug"
-    {% else %}
-      hx-post="/admin/teams/new/slug"
-    {% endif %}
+    hx-post="/teams/{{ team.id }}/settings/slug"
     {% if form %}
       value="{{ form.slug }}"
     {% elif team %}
@@ -20,10 +16,10 @@
     pattern="[\w\-]{3,}"
     required>
   <p class="text-xs text-gray-500 dark:text-gray-300 mt-1">
-    This is the URL slug that is used to access the team's page. This must be at least three
+    This is the URL slug that is used to access your team's page. This must be at least three
     characters in length, and can only include letters, numbers, hyphens, and underscores.
   </p>
   {% if exists %}
-    <div class="h-4 text-danger">A {{ exists }} with this URL slug already exists.</div>
+    <div class="h-4 text-danger">This slug is already in use</div>
   {% endif %}
 </div>

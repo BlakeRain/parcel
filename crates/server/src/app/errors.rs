@@ -71,5 +71,6 @@ pub async fn handle_500(error: poem::Error) -> impl IntoResponse {
     .with_status(error.status())
     .with_header("Pragma", "no-cache")
     .with_header("Cache-Control", "no-cache, no-store, must-revalidate")
+    .with_header("HX-Trigger", "closeModals")
     .into_response()
 }

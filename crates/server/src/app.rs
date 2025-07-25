@@ -89,6 +89,8 @@ pub fn create_app(env: Env, cookie_key: Option<&[u8]>) -> anyhow::Result<impl In
         "/uploads/:id/download"         handlers::uploads::download             GET POST
         "/uploads/:owner/:slug"         handlers::uploads::custom_upload        GET
         "/teams/:id"                    handlers::teams::team                   GET
+        "/teams/:id/settings"           handlers::teams::settings::settings     GET POST
+        "/teams/:id/settings/slug"      handlers::teams::settings::check_slug       POST
         "/teams/:id/tab"                handlers::teams::tab                    GET
         "/teams/:id/uploads/list"       handlers::teams::uploads::list          GET
         "/teams/:id/uploads/list/:page" handlers::teams::uploads::page          GET

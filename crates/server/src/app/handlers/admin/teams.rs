@@ -396,7 +396,7 @@ pub async fn post_team(
             InternalServerError(err)
         })?;
 
-    tracing::info!(team = %team.id, ?team.name, "Updated team");
+    tracing::info!(team = %team.id, ?team.name, ?team.slug, "Updated team");
 
     Ok(Redirect::see_other("/admin/teams").into_response())
 }

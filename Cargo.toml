@@ -15,7 +15,7 @@ anyhow = { version = "1.0" }
 argon2 = { version = "0.5", features = ["std"] }
 base32 = { version = "0.5" }
 base64 = { version = "0.22" }
-clap = { version = "4.4", features = ["derive", "env"] }
+clap = { version = "4.4", features = ["derive", "env", "wrap_help"] }
 humansize = { version = "2.1" }
 pbkdf2 = { version = "0.12", features = ["simple"] }
 rand_core = { version = "0.9", features = ["std"] }
