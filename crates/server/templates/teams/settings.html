@@ -62,14 +62,10 @@
         class="button"
         data-loading-disable>
         <span
-          class="{% if team %}icon-check{% else %}icon-plus{% endif %}"
+          class="icon-check"
           data-loading-class="icon-loader-circle animate-spin"
-          data-loading-class-remove="{% if team %}icon-check{% else %}icon-plus{% endif %}"></span>
-        {% if team %}
+          data-loading-class-remove="icon-check"></span>
           Save changes
-        {% else %}
-          Add team
-        {% endif %}
       </button>
       <button
         class="button hollow"
