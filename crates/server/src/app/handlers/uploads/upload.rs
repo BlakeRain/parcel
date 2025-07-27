@@ -58,17 +58,21 @@ async fn render_upload(
         None
     };
 
-    let Some(uploader) = User::get(&env.pool, upload.uploaded_by)
-        .await
-        .map_err(|err| {
-            tracing::error!(?err, user_id = %upload.uploaded_by,
-                            "Unable to get user by ID");
-            InternalServerError(err)
-        })?
-    else {
-        tracing::error!(user_id = %upload.uploaded_by, "Unable to find user with given ID");
-        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
-    };
+    let uploader =
+        if let Some(uploaded_by) = upload.uploaded_by {
+            Some(User::get(&env.pool, uploaded_by)
+            .await
+            .map_err(|err| {
+                tracing::error!(?err, user_id = %uploaded_by, "Unable to get user by ID");
+                InternalServerError(err)
+            })?
+            .ok_or_else(|| {
+                tracing::error!(user_id = %uploaded_by, "Unable to find user with given ID");
+                poem::Error::from_status(StatusCode::NOT_FOUND)
+            })?)
+        } else {
+            None
+        };
 
     let team = if let Some(team_id) = upload.owner_team {
         let Some(team) = Team::get(&env.pool, team_id).await.map_err(|err| {

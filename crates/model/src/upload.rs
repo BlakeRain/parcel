@@ -26,7 +26,7 @@ pub struct Upload {
     pub custom_slug: Option<String>,
     pub owner_team: Option<Key<Team>>,
     pub owner_user: Option<Key<User>>,
-    pub uploaded_by: Key<User>,
+    pub uploaded_by: Option<Key<User>>,
     pub uploaded_at: OffsetDateTime,
     pub remote_addr: Option<String>,
 }
@@ -506,8 +506,8 @@ pub struct UploadList {
     pub expiry_date: Option<Date>,
     pub custom_slug: Option<String>,
     pub owner_slug: String,
-    pub uploaded_by_id: Key<User>,
-    pub uploaded_by_name: String,
+    pub uploaded_by_id: Option<Key<User>>,
+    pub uploaded_by_name: Option<String>,
     pub uploaded_at: OffsetDateTime,
 }
 
