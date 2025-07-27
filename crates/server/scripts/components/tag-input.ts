@@ -1,4 +1,4 @@
-const VALID_TAG_RE = /^[ a-zA-Z0-9-]+$/;
+const VALID_TAG_RE = /^[\p{L}\p{N}_ -]+$/u;
 
 class ParcelTagInput extends HTMLElement {
   #tags: string[] = [];
@@ -57,7 +57,7 @@ class ParcelTagInput extends HTMLElement {
     this.#tagInput = document.createElement("input");
     this.#tagInput.type = "text";
     this.#tagInput.placeholder = "Add a tag, press Enter";
-    this.#tagInput.pattern = VALID_TAG_RE.source;
+    // this.#tagInput.pattern = VALID_TAG_RE.source;
     this.#tagInput.classList.add("field", "grow");
 
     const datalist = this.querySelector("datalist");
