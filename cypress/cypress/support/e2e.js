@@ -1,4 +1,5 @@
 import users from "../fixtures/users.json";
+import teams from "../fixtures/teams.json";
 
 Cypress.Commands.add("resetDatabase", () => {
   cy.request("/debug/reset-database").then((response) => {
@@ -9,6 +10,13 @@ Cypress.Commands.add("resetDatabase", () => {
 Cypress.Commands.add("initialUsers", () => {
   const body = Object.keys(users).map((key) => users[key]);
   cy.request("POST", "/debug/initial-users", body).then((response) => {
+    expect(response.status).to.eq(200);
+  });
+});
+
+Cypress.Commands.add("initialTeams", () => {
+  const body = Object.keys(teams).map((key) => teams[key]);
+  cy.request("POST", "/debug/initial-teams", body).then((response) => {
     expect(response.status).to.eq(200);
   });
 });

@@ -9,7 +9,7 @@ use serde::Deserialize;
 use sqlx::SqlitePool;
 use time::OffsetDateTime;
 
-use parcel_model::{password::StoredPassword, types::Key, upload::Upload, user::User};
+use parcel_model::{password::StoredPassword, team::Team, types::Key, upload::Upload, user::User};
 
 use crate::env::Env;
 
@@ -83,6 +83,77 @@ async fn initial_users(env: Data<&Env>, Json(users): Json<Vec<InitialUser>>) -> 
 }
 
 #[derive(Debug, Deserialize)]
+pub struct InitialTeam {
+    name: String,
+    slug: String,
+    members: Vec<InitialTeamMember>,
+}
+
+#[derive(Debug, Deserialize)]
+struct InitialTeamMember {
+    name: String,
+    edit: bool,
+    delete: bool,
+    config: bool,
+}
+
+#[poem::handler]
+async fn post_initial_teams(
+    env: Data<&Env>,
+    Json(teams): Json<Vec<InitialTeam>>,
+) -> poem::Result<()> {
+    for InitialTeam {
+        name,
+        slug,
+        members,
+    } in teams
+    {
+        let team = Team {
+            id: Key::new(),
+            name,
+            slug,
+            limit: None,
+            enabled: true,
+            created_at: OffsetDateTime::now_utc(),
+            created_by: None,
+        };
+
+        team.create(&env.pool).await.map_err(|err| {
+            tracing::error!(?err, "Failed to insert team in database");
+            InternalServerError(err)
+        })?;
+
+        for member in members {
+            let Some(user) = User::get_by_username(&env.pool, &member.name)
+                .await
+                .map_err(|err| {
+                    tracing::error!("Failed to get user by username: {}", err);
+                    InternalServerError(err)
+                })?
+            else {
+                tracing::error!("User not found: {}", member.name);
+                return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
+            };
+
+            user.join_team(
+                &env.pool,
+                team.id,
+                member.edit,
+                member.delete,
+                member.config,
+            )
+            .await
+            .map_err(|err| {
+                tracing::error!(?err, "Failed to add user to team in database");
+                InternalServerError(err)
+            })?;
+        }
+    }
+
+    Ok(())
+}
+
+#[derive(Debug, Deserialize)]
 struct DirectUpload {
     owner: String,
     filename: String,
@@ -102,16 +173,27 @@ async fn post_uploads(
         content,
     } in uploads
     {
-        let Some(owner) = User::get_by_username(&env.pool, &owner)
+        let owner_user = User::get_by_username(&env.pool, &owner)
             .await
             .map_err(|err| {
                 tracing::error!("Failed to get user by username: {}", err);
                 InternalServerError(err)
-            })?
-        else {
-            tracing::error!("User not found: {}", owner);
+            })?;
+
+        let owner_team = Team::get_by_slug(&env.pool, &owner).await.map_err(|err| {
+            tracing::error!("Failed to get team by slug: {}", err);
+            InternalServerError(err)
+        })?;
+
+        if owner_user.is_none() && owner_team.is_none() {
+            tracing::error!("Owner not found: {}", owner);
             return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
-        };
+        }
+
+        if owner_user.is_some() && owner_team.is_some() {
+            tracing::error!("Both user and team found for owner: {}", owner);
+            return Err(poem::Error::from_status(StatusCode::BAD_REQUEST));
+        }
 
         let content = base64::engine::general_purpose::STANDARD
             .decode(content.as_bytes())
@@ -139,9 +221,9 @@ async fn post_uploads(
             expiry_date: None,
             password: None,
             custom_slug: None,
-            owner_team: None,
-            owner_user: Some(owner.id),
-            uploaded_by: owner.id,
+            owner_team: owner_team.map(|t| t.id),
+            owner_user: owner_user.map(|u| u.id),
+            uploaded_by: None,
             uploaded_at: OffsetDateTime::now_utc(),
             remote_addr: None,
         };
@@ -162,5 +244,6 @@ pub fn add_debug_routes(app: poem::Route) -> poem::Route {
 
     app.at("/debug/reset-database", get(reset_database))
         .at("/debug/initial-users", post(initial_users))
+        .at("/debug/initial-teams", post(post_initial_teams))
         .at("/debug/uploads", post(post_uploads))
 }

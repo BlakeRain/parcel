@@ -1,0 +1,14 @@
+{
+  "team-a": {
+    "name": "Team A",
+    "slug": "team-a",
+    "members": [
+      {
+        "name": "user",
+        "edit": true,
+        "delete": true,
+        "config": true
+      }
+    ]
+  }
+}
