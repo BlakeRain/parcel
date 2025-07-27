@@ -253,7 +253,7 @@ pub async fn post_new(
         enabled,
         limit,
         created_at: OffsetDateTime::now_utc(),
-        created_by: admin.id,
+        created_by: Some(admin.id),
     };
 
     team.create(&env.pool).await.map_err(|err| {

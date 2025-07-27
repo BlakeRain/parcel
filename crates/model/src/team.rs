@@ -12,7 +12,7 @@ pub struct Team {
     pub limit: Option<i64>,
     pub enabled: bool,
     pub created_at: OffsetDateTime,
-    pub created_by: Key<User>,
+    pub created_by: Option<Key<User>>,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
