@@ -8,6 +8,11 @@
 
 ---
 
+![GitHub Release](https://img.shields.io/github/v/release/BlakeRain/parcel)
+![GitHub License](https://img.shields.io/github/license/BlakeRain/parcel)
+[![Check](https://github.com/BlakeRain/parcel/actions/workflows/check.yaml/badge.svg)](https://github.com/BlakeRain/parcel/actions/workflows/check.yaml)
+[![Deploy](https://github.com/BlakeRain/parcel/actions/workflows/deploy.yaml/badge.svg)](https://github.com/BlakeRain/parcel/actions/workflows/deploy.yaml)
+
 Parcel is a simple light-weight file upload application with a nice UI and a small set of features.
 
 - Support multiple users and administrators, including MFA
