@@ -39,7 +39,7 @@
       @apply dark:bg-gray-800 dark:border-gray-700 dark:text-gray-500;
     }
 
-    &:invalid {
+    &:invalid, &.invalid {
       @apply border-red-500;
       @apply dark:border-red-400;
     }
