@@ -6,7 +6,6 @@ import { register as register_dropdown } from "./components/dropdown";
 import { register as register_modal } from "./components/modal";
 import { register as register_select } from "./components/select";
 import { register as register_teams } from "./components/teams";
-import { register as register_dropdown } from "./components/dropdown";
 import { register as register_tag_input } from "./components/tag-input";
 
 function init() {
@@ -25,7 +24,6 @@ function init() {
   register_modal();
   register_select();
   register_teams();
-  register_dropdown();
   register_tag_input();
 
   document.addEventListener("click", (event) => {
