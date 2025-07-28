@@ -27,7 +27,7 @@ async fn main() -> anyhow::Result<()> {
     let env = Env::new(&args).await?;
 
     tracing::info!("Starting preview generation worker");
-    let (preview, worker) = workers::generate_previews::start_worker(env.clone()).await?;
+    let (preview, worker) = workers::previews::start_worker(env.clone()).await?;
 
     let app = create_app(env, preview.clone(), cookie_key.as_deref())
         .context("failed to create application")?;
