@@ -348,11 +348,17 @@ impl Upload {
         pool: &SqlitePool,
         has_preview: bool,
     ) -> sqlx::Result<()> {
-        let result = sqlx::query("UPDATE uploads SET has_preview = $1 WHERE id = $2")
-            .bind(has_preview)
-            .bind(self.id)
-            .execute(pool)
-            .await?;
+        let result =
+            sqlx::query("UPDATE uploads SET has_preview = $1, preview_error = $2 WHERE id = $3")
+                .bind(has_preview)
+                .bind(if has_preview {
+                    None::<&String>
+                } else {
+                    self.preview_error.as_ref()
+                })
+                .bind(self.id)
+                .execute(pool)
+                .await?;
 
         if result.rows_affected() == 0 {
             return Err(sqlx::Error::RowNotFound);
@@ -370,11 +376,11 @@ impl Upload {
         sqlx::query_as(
             "SELECT * FROM uploads \
             WHERE NOT has_preview AND preview_error IS NULL \
-            OFFSET $1 \
-            LIMIT $2",
+            LIMIT $1 \
+            OFFSET $2",
         )
-        .bind(offset as i64)
         .bind(limit as i64)
+        .bind(offset as i64)
         .fetch_all(pool)
         .await
     }
