@@ -1,5 +1,8 @@
+# Ignore the Cypress directory, as we don't need the E2E tests in the Docker image
+cypress/
+
+# Ignore the media directory, as we don't need logos and such
+media/
+
 # Ignore the Rust target directory
 target/
-
-# Ignore the Node.js modules directory
-node_modules/
