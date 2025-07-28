@@ -59,6 +59,13 @@
             "thumbnail,scale=400:-1",
             "-frames:v",
             "1",
+            "${temp_dir}/${input_base}.png"
+          ]
+        },
+        {
+          "command": "mv",
+          "args": [
+            "${temp_dir}/${input_base}.png",
             "${output}"
           ]
         }
