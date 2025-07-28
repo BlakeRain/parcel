@@ -22,15 +22,16 @@
 //! 3. If the worker sees that the upload is bigger than the configured maximum size for previews,
 //!    it will skip the upload.
 
-use std::{borrow::Cow, collections::HashMap, path::Path, sync::Arc};
+use std::sync::Arc;
 
 use anyhow::Context;
-use serde::Deserialize;
-use tokio::{io::AsyncReadExt, process::Command, sync::mpsc::Sender, task::JoinHandle};
+use tokio::{process::Command, sync::mpsc::Sender, task::JoinHandle};
 
 use parcel_model::{types::Key, upload::Upload};
 
 use crate::env::Env;
+
+mod config;
 
 pub enum PreviewGenerationCommand {
     GeneratePreview(Vec<Key<Upload>>),
@@ -64,7 +65,7 @@ pub async fn start_worker(env: Env) -> anyhow::Result<(PreviewWorker, JoinHandle
     // Try and load our previewer configuration file.
     let config_path = env.config_dir.join("previewers.json");
     let config = if config_path.exists() {
-        PreviewConfig::from_file(&config_path)
+        config::PreviewConfig::from_file(&config_path)
             .await
             .context("failed to read 'previewers.json' configuration")?
     } else {
@@ -73,7 +74,7 @@ pub async fn start_worker(env: Env) -> anyhow::Result<(PreviewWorker, JoinHandle
             "Previewer configuration file not found; no previews will be generated",
         );
 
-        PreviewConfig::default()
+        config::PreviewConfig::default()
     };
 
     let config = Arc::new(config);
@@ -113,224 +114,9 @@ pub async fn start_worker(env: Env) -> anyhow::Result<(PreviewWorker, JoinHandle
     Ok((PreviewWorker { sender: tx }, task))
 }
 
-#[derive(Debug, Default, Deserialize)]
-struct PreviewConfig {
-    previewers: Vec<Previewer>,
-}
-
-impl PreviewConfig {
-    async fn from_file<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
-        let mut file = tokio::fs::File::open(path)
-            .await
-            .context("failed to open configuration file")?;
-        let mut content = String::new();
-        file.read_to_string(&mut content)
-            .await
-            .context("failed to read configuration file")?;
-        let config =
-            serde_json::from_str(&content).context("failed to parse configuration file")?;
-        Ok(config)
-    }
-
-    fn find_previewer(&self, mime_type: &str) -> Option<&Previewer> {
-        self.previewers
-            .iter()
-            .filter(|previewer| previewer.is_enabled())
-            .find(|previewer| previewer.matcher.matches(mime_type))
-    }
-}
-
-#[derive(Debug, Deserialize)]
-struct Previewer {
-    #[serde(default)]
-    feature: Option<PreviewerFeature>,
-    #[serde(rename = "match")]
-    matcher: PreviewerMatch,
-    #[serde(default)]
-    commands: Vec<PreviewerCommand>,
-}
-
-impl Previewer {
-    fn is_enabled(&self) -> bool {
-        self.feature
-            .as_ref()
-            .is_none_or(|feature| feature.is_enabled())
-    }
-}
-
-#[derive(Debug, Deserialize)]
-pub enum PreviewerFeature {
-    #[serde(rename = "libreoffice")]
-    LibreOffice,
-}
-
-impl PreviewerFeature {
-    fn is_enabled(&self) -> bool {
-        match self {
-            Self::LibreOffice => cfg!(feature = "libreoffice"),
-        }
-    }
-}
-
-#[derive(Debug, Deserialize)]
-enum PreviewerMatch {
-    #[serde(rename = "exact")]
-    Exact(String),
-    #[serde(rename = "prefix")]
-    Prefix(String),
-}
-
-impl PreviewerMatch {
-    fn matches(&self, mime_type: &str) -> bool {
-        match self {
-            PreviewerMatch::Exact(ref exact) => mime_type == exact,
-            PreviewerMatch::Prefix(ref prefix) => mime_type.starts_with(prefix),
-        }
-    }
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(untagged)]
-enum PreviewerCommandName {
-    Direct(String),
-    Platforms(HashMap<String, String>),
-}
-
-#[derive(Debug, Deserialize)]
-struct PreviewerCommand {
-    command: PreviewerCommandName,
-    args: Vec<String>,
-}
-
-impl PreviewerCommand {
-    fn select_command(&self) -> Option<&str> {
-        match self.command {
-            PreviewerCommandName::Direct(ref cmd) => Some(cmd),
-            PreviewerCommandName::Platforms(ref platforms) => {
-                platforms.get(std::env::consts::OS).map(String::as_str)
-            }
-        }
-    }
-
-    fn build_command(&self, env: &Env, upload: &Upload) -> Option<Command> {
-        let Some(cmd) = self.select_command() else {
-            tracing::warn!("No command found for platform {}", std::env::consts::OS);
-            return None;
-        };
-
-        let input = env.cache_dir.join(&upload.slug);
-        let input_base = upload.slug.clone();
-        let output = env.cache_dir.join(format!("{}.preview", upload.slug));
-        let temp_dir = env.cache_dir.join("temp");
-
-        let context = move |var: &str| -> Result<Option<Cow<'static, str>>, std::env::VarError> {
-            match var {
-                "input" => Ok(Some(Cow::Owned(input.to_string_lossy().to_string()))),
-                "input_base" => Ok(Some(Cow::Owned(input_base.clone()))),
-                "output" => Ok(Some(Cow::Owned(output.to_string_lossy().to_string()))),
-                "temp_dir" => Ok(Some(Cow::Owned(temp_dir.to_string_lossy().to_string()))),
-                _ => Err(std::env::VarError::NotPresent),
-            }
-        };
-
-        let mut command = Command::new(cmd);
-
-        for arg in &self.args {
-            match shellexpand::env_with_context(arg, &context) {
-                Ok(expanded) => {
-                    command.arg(expanded.into_owned());
-                }
-
-                Err(err) => {
-                    tracing::error!(
-                        command = cmd,
-                        mime_type = upload.mime_type.as_deref().unwrap_or("unknown"),
-                        "Failed to expand argument '{}': {}",
-                        arg,
-                        err
-                    );
-
-                    return None;
-                }
-            }
-        }
-
-        Some(command)
-    }
-
-    async fn run_command(&self, env: &Env, upload: &mut Upload) -> bool {
-        let Some(mut command) = self.build_command(env, upload) else {
-            tracing::warn!(
-                "Failed to build command for previewer for upload {}",
-                upload.id
-            );
-
-            return false;
-        };
-
-        let output = match command.output().await {
-            Ok(output) => output,
-            Err(err) => {
-                tracing::error!(
-                    command = ?self,
-                    "Failed to execute command for upload {}: {}",
-                    upload.id,
-                    err
-                );
-
-                let error_message = format!("Failed to execute preview command: {err}");
-
-                upload
-                    .set_preview_error(&env.pool, error_message)
-                    .await
-                    .unwrap_or_else(|err| {
-                        tracing::error!(
-                            "Failed to set preview error for upload {}: {}",
-                            upload.id,
-                            err
-                        );
-                    });
-
-                return false;
-            }
-        };
-
-        if !output.status.success() {
-            let error_message = String::from_utf8_lossy(&output.stderr).trim().to_string();
-
-            tracing::error!(
-                command = ?self,
-                "Command failed for upload {}: {}",
-                upload.id,
-                error_message
-            );
-
-            upload
-                .set_preview_error(&env.pool, error_message)
-                .await
-                .unwrap_or_else(|err| {
-                    tracing::error!(
-                        "Failed to set preview error for upload {}: {}",
-                        upload.id,
-                        err
-                    );
-                });
-
-            return false;
-        }
-
-        tracing::info!(
-            "Successfully executed preview command for upload {}",
-            upload.id
-        );
-
-        true
-    }
-}
-
 const SCAN_MAX_SIZE: u32 = 10;
 
-async fn scan_for_uploads(config: Arc<PreviewConfig>, env: Env) -> anyhow::Result<()> {
+async fn scan_for_uploads(config: Arc<config::PreviewConfig>, env: Env) -> anyhow::Result<()> {
     let mut offset = 0;
 
     loop {
@@ -357,7 +143,7 @@ async fn scan_for_uploads(config: Arc<PreviewConfig>, env: Env) -> anyhow::Resul
 }
 
 async fn generate_previews(
-    config: Arc<PreviewConfig>,
+    config: Arc<config::PreviewConfig>,
     env: Env,
     uploads: Vec<Key<Upload>>,
 ) -> anyhow::Result<()> {
@@ -373,7 +159,7 @@ async fn generate_previews(
     Ok(())
 }
 
-async fn generate_preview(config: &PreviewConfig, env: &Env, mut upload: Upload) {
+async fn generate_preview(config: &config::PreviewConfig, env: &Env, mut upload: Upload) {
     if upload.has_preview {
         tracing::info!("Upload {} already has a preview, skipping", upload.id);
         return;
@@ -420,7 +206,17 @@ async fn generate_preview(config: &PreviewConfig, env: &Env, mut upload: Upload)
         return;
     };
 
-    if previewer.commands.is_empty() {
+    if !previewer.is_enabled() {
+        tracing::warn!(
+            "Previewer matching MIME type '{}' is not enabled, skipping upload {}",
+            mime_type,
+            upload.id
+        );
+
+        return;
+    }
+
+    if previewer.is_empty() {
         tracing::warn!(
             "No commands configured for previewer matching MIME type '{}', skipping upload {}",
             mime_type,
@@ -430,11 +226,9 @@ async fn generate_preview(config: &PreviewConfig, env: &Env, mut upload: Upload)
         return;
     }
 
-    for command in &previewer.commands {
-        if !command.run_command(env, &mut upload).await {
-            tracing::warn!("Post-processing command failed for upload {}", upload.id);
-            return;
-        }
+    if !previewer.run_commands(env, &mut upload).await {
+        tracing::warn!("Previewer failed to run commands for upload {}", upload.id);
+        return;
     }
 
     upload

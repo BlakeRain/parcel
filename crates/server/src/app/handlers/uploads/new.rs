@@ -17,7 +17,7 @@ use crate::{
         templates::{authorized_context, render_template},
     },
     env::Env,
-    workers::generate_previews::PreviewWorker,
+    workers::previews::PreviewWorker,
 };
 
 #[derive(Debug, Deserialize)]

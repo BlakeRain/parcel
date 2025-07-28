@@ -7,7 +7,7 @@ use poem::{
 };
 use poem_route_macro::define_routes;
 
-use crate::{env::Env, workers::generate_previews::PreviewWorker};
+use crate::{env::Env, workers::previews::PreviewWorker};
 
 mod extractors {
     pub mod admin;
