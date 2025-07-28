@@ -135,16 +135,41 @@ impl PreviewConfig {
     fn find_previewer(&self, mime_type: &str) -> Option<&Previewer> {
         self.previewers
             .iter()
+            .filter(|previewer| previewer.is_enabled())
             .find(|previewer| previewer.matcher.matches(mime_type))
     }
 }
 
 #[derive(Debug, Deserialize)]
 struct Previewer {
+    #[serde(default)]
+    feature: Option<PreviewerFeature>,
     #[serde(rename = "match")]
     matcher: PreviewerMatch,
     #[serde(default)]
     commands: Vec<PreviewerCommand>,
+}
+
+impl Previewer {
+    fn is_enabled(&self) -> bool {
+        self.feature
+            .as_ref()
+            .map_or(true, |feature| feature.is_enabled())
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub enum PreviewerFeature {
+    #[serde(rename = "libreoffice")]
+    LibreOffice,
+}
+
+impl PreviewerFeature {
+    fn is_enabled(&self) -> bool {
+        match self {
+            Self::LibreOffice => cfg!(feature = "libreoffice"),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
