@@ -3,6 +3,10 @@ FROM rust:latest AS builder
 # Allow overriding the target architecture
 ARG TARGETARCH
 
+# Allow enabling LibreOffice support
+ARG WITH_LIBREOFFICE=false
+ENV WITH_LIBREOFFICE=${WITH_LIBREOFFICE}
+
 # Compute the RUSTARCH based on the TARGETARCH argument; falling back to `uname`.
 RUN case "$TARGETARCH" in \
     "amd64")  RUSTARCH="x86_64-unknown-linux-musl" ;; \
@@ -27,8 +31,7 @@ RUN apt-get install -y nodejs
 RUN mkdir -p /usr/src/parcel
 WORKDIR /usr/src/parcel
 ADD . .
-RUN npm install
-RUN . /etc/environment && cargo build --target "$RUSTARCH" --release
+RUN . /etc/environment && cargo build --target "$RUSTARCH" $( [ "$WITH_LIBREOFFICE" = "true" ] && echo "--features libreoffice" ) --release
 RUN . /etc/environment && cp "/usr/src/parcel/target/${RUSTARCH}/release/parcel-server" /usr/src/parcel/target/parcel-server
 
 # ------------------------------------------------------------------------------------------------
@@ -36,13 +39,22 @@ RUN . /etc/environment && cp "/usr/src/parcel/target/${RUSTARCH}/release/parcel-
 
 FROM alpine:latest
 
+# Allow enabling LibreOffice support
+ARG WITH_LIBREOFFICE=false
+ENV WITH_LIBREOFFICE=${WITH_LIBREOFFICE}
+
 # Install dependencies, such as file identification and preview generation tools.
 RUN apk add --no-cache file imagemagick poppler-utils ffmpeg
+
+# If we're building with LibreOffice support, install it.
+RUN echo "WITH_LIBREOFFICE=$WITH_LIBREOFFICE" && if [ "$WITH_LIBREOFFICE" = "true" ]; then \
+      apk add --no-cache libreoffice; \
+    fi
 
 # Prepare the working directory
 WORKDIR /app
 COPY --from=builder /usr/src/parcel/target/parcel-server .
-COPY --from=builder /usr/src/parcel/static ./static
+COPY --from=builder /usr/src/parcel/crates/server/static ./static
 COPY --from=builder /usr/src/parcel/etc/previewers.json ./etc/previewers.json
 
 # Set the user and run the application

@@ -65,8 +65,55 @@
       ]
     },
     {
+      "feature": "libreoffice",
       "match": {
         "exact": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      },
+      "commands": [
+        {
+          "command": {
+            "linux": "libreoffice",
+            "macos": "soffice"
+          },
+          "args": [
+            "--headless",
+            "--convert-to",
+            "pdf",
+            "--outdir",
+            "${temp_dir}",
+            "${input}"
+          ]
+        },
+        {
+          "command": "pdftoppm",
+          "args": [
+            "-png",
+            "-singlefile",
+            "-scale-to",
+            "400",
+            "${temp_dir}/${input_base}.pdf",
+            "${output}"
+          ]
+        },
+        {
+          "command": "rm",
+          "args": [
+            "${temp_dir}/${input_base}.pdf"
+          ]
+        },
+        {
+          "command": "mv",
+          "args": [
+            "${output}.png",
+            "${output}"
+          ]
+        }
+      ]
+    },
+    {
+      "feature": "libreoffice",
+      "match": {
+        "exact": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
       },
       "commands": [
         {
