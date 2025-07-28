@@ -22,7 +22,7 @@
             <span class="icon-download group-hover:text-blue-600 dark:group-hover:text-blue-500"></span>
           </div>
         {% endif %}
-        <div>
+        <div class="grow">
           <h1 class="heading group-hover:text-blue-600 dark:group-hover:text-blue-500">
             {{ upload.filename }}
             <span class="text-gray-400 group-hover:text-blue-500 dark:group-hover:text-blue-400">
@@ -66,9 +66,24 @@
           {% endif %}
 
           {% if owner and upload.preview_error %}
-            <div class="text-danger">
-              <span class="icon-triangle-alert"></span>
-              {{ upload.preview_error }}
+            <div class="flex flex-col gap-2 text-danger border border-red-500 dark:border-red-400
+            bg-red-100 dark:bg-red-900/20 p-2 rounded-md mt-2">
+              <div class="flex flex-row justify-between items-center gap-2">
+                <div class="font-bold">
+                  <span class="icon-triangle-alert"></span>
+                  <span>There was an error generating the preview</span>
+                </div>
+                <a
+                  href="#"
+                  class="text-xs no-color opacity-75 hover:opacity-100"
+                  onclick="event.preventDefault();
+                  document.getElementById('preview-error-details').classList.toggle('hidden');">
+                  Show details
+                </a>
+              </div>
+              <div id="preview-error-details" class="hidden font-mono text-xs">
+                {{ upload.preview_error }}
+              </div>
             </div>
           {% endif %}
         </div>
