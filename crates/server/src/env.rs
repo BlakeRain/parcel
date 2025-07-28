@@ -70,6 +70,12 @@ impl Env {
             std::fs::create_dir_all(&cache_dir)?;
         }
 
+        let temp_dir = cache_dir.join("temp");
+        if !temp_dir.exists() {
+            tracing::warn!("Temporary directory {temp_dir:?} does not exist; creating it");
+            std::fs::create_dir_all(&temp_dir)?;
+        }
+
         tracing::info!(?db, "Creating SQLite connection pool");
         let opts = SqliteConnectOptions::from_str(db)?
             .create_if_missing(true)
