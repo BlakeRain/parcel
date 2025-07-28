@@ -1,0 +1,62 @@
+name: Beta
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-beta:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract short SHA
+        id: vars
+        run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Build and tag Docker image
+        run: |
+          docker build -t blakerain/parcel:beta -t blakerain/parcel:beta-${{ steps.vars.outputs.SHORT_SHA }} .
+
+      - name: Push Docker image
+        run: |
+          docker push blakerain/parcel:beta
+          docker push blakerain/parcel:beta-${{ steps.vars.outputs.SHORT_SHA }}
+
+  build-beta-libreoffice:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract short SHA
+        id: vars
+        run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Build and tag Docker image
+        run: |
+          docker build --build-arg WITH_LIBREOFFICE=true -t blakerain/parcel:beta-libreoffice -t blakerain/parcel:beta-${{ steps.vars.outputs.SHORT_SHA }}-libreoffice .
+
+      - name: Push Docker image
+        run: |
+          docker push blakerain/parcel:beta-libreoffice
+          docker push blakerain/parcel:beta-${{ steps.vars.outputs.SHORT_SHA }}-libreoffice
