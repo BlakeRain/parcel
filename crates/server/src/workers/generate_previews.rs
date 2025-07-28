@@ -154,7 +154,7 @@ impl Previewer {
     fn is_enabled(&self) -> bool {
         self.feature
             .as_ref()
-            .map_or(true, |feature| feature.is_enabled())
+            .is_none_or(|feature| feature.is_enabled())
     }
 }
 
