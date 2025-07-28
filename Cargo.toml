@@ -10,9 +10,6 @@ members = [
 version = "2.1.4"
 edition = "2021"
 
-[workspace.features]
-libreoffice = ["parcel-server/libreoffice"]
-
 [workspace.dependencies]
 anyhow = { version = "1.0" }
 argon2 = { version = "0.5", features = ["std"] }
