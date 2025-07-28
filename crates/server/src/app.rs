@@ -88,6 +88,7 @@ pub fn create_app(
         "/uploads/:id/edit"             handlers::uploads::edit                 GET POST
         "/uploads/:id/edit/slug"        handlers::uploads::check_slug               POST
         "/uploads/:id/preview"          handlers::uploads::preview              GET
+        "/uploads/:id/preview/error"    handlers::uploads::preview_error                 DELETE
         "/uploads/:id/public"           handlers::uploads::public                   POST
         "/uploads/:id/reset"            handlers::uploads::reset                    POST
         "/uploads/:id/share"            handlers::uploads::share                GET

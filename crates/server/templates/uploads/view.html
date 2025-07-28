@@ -67,22 +67,34 @@
 
           {% if owner and upload.preview_error %}
             <div class="flex flex-col gap-2 text-danger border border-red-500 dark:border-red-400
-            bg-red-100 dark:bg-red-900/20 p-2 rounded-md mt-2">
-              <div class="flex flex-row justify-between items-center gap-2">
+            bg-red-100 dark:bg-red-900/20 p-4 rounded-md mt-4">
+              <div class="flex flex-row justify-between items-center gap-4">
                 <div class="font-bold">
                   <span class="icon-triangle-alert"></span>
                   <span>There was an error generating the preview</span>
                 </div>
                 <a
                   href="#"
-                  class="text-xs no-color opacity-75 hover:opacity-100"
+                  class="no-color opacity-75 hover:opacity-100"
                   onclick="event.preventDefault();
-                  document.getElementById('preview-error-details').classList.toggle('hidden');">
+                  document.getElementById('preview-error-details').style.display = 'flex';">
                   Show details
                 </a>
               </div>
-              <div id="preview-error-details" class="hidden font-mono text-xs">
-                {{ upload.preview_error }}
+              <div id="preview-error-details" class="hidden flex-col gap-4">
+                <pre class="text-xs whitespace-pre-wrap max-h-40 overflow-x-scroll">{{ upload.preview_error }}</pre>
+                <div class="buttons end">
+                  <a
+                    href="#"
+                    class="no-color opacity-75 hover:opacity-100"
+                    hx-delete="/uploads/{{ upload.id }}/preview/error"
+                    hx-include="[name='csrf_token']"
+                    hx-trigger="click"
+                    hx-swap="none">
+                    <span class="icon-trash"></span>
+                    Clear error
+                  </a>
+                </div>
               </div>
             </div>
           {% endif %}

@@ -343,6 +343,20 @@ impl Upload {
         Ok(())
     }
 
+    pub async fn clear_preview_error(&mut self, pool: &SqlitePool) -> sqlx::Result<()> {
+        let result = sqlx::query("UPDATE uploads SET preview_error = NULL WHERE id = $1")
+            .bind(self.id)
+            .execute(pool)
+            .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(sqlx::Error::RowNotFound);
+        }
+
+        self.preview_error = None;
+        Ok(())
+    }
+
     pub async fn set_has_preview(
         &mut self,
         pool: &SqlitePool,

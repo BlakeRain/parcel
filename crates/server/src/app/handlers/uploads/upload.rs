@@ -325,3 +325,40 @@ pub async fn get_preview(
         .header(CONTENT_LENGTH, meta.len())
         .body(poem::Body::from_async_read(file)))
 }
+
+#[derive(Debug, Deserialize)]
+pub struct DeletePreviewErrorQuery {
+    csrf_token: String,
+}
+
+#[handler]
+pub async fn delete_preview_error(
+    env: Data<&Env>,
+    SessionUser(user): SessionUser,
+    csrf_verifier: &CsrfVerifier,
+    Path(id): Path<Key<Upload>>,
+    Query(DeletePreviewErrorQuery { csrf_token }): Query<DeletePreviewErrorQuery>,
+) -> poem::Result<poem::Response> {
+    if !csrf_verifier.is_valid(&csrf_token) {
+        tracing::warn!(%user.id, %id, "CSRF token verification failed for upload deletion");
+        return Err(poem::Error::from_status(StatusCode::FORBIDDEN));
+    }
+
+    let mut upload = get_upload_by_id(&env, id).await?;
+    check_permission(&env, &upload, Some(&user), UploadPermission::Edit).await?;
+
+    upload.clear_preview_error(&env.pool).await.map_err(|err| {
+        tracing::error!(?err, %upload.id, "Unable to clear preview error for upload");
+        InternalServerError(err)
+    })?;
+
+    Ok(Html("")
+        .with_header(
+            "HX-Trigger",
+            serde_json::json!({
+                "parcelUploadChanged": id,
+            })
+            .to_string(),
+        )
+        .into_response())
+}
