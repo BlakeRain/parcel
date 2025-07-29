@@ -154,9 +154,7 @@ pub enum ApiUploadModifyDownloadLimit {
     #[serde(rename = "unlimited")]
     Unlimited,
     #[serde(rename = "limited")]
-    Limited {
-        limit: i64,
-    },
+    Limited { limit: i64 },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -165,9 +163,7 @@ pub enum ApiUploadModifyExpiry {
     #[serde(rename = "never")]
     Never,
     #[serde(rename = "date")]
-    Date {
-        date: OffsetDateTime,
-    },
+    Date { date: OffsetDateTime },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -176,7 +172,5 @@ pub enum ApiUploadModifyPassword {
     #[serde(rename = "none")]
     None,
     #[serde(rename = "set")]
-    Set {
-        password: String,
-    },
+    Set { password: String },
 }

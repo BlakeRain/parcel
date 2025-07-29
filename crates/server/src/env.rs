@@ -47,9 +47,8 @@ pub struct Inner {
 }
 
 impl Env {
-    pub async fn new(
+    pub async fn new_with_pool(
         Args {
-            db,
             config_dir,
             cache_dir,
             analytics_domain,
@@ -58,6 +57,7 @@ impl Env {
             max_preview_size,
             ..
         }: &Args,
+        pool: SqlitePool,
     ) -> sqlx::Result<Self> {
         let config_dir = config_dir.clone();
         if !config_dir.exists() {
@@ -76,18 +76,6 @@ impl Env {
             std::fs::create_dir_all(&temp_dir)?;
         }
 
-        tracing::info!(?db, "Creating SQLite connection pool");
-        let opts = SqliteConnectOptions::from_str(db)?
-            .create_if_missing(true)
-            .journal_mode(SqliteJournalMode::Wal)
-            .pragma("synchronous", "normal")
-            .pragma("journal_size_limit", "6144000")
-            .pragma("mmap_size", "268435456");
-        let pool = SqlitePool::connect_with(opts).await?;
-
-        tracing::info!("Running database migrations");
-        MIGRATOR.run(&pool).await?;
-
         let analytics_domain = analytics_domain.clone();
         let plausible_script = plausible_script.clone();
         let preview_generation_interval = Duration::from(*preview_generation_interval);
@@ -104,5 +92,21 @@ impl Env {
         let inner = Arc::new(inner);
 
         Ok(Self { inner })
+    }
+
+    pub async fn new(args: &Args) -> sqlx::Result<Self> {
+        tracing::info!(db = ?args.db, "Creating SQLite connection pool");
+        let opts = SqliteConnectOptions::from_str(&args.db)?
+            .create_if_missing(true)
+            .journal_mode(SqliteJournalMode::Wal)
+            .pragma("synchronous", "normal")
+            .pragma("journal_size_limit", "6144000")
+            .pragma("mmap_size", "268435456");
+        let pool = SqlitePool::connect_with(opts).await?;
+
+        tracing::info!("Running database migrations");
+        MIGRATOR.run(&pool).await?;
+
+        Self::new_with_pool(args, pool).await
     }
 }

@@ -38,10 +38,8 @@ parcel-shared.workspace = true
 
 fast_qr = { version = "0.13", features = ["svg"] }
 mime = { version = "0.3" }
-minijinja = { version = "2.0", features = ["unicode", "loader", "json", "urlencode", "speedups"] }
 nanoid = { version = "0.4" }
 notify = { version = "8.0" }
-poem = { version = "3.1", features = ["anyhow", "cookie", "csrf", "multipart", "session", "static-files"] }
 rust-embed = { version = "8.0", features = ["debug-embed", "interpolate-folder-path"] }
 serde_html_form = { version = "0.2" }
 totp-lite = { version = "2.0" }
@@ -50,6 +48,31 @@ validator = { version = "0.20", features = ["derive"] }
 
 esbuild-bundle = { git = "https://github.com/BlakeRain/esbuild-bundle", tag = "v0.3.0" }
 poem-route-macro = { git = "https://github.com/BlakeRain/poem-route-macro" }
+
+[dependencies.minijinja]
+version = "2.0"
+features = [
+  "unicode",
+  "loader",
+  "json",
+  "urlencode",
+  "speedups",
+]
+
+[dependencies.poem]
+version = "3.1"
+features = [
+  "anyhow",
+  "cookie",
+  "csrf",
+  "multipart",
+  "session",
+  "static-files",
+  "test",
+]
+
+[dev-dependencies]
+test-log.workspace = true
 
 [build-dependencies]
 build-data = { version = "0.3" }
