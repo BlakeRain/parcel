@@ -85,10 +85,14 @@ impl Team {
     }
 
     pub async fn get_for_user(pool: &SqlitePool, user: Key<User>) -> sqlx::Result<Vec<Self>> {
-        sqlx::query_as("SELECT teams.* FROM teams LEFT JOIN team_members ON team_members.team = teams.id WHERE team_members.user = $1")
-            .bind(user)
-            .fetch_all(pool)
-            .await
+        sqlx::query_as(
+            "SELECT teams.* FROM teams \
+            LEFT JOIN team_members ON team_members.team = teams.id \
+            WHERE team_members.user = $1",
+        )
+        .bind(user)
+        .fetch_all(pool)
+        .await
     }
 
     pub async fn delete(&self, pool: &SqlitePool) -> sqlx::Result<()> {

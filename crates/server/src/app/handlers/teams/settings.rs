@@ -204,12 +204,10 @@ pub async fn post_settings(
         );
 
         // Don't let team managers accidently add new members by forming POST requests.
-        let is_member = team.is_member(&env.pool, user_id)
-            .await
-            .map_err(|err| {
-                tracing::error!(?err, %user_id, "Failed to check if user is active");
-                InternalServerError(err)
-            })?;
+        let is_member = team.is_member(&env.pool, user_id).await.map_err(|err| {
+            tracing::error!(?err, %user_id, "Failed to check if user is active");
+            InternalServerError(err)
+        })?;
 
         if !is_member {
             tracing::error!(
