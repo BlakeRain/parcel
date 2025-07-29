@@ -25,6 +25,7 @@ mod download;
 mod edit;
 mod list;
 mod new;
+mod tags;
 mod transfer;
 mod upload;
 
@@ -32,6 +33,7 @@ pub use download::{get_download, post_download};
 pub use edit::{get_edit, post_check_slug, post_edit};
 pub use list::{get_list, get_page, post_delete, ListQuery};
 pub use new::{get_new, post_new};
+pub use tags::{get_tags, get_tags_edit, post_tags_edit};
 pub use transfer::{get_transfer, post_transfer};
 pub use upload::{
     delete_preview_error, delete_upload, get_custom_upload, get_preview, get_share, get_upload,

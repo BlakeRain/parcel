@@ -26,6 +26,13 @@
             Team Settings
           </button>
         {% endif %}
+        <script id="tag-filter-options" type="application/json">
+          [{% for tag in tags %}{{ dict(value=tag.name, label=tag.name) | tojson }}{% if not loop.last %},{% endif %}{% endfor %}]
+        </script>
+        <script id="tag-filter-values" type="application/json">
+          []
+        </script>
+        <parcel-select class="min-w-60 order-3 xl:order-1" noun="tag" options="#tag-filter-options" values="#tag-filter-values"></parcel-select>
         <div class="relative order-2 xl:order-1">
           <input
             type="text"
