@@ -128,3 +128,55 @@ pub struct ApiUpload {
     pub uploaded_by: Option<Uuid>,
     pub uploaded_at: OffsetDateTime,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ApiUploadModifyRequest {
+    pub filename: Option<String>,
+    pub slug: Option<ApiUploadModifySlug>,
+    pub public: Option<bool>,
+    pub limit: Option<ApiUploadModifyDownloadLimit>,
+    pub expiry: Option<ApiUploadModifyExpiry>,
+    pub password: Option<ApiUploadModifyPassword>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum ApiUploadModifySlug {
+    #[serde(rename = "custom")]
+    Custom { slug: String },
+    #[serde(rename = "auto")]
+    Auto,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum ApiUploadModifyDownloadLimit {
+    #[serde(rename = "unlimited")]
+    Unlimited,
+    #[serde(rename = "limited")]
+    Limited {
+        limit: i64,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum ApiUploadModifyExpiry {
+    #[serde(rename = "never")]
+    Never,
+    #[serde(rename = "date")]
+    Date {
+        date: OffsetDateTime,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum ApiUploadModifyPassword {
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "set")]
+    Set {
+        password: String,
+    },
+}
