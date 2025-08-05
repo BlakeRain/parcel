@@ -8,10 +8,11 @@
 
 ---
 
-![GitHub Release](https://img.shields.io/github/v/release/BlakeRain/parcel)
-![GitHub License](https://img.shields.io/github/license/BlakeRain/parcel)
+[![GitHub Release](https://img.shields.io/github/v/release/BlakeRain/parcel)](https://github.com/BlakeRain/parcel/releases/latest)
+[![GitHub License](https://img.shields.io/github/license/BlakeRain/parcel)](https://github.com/BlakeRain/parcel?tab=BSD-3-Clause-1-ov-file#readme)
 [![Check](https://github.com/BlakeRain/parcel/actions/workflows/check.yaml/badge.svg)](https://github.com/BlakeRain/parcel/actions/workflows/check.yaml)
 [![Deploy](https://github.com/BlakeRain/parcel/actions/workflows/deploy.yaml/badge.svg)](https://github.com/BlakeRain/parcel/actions/workflows/deploy.yaml)
+[![Next release milestone](https://img.shields.io/github/milestones/progress-percent/BlakeRain/parcel/3)](https://github.com/BlakeRain/parcel/milestone/3)
 
 Parcel is a simple light-weight file upload application with a nice UI and a small set of features.
 
