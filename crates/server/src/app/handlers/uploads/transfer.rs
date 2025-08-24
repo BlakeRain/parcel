@@ -16,6 +16,7 @@ use parcel_model::{
 
 use crate::{
     app::{
+        errors::CsrfError,
         extractors::user::SessionUser,
         handlers::utils::{check_permission, get_upload_by_id},
         templates::{authorized_context, render_template},
@@ -90,7 +91,7 @@ pub async fn post_transfer(
 
     if !csrf_verifier.is_valid(&form.csrf_token) {
         tracing::error!(%user.id, %upload_id, "CSRF token verification failed");
-        return Err(poem::Error::from_status(StatusCode::FORBIDDEN));
+        return Err(CsrfError.into());
     }
 
     let Some(team) = Team::get(&env.pool, form.team).await.map_err(|err| {

@@ -13,6 +13,7 @@ use parcel_model::{team::Team, types::Key, upload::Upload};
 
 use crate::{
     app::{
+        errors::CsrfError,
         extractors::user::SessionUser,
         templates::{authorized_context, render_template},
     },
@@ -91,7 +92,7 @@ pub async fn post_new(
         if field.name() == Some("csrf_token") {
             if !csrf_verifier.is_valid(&field.text().await?) {
                 tracing::error!("CSRF token is invalid in upload form");
-                return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+                return Err(CsrfError.into());
             }
 
             seen_csrf = true;

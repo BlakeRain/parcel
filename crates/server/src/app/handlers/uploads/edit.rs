@@ -19,6 +19,7 @@ use parcel_model::{
 
 use crate::{
     app::{
+        errors::CsrfError,
         extractors::user::SessionUser,
         handlers::utils::{check_permission, get_upload_by_id},
         templates::{authorized_context, render_template},
@@ -66,7 +67,7 @@ pub async fn post_check_slug(
 ) -> poem::Result<Html<String>> {
     if !verifier.is_valid(&token) {
         tracing::error!("CSRF token is invalid in upload edit");
-        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+        return Err(CsrfError.into());
     }
 
     let mut upload = get_upload_by_id(&env, id).await?;
@@ -126,7 +127,7 @@ pub async fn post_edit(
 ) -> poem::Result<Response> {
     if !verifier.is_valid(&form.token) {
         tracing::error!("CSRF token is invalid in upload edit");
-        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+        return Err(CsrfError.into());
     }
 
     let mut upload = get_upload_by_id(&env, id).await?;

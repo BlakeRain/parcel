@@ -16,6 +16,7 @@ use parcel_model::{
 
 use crate::{
     app::{
+        errors::CsrfError,
         extractors::user::SessionUser,
         handlers::utils::{check_permission, delete_upload_cache},
         templates::{authorized_context, render_template},
@@ -123,7 +124,7 @@ pub async fn post_delete(
 
     if !csrf_verifier.is_valid(csrf_token) {
         tracing::error!("Invalid CSRF token in form data");
-        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+        return Err(CsrfError.into());
     }
 
     let ids = form

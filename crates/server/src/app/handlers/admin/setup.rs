@@ -19,7 +19,10 @@ use parcel_model::{
 };
 
 use crate::{
-    app::templates::{default_context, render_template},
+    app::{
+        errors::CsrfError,
+        templates::{default_context, render_template},
+    },
     env::Env,
     utils::validate_slug,
 };
@@ -90,7 +93,7 @@ pub async fn post_setup(
 
     if !verifier.is_valid(&form.token) {
         tracing::error!("CSRF token in setup form was invalid");
-        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+        return Err(CsrfError.into());
     }
 
     if let Err(err) = form.validate() {

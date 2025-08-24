@@ -23,6 +23,7 @@ use parcel_model::{
 
 use crate::{
     app::{
+        errors::CsrfError,
         extractors::admin::SessionAdmin,
         handlers::utils::delete_upload_cache_by_slug,
         templates::{authorized_context, render_template},
@@ -120,7 +121,7 @@ pub async fn post_new(
 ) -> poem::Result<Response> {
     if !verifier.is_valid(&form.token) {
         tracing::error!("Invalid CSRF token in new user form");
-        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+        return Err(CsrfError.into());
     }
 
     let mut errors = ValidationErrors::new();
@@ -267,7 +268,7 @@ pub async fn post_new_username(
 ) -> poem::Result<Html<String>> {
     if !verifier.is_valid(&token) {
         tracing::error!("Invalid CSRF token in new username form");
-        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+        return Err(CsrfError.into());
     }
 
     let username = username.trim().to_string();
@@ -363,7 +364,7 @@ pub async fn post_user(
 ) -> poem::Result<Response> {
     if !verifier.is_valid(&form.token) {
         tracing::error!("Invalid CSRF token in edit user form");
-        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+        return Err(CsrfError.into());
     }
 
     let Some(mut user) = User::get(&env.pool, user_id).await.map_err(|err| {
@@ -533,7 +534,7 @@ pub async fn delete_user(
 ) -> poem::Result<Redirect> {
     if !csrf_verifier.is_valid(&csrf_token) {
         tracing::error!("Invalid CSRF token in delete user request");
-        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+        return Err(CsrfError.into());
     }
 
     let Some(mut user) = User::get(&env.pool, user_id).await.map_err(|err| {
@@ -575,7 +576,7 @@ pub async fn post_check_username(
 ) -> poem::Result<Html<String>> {
     if !verifier.is_valid(&token) {
         tracing::error!("Invalid CSRF token in new username form");
-        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+        return Err(CsrfError.into());
     }
 
     let Some(user) = User::get(&env.pool, user_id).await.map_err(|err| {
@@ -629,7 +630,7 @@ pub async fn post_disable_user(
 ) -> poem::Result<Redirect> {
     if !csrf_verifier.is_valid(&csrf_token) {
         tracing::error!("Invalid CSRF token in disable user request");
-        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+        return Err(CsrfError.into());
     }
 
     let Some(mut user) = User::get(&env.pool, user_id).await.map_err(|err| {
@@ -660,7 +661,7 @@ pub async fn post_enable_user(
 ) -> poem::Result<Redirect> {
     if !csrf_verifier.is_valid(&csrf_token) {
         tracing::error!("Invalid CSRF token in disable user request");
-        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+        return Err(CsrfError.into());
     }
 
     let Some(mut user) = User::get(&env.pool, user_id).await.map_err(|err| {

@@ -22,6 +22,7 @@ use parcel_model::{
 
 use crate::{
     app::{
+        errors::CsrfError,
         extractors::user::SessionUser,
         handlers::utils::{
             check_permission, delete_upload_cache, get_upload_by_id, get_upload_by_slug,
@@ -185,7 +186,7 @@ pub async fn delete_upload(
 ) -> poem::Result<poem::Response> {
     if !csrf_verifier.is_valid(&csrf_token) {
         tracing::warn!(%user.id, %id, "CSRF token verification failed for upload deletion");
-        return Err(poem::Error::from_status(StatusCode::FORBIDDEN));
+        return Err(CsrfError.into());
     }
 
     let upload = get_upload_by_id(&env, id).await?;
@@ -341,7 +342,7 @@ pub async fn delete_preview_error(
 ) -> poem::Result<poem::Response> {
     if !csrf_verifier.is_valid(&csrf_token) {
         tracing::warn!(%user.id, %id, "CSRF token verification failed for upload deletion");
-        return Err(poem::Error::from_status(StatusCode::FORBIDDEN));
+        return Err(CsrfError.into());
     }
 
     let mut upload = get_upload_by_id(&env, id).await?;

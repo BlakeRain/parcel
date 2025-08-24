@@ -1,7 +1,6 @@
 use poem::{
     error::InternalServerError,
     handler,
-    http::StatusCode,
     web::{CsrfVerifier, Data, Form, Html, Path},
     IntoResponse, Response,
 };
@@ -15,6 +14,7 @@ use parcel_model::{
 
 use crate::{
     app::{
+        errors::CsrfError,
         extractors::user::SessionUser,
         handlers::utils::{check_permission, get_upload_by_id},
     },
@@ -53,7 +53,7 @@ pub async fn post_public(
 ) -> poem::Result<Response> {
     if !csrf_verifier.is_valid(&csrf_token) {
         tracing::warn!(%id, "CSRF verification failed for upload public state change");
-        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+        return Err(CsrfError.into());
     }
 
     let mut upload = get_upload_by_id(&env, id).await?;
@@ -91,7 +91,7 @@ pub async fn post_reset(
 ) -> poem::Result<Response> {
     if !csrf_verifier.is_valid(&csrf_token) {
         tracing::warn!(%id, "CSRF verification failed for upload reset");
-        return Err(poem::Error::from_status(StatusCode::UNAUTHORIZED));
+        return Err(CsrfError.into());
     }
 
     let mut upload = get_upload_by_id(&env, id).await?;

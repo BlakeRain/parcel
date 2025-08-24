@@ -12,6 +12,7 @@ use parcel_model::{types::Key, upload::Upload, user::User};
 
 use crate::{
     app::{
+        errors::CsrfError,
         extractors::admin::SessionAdmin,
         templates::{authorized_context, render_template},
     },
@@ -216,9 +217,7 @@ pub async fn post_cache(
 ) -> poem::Result<Html<String>> {
     if !csrf_verifier.is_valid(&csrf_token) {
         tracing::error!("CSRF token is invalid in cache management");
-        return Err(poem::Error::from_status(
-            poem::http::StatusCode::UNAUTHORIZED,
-        ));
+        return Err(CsrfError.into());
     }
 
     let summary = find_cache_files::<CacheFilesSummary>(*env).await?;
@@ -243,9 +242,7 @@ pub async fn delete_cache(
 ) -> poem::Result<Html<String>> {
     if !csrf_verifier.is_valid(&csrf_token) {
         tracing::error!("CSRF token is invalid in cache management");
-        return Err(poem::Error::from_status(
-            poem::http::StatusCode::UNAUTHORIZED,
-        ));
+        return Err(CsrfError.into());
     }
 
     let result = find_cache_files::<CacheFilesCleanup>(*env).await?;
