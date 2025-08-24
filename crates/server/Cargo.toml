@@ -47,7 +47,7 @@ totp-lite = { version = "2.0" }
 
 validator = { version = "0.20", features = ["derive"] }
 
-esbuild-bundle = { git = "https://github.com/BlakeRain/esbuild-bundle", tag = "v0.3.0" }
+esbuild-bundle = { git = "https://github.com/BlakeRain/esbuild-bundle", tag = "v0.3.3" }
 poem-route-macro = { git = "https://github.com/BlakeRain/poem-route-macro" }
 
 [build-dependencies]
