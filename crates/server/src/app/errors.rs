@@ -42,7 +42,7 @@ impl CsrfError {
 
 impl ResponseError for CsrfError {
     fn status(&self) -> StatusCode {
-        StatusCode::UNAUTHORIZED
+        StatusCode::FORBIDDEN
     }
 }
 
