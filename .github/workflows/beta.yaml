@@ -2,7 +2,9 @@ name: Beta
 
 on:
   push:
-    branches: [main]
+    tags:
+      - beta
+  workflow_dispatch:
 
 jobs:
   build-beta:
