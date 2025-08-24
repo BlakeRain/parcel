@@ -1,5 +1,4 @@
 use poem::{error::InternalServerError, web::Html};
-use rust_embed::RustEmbed;
 use serde::Serialize;
 
 pub mod context;
@@ -15,10 +14,6 @@ pub mod reload;
 pub mod embed;
 
 pub use context::*;
-
-#[derive(RustEmbed)]
-#[folder = "$CARGO_MANIFEST_DIR/templates/"]
-struct TemplatesEmbed;
 
 #[cfg(debug_assertions)]
 use reload::get_templates;
