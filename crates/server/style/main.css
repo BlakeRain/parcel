@@ -13,6 +13,8 @@
 @import "./components/select.css";
 @import "./components/table.css";
 @import "./components/tabs.css";
+@import "./components/tag-input.css";
+@import "./components/tags.css";
 @import "./components/uploads.css";
 
 @import "./utils/animation.css";
