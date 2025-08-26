@@ -243,4 +243,3 @@ impl PreviewerCommand {
         true
     }
 }
-

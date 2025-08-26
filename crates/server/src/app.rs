@@ -11,6 +11,7 @@ use crate::{env::Env, workers::previews::PreviewWorker};
 
 mod extractors {
     pub mod admin;
+    pub mod api_key;
     pub mod user;
 }
 
@@ -19,6 +20,7 @@ pub mod templates;
 
 mod handlers {
     pub mod admin;
+    pub mod api;
     pub mod index;
     pub mod teams;
     pub mod uploads;
@@ -77,53 +79,60 @@ pub fn create_app(
     let routes = add_debug_routes(define_routes!({
         *"/static" { static_ep }
 
-        "/"                             handlers::index::index                  GET
-        "/tab"                          handlers::index::tab                    GET
-        "/uploads/delete"               handlers::uploads::delete                   POST
-        "/uploads/list"                 handlers::uploads::list                 GET
-        "/uploads/list/:page"           handlers::uploads::page                 GET
-        "/uploads/new"                  handlers::uploads::new                  GET POST
-        "/uploads/:id"                  handlers::uploads::upload               GET      DELETE
-        "/uploads/:id/download"         handlers::uploads::download             GET POST
-        "/uploads/:id/edit"             handlers::uploads::edit                 GET POST
-        "/uploads/:id/edit/slug"        handlers::uploads::check_slug               POST
-        "/uploads/:id/preview"          handlers::uploads::preview              GET
-        "/uploads/:id/preview/error"    handlers::uploads::preview_error                 DELETE
-        "/uploads/:id/public"           handlers::uploads::public                   POST
-        "/uploads/:id/reset"            handlers::uploads::reset                    POST
-        "/uploads/:id/share"            handlers::uploads::share                GET
-        "/uploads/:id/transfer"         handlers::uploads::transfer             GET POST
-        "/uploads/:owner/:slug"         handlers::uploads::custom_upload        GET
-        "/teams/:id"                    handlers::teams::team                   GET
-        "/teams/:id/settings"           handlers::teams::settings::settings     GET POST
-        "/teams/:id/settings/slug"      handlers::teams::settings::check_slug       POST
-        "/teams/:id/tab"                handlers::teams::tab                    GET
-        "/teams/:id/uploads/list"       handlers::teams::uploads::list          GET
-        "/teams/:id/uploads/list/:page" handlers::teams::uploads::page          GET
-        "/user/signin"                  handlers::users::signin                 GET POST
-        "/user/signin/totp"             handlers::users::signin_totp            GET POST
-        "/user/signout"                 handlers::users::signout                GET
-        "/user/settings"                handlers::users::settings               GET POST
-        "/user/settings/password"       handlers::users::password                   POST
-        "/user/settings/totp"           handlers::users::setup_totp             GET POST
-        "/user/settings/totp/remove"    handlers::users::remove_totp            GET POST
-        "/admin"                        handlers::admin::admin                  GET
-        "/admin/setup"                  handlers::admin::setup::setup           GET POST
-        "/admin/uploads"                handlers::admin::uploads::uploads       GET
-        "/admin/uploads/cache"          handlers::admin::uploads::cache         GET POST DELETE
-        "/admin/users"                  handlers::admin::users::users           GET
-        "/admin/users/new"              handlers::admin::users::new             GET POST
-        "/admin/users/new/username"     handlers::admin::users::new_username        POST
-        "/admin/users/:id"              handlers::admin::users::user            GET POST DELETE
-        "/admin/users/:id/disable"      handlers::admin::users::disable_user        POST
-        "/admin/users/:id/enable"       handlers::admin::users::enable_user         POST
-        "/admin/users/:id/masquerade"   handlers::admin::users::masquerade      GET
-        "/admin/users/:id/username"     handlers::admin::users::check_username      POST
-        "/admin/teams"                  handlers::admin::teams::teams           GET
-        "/admin/teams/new"              handlers::admin::teams::new             GET POST
-        "/admin/teams/new/slug"         handlers::admin::teams::check_new_slug      POST
-        "/admin/teams/:id"              handlers::admin::teams::team            GET POST DELETE
-        "/admin/teams/:id/slug"         handlers::admin::teams::check_slug          POST
+        "/"                               handlers::index::index                  GET
+        "/admin"                          handlers::admin::admin                  GET
+        "/admin/setup"                    handlers::admin::setup::setup           GET POST
+        "/admin/teams"                    handlers::admin::teams::teams           GET
+        "/admin/teams/:id"                handlers::admin::teams::team            GET POST DELETE
+        "/admin/teams/:id/slug"           handlers::admin::teams::check_slug          POST
+        "/admin/teams/new"                handlers::admin::teams::new             GET POST
+        "/admin/teams/new/slug"           handlers::admin::teams::check_new_slug      POST
+        "/admin/uploads"                  handlers::admin::uploads::uploads       GET
+        "/admin/uploads/cache"            handlers::admin::uploads::cache         GET POST DELETE
+        "/admin/users"                    handlers::admin::users::users           GET
+        "/admin/users/:id"                handlers::admin::users::user            GET POST DELETE
+        "/admin/users/:id/disable"        handlers::admin::users::disable_user        POST
+        "/admin/users/:id/enable"         handlers::admin::users::enable_user         POST
+        "/admin/users/:id/masquerade"     handlers::admin::users::masquerade      GET
+        "/admin/users/:id/username"       handlers::admin::users::check_username      POST
+        "/admin/users/new"                handlers::admin::users::new             GET POST
+        "/admin/users/new/username"       handlers::admin::users::new_username        POST
+        "/tab"                            handlers::index::tab                    GET
+        "/teams/:id"                      handlers::teams::team                   GET
+        "/teams/:id/settings"             handlers::teams::settings::settings     GET POST
+        "/teams/:id/settings/slug"        handlers::teams::settings::check_slug       POST
+        "/teams/:id/tab"                  handlers::teams::tab                    GET
+        "/teams/:id/uploads/list"         handlers::teams::uploads::list          GET
+        "/teams/:id/uploads/list/:page"   handlers::teams::uploads::page          GET
+        "/uploads/:id"                    handlers::uploads::upload               GET      DELETE
+        "/uploads/:id/download"           handlers::uploads::download             GET POST
+        "/uploads/:id/edit"               handlers::uploads::edit                 GET POST
+        "/uploads/:id/edit/slug"          handlers::uploads::check_slug               POST
+        "/uploads/:id/preview"            handlers::uploads::preview              GET
+        "/uploads/:id/preview/error"      handlers::uploads::preview_error                 DELETE
+        "/uploads/:id/public"             handlers::uploads::public                   POST
+        "/uploads/:id/reset"              handlers::uploads::reset                    POST
+        "/uploads/:id/share"              handlers::uploads::share                GET
+        "/uploads/:id/transfer"           handlers::uploads::transfer             GET POST
+        "/uploads/:owner/:slug"           handlers::uploads::custom_upload        GET
+        "/uploads/delete"                 handlers::uploads::delete                   POST
+        "/uploads/list"                   handlers::uploads::list                 GET
+        "/uploads/list/:page"             handlers::uploads::page                 GET
+        "/uploads/new"                    handlers::uploads::new                  GET POST
+        "/user/settings"                  handlers::users::settings               GET POST
+        "/user/settings/password"         handlers::users::password                   POST
+        "/user/settings/totp"             handlers::users::setup_totp             GET POST
+        "/user/settings/totp/remove"      handlers::users::remove_totp            GET POST
+        "/user/signin"                    handlers::users::signin                 GET POST
+        "/user/signin/totp"               handlers::users::signin_totp            GET POST
+        "/user/signout"                   handlers::users::signout                GET
+
+        "/api/1.0/me"                     handlers::api::me                       GET
+        "/api/1.0/teams"                  handlers::api::teams                    GET
+        "/api/1.0/teams/:team_id"         handlers::api::team                     GET
+        "/api/1.0/teams/:team_id/uploads" handlers::api::team_uploads             GET
+        "/api/1.0/uploads"                handlers::api::uploads                  GET
+        "/api/1.0/uploads/:upload_id"     handlers::api::upload                   GET PUT POST DELETE
     }));
 
     let routes = add_tailwind_rebuilder(routes)?.into_endpoint();
