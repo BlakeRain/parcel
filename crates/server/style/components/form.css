@@ -26,7 +26,7 @@
   }
 
   .field {
-    @apply block w-full px-2.5 py-2;
+    @apply block w-full px-5 py-2;
     @apply sm:text-sm;
     @apply outline-none border rounded-lg;
     @apply bg-gray-50 border-gray-300 text-gray-900;
@@ -39,7 +39,7 @@
       @apply dark:bg-gray-800 dark:border-gray-700 dark:text-gray-500;
     }
 
-    &:invalid {
+    &:invalid, &.invalid {
       @apply border-red-500;
       @apply dark:border-red-400;
     }
