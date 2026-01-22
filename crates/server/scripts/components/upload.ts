@@ -32,8 +32,15 @@ function startUpload(
 
   upload.addEventListener("load", () => {
     modal.setUnderlayDismiss(true);
-    htmx.trigger("#upload-list-refresh", "refresh");
-    dispatch({ type: "complete" });
+
+    // Check if the request was successful (2xx status codes)
+    if (upload.status >= 200 && upload.status < 300) {
+      htmx.trigger("#upload-list-refresh", "refresh");
+      dispatch({ type: "complete" });
+    } else {
+      console.error("Upload failed with status:", upload.status, upload.statusText);
+      dispatch({ type: "error", event: new ErrorEvent("error", { message: `HTTP ${upload.status}: ${upload.statusText}` }) });
+    }
   });
 
   upload.addEventListener("error", (event) => {

@@ -1,11 +1,11 @@
 class ClipboardElement extends HTMLElement {
-  private icon: HTMLDivElement = null;
+  private icon: HTMLDivElement | null = null;
 
   static get observedAttributes() {
     return ["url", "value"];
   }
 
-  getValue(): string {
+  getValue(): string | null {
     let value = this.getAttribute("value");
     if (typeof value !== "string") {
       return null;
@@ -31,14 +31,33 @@ class ClipboardElement extends HTMLElement {
 
     this.icon.addEventListener("click", () => {
       const value = this.getValue();
+      if (!value) {
+        console.warn("Clipboard: no value to copy");
+        return;
+      }
+
       const blob = new Blob([value], { type: "text/plain" });
       const data = [new ClipboardItem({ ["text/plain"]: blob })];
-      navigator.clipboard.write(data);
 
-      this.icon.className = "cursor-pointer icon-clipboard-check text-success";
-      window.setTimeout(() => {
-        this.icon.className = "cursor-pointer icon-clipboard-copy";
-      }, 2000);
+      navigator.clipboard.write(data)
+        .then(() => {
+          this.icon!.className = "cursor-pointer icon-clipboard-check text-success";
+          window.setTimeout(() => {
+            if (this.icon) {
+              this.icon.className = "cursor-pointer icon-clipboard-copy";
+            }
+          }, 2000);
+        })
+        .catch((err) => {
+          console.error("Failed to copy to clipboard:", err);
+          // Show error state briefly
+          this.icon!.className = "cursor-pointer icon-clipboard-x text-danger";
+          window.setTimeout(() => {
+            if (this.icon) {
+              this.icon.className = "cursor-pointer icon-clipboard-copy";
+            }
+          }, 2000);
+        });
     });
   }
 

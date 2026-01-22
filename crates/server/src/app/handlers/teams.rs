@@ -68,7 +68,10 @@ pub async fn get_team(
 
     let stats = UploadStats::get_for_team(&env.pool, team.id)
         .await
-        .map_err(InternalServerError)?;
+        .map_err(|err| {
+            tracing::error!(?err, %team.id, "Failed to get upload stats for team");
+            InternalServerError(err)
+        })?;
 
     let uploads = UploadList::get_for_team(
         &env.pool,
@@ -147,7 +150,10 @@ pub async fn get_tab(
 
     let stats = UploadStats::get_for_team(&env.pool, team.id)
         .await
-        .map_err(InternalServerError)?;
+        .map_err(|err| {
+            tracing::error!(?err, %team.id, "Failed to get upload stats for team");
+            InternalServerError(err)
+        })?;
 
     let uploads = UploadList::get_for_team(
         &env.pool,

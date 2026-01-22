@@ -90,11 +90,17 @@ pub async fn post_check_new_slug(
 
     let team_exists = Team::slug_exists(&env.pool, None, &slug)
         .await
-        .map_err(InternalServerError)?;
+        .map_err(|err| {
+            tracing::error!(?err, %slug, "Failed to check if team slug exists");
+            InternalServerError(err)
+        })?;
 
     let user_exists = User::username_exists(&env.pool, None, &slug)
         .await
-        .map_err(InternalServerError)?;
+        .map_err(|err| {
+            tracing::error!(?err, %slug, "Failed to check if username exists");
+            InternalServerError(err)
+        })?;
 
     let exists = if team_exists {
         Some("team")
@@ -137,11 +143,17 @@ pub async fn post_check_slug(
 
     let team_exists = Team::slug_exists(&env.pool, Some(team_id), &slug)
         .await
-        .map_err(InternalServerError)?;
+        .map_err(|err| {
+            tracing::error!(?err, %team_id, %slug, "Failed to check if team slug exists");
+            InternalServerError(err)
+        })?;
 
     let user_exists = User::username_exists(&env.pool, None, &slug)
         .await
-        .map_err(InternalServerError)?;
+        .map_err(|err| {
+            tracing::error!(?err, %slug, "Failed to check if username exists");
+            InternalServerError(err)
+        })?;
 
     let exists = if team_exists {
         Some("team")
@@ -195,7 +207,10 @@ pub async fn post_new(
 
     if Team::slug_exists(&env.pool, None, &form.slug)
         .await
-        .map_err(InternalServerError)?
+        .map_err(|err| {
+            tracing::error!(?err, slug = %form.slug, "Failed to check if team slug exists");
+            InternalServerError(err)
+        })?
     {
         errors.add(
             "slug",
@@ -206,7 +221,10 @@ pub async fn post_new(
 
     if User::username_exists(&env.pool, None, &form.slug)
         .await
-        .map_err(InternalServerError)?
+        .map_err(|err| {
+            tracing::error!(?err, slug = %form.slug, "Failed to check if username exists");
+            InternalServerError(err)
+        })?
     {
         errors.add(
             "slug",
@@ -337,7 +355,10 @@ pub async fn post_team(
 
     if Team::slug_exists(&env.pool, Some(team_id), &form.slug)
         .await
-        .map_err(InternalServerError)?
+        .map_err(|err| {
+            tracing::error!(?err, %team_id, slug = %form.slug, "Failed to check if team slug exists");
+            InternalServerError(err)
+        })?
     {
         errors.add(
             "slug",
@@ -348,7 +369,10 @@ pub async fn post_team(
 
     if User::username_exists(&env.pool, None, &form.slug)
         .await
-        .map_err(InternalServerError)?
+        .map_err(|err| {
+            tracing::error!(?err, slug = %form.slug, "Failed to check if username exists");
+            InternalServerError(err)
+        })?
     {
         errors.add(
             "slug",

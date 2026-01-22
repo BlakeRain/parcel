@@ -253,12 +253,11 @@ pub async fn post_new(
         InternalServerError(err)
     })?;
 
-    preview
-        .generate_previews(upload_ids)
-        .await
-        .inspect_err(|err| {
-            tracing::error!(?err, "Failed to send preview generation command");
-        })?;
+    // Trigger preview generation but don't fail the request if it errors.
+    // The upload was successful - preview generation is a background enhancement.
+    if let Err(err) = preview.generate_previews(upload_ids).await {
+        tracing::error!(?err, "Failed to send preview generation command");
+    }
 
     Ok(Json(()))
 }

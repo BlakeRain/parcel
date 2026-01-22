@@ -1,9 +1,10 @@
 class CheckboxGroup extends HTMLElement {
-  private _checkbox: HTMLInputElement = null;
+  private _checkbox: HTMLInputElement | null = null;
   private _dirty: boolean = true;
   private _hasAnyChecked: boolean = false;
   private _hasAllChecked: boolean = false;
   private _changed: ((event: CustomEvent) => void) | null = null;
+  private _onCheckboxClick: (() => void) | null = null;
   public lastChecked: GroupedCheckbox | null = null;
 
   static get observedAttributes() {
@@ -33,8 +34,9 @@ class CheckboxGroup extends HTMLElement {
     this._checkbox.type = "checkbox";
     this._checkbox.style.margin = "0px";
 
-    this._checkbox.addEventListener("click", () => {
-      const checked = this._checkbox.checked;
+    // Store the click handler so we can remove it in disconnectedCallback
+    this._onCheckboxClick = () => {
+      const checked = this._checkbox!.checked;
       this.getChildCheckboxes().forEach((checkbox) => {
         checkbox.checked = checked;
       });
@@ -43,30 +45,34 @@ class CheckboxGroup extends HTMLElement {
       this._hasAllChecked = checked;
       this._hasAnyChecked = checked;
       this.dispatchChangedEvent();
-    });
+    };
+
+    this._checkbox.addEventListener("click", this._onCheckboxClick);
 
     if (!this.shadowRoot) {
       this.attachShadow({ mode: "open" });
     }
 
-    this.shadowRoot.appendChild(this._checkbox);
+    this.shadowRoot!.appendChild(this._checkbox);
 
     if (this.hasAttribute("onchanged")) {
       const handler_script = this.getAttribute("onchanged");
-      this._changed = new Function("event", handler_script).bind(this);
+      this._changed = new Function("event", handler_script).bind(this) as (event: CustomEvent) => void;
       this.addEventListener("changed", this._changed);
     }
   }
 
   disconnectedCallback() {
-    if (this._checkbox) {
-      this._checkbox.removeEventListener("click", this.updateCheckbox);
+    if (this._checkbox && this._onCheckboxClick) {
+      this._checkbox.removeEventListener("click", this._onCheckboxClick);
       this._checkbox.remove();
       this._checkbox = null;
+      this._onCheckboxClick = null;
     }
 
     if (this._changed) {
       this.removeEventListener("changed", this._changed);
+      this._changed = null;
     }
   }
 
@@ -96,8 +102,10 @@ class CheckboxGroup extends HTMLElement {
 
   updateCheckbox() {
     this.fetchCheckboxStates();
-    this._checkbox.checked = this._hasAllChecked;
-    this._checkbox.indeterminate = this._hasAnyChecked;
+    if (this._checkbox) {
+      this._checkbox.checked = this._hasAllChecked;
+      this._checkbox.indeterminate = this._hasAnyChecked;
+    }
     this.dispatchChangedEvent();
   }
 
@@ -122,7 +130,7 @@ class CheckboxGroup extends HTMLElement {
 }
 
 class GroupedCheckbox extends HTMLElement {
-  private _checkbox: HTMLInputElement = null;
+  private _checkbox: HTMLInputElement | null = null;
 
   get checked() {
     return this._checkbox && this._checkbox.checked;

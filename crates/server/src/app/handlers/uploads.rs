@@ -63,7 +63,10 @@ pub async fn post_public(
     upload
         .set_public(&env.pool, public)
         .await
-        .map_err(InternalServerError)?;
+        .map_err(|err| {
+            tracing::error!(?err, %upload.id, "Failed to set upload public state");
+            InternalServerError(err)
+        })?;
 
     Ok(Html("")
         .with_header(
@@ -101,7 +104,10 @@ pub async fn post_reset(
     upload
         .reset_remaining(&env.pool)
         .await
-        .map_err(InternalServerError)?;
+        .map_err(|err| {
+            tracing::error!(?err, %upload.id, "Failed to reset upload remaining downloads");
+            InternalServerError(err)
+        })?;
 
     Ok(Html("")
         .with_header(

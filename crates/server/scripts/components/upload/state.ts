@@ -12,8 +12,8 @@ export type StateAction =
   | { type: "removeAll" }
   | { type: "upload"; upload: XMLHttpRequest }
   | { type: "progress"; loaded: number }
-  | { type: "error"; event: ProgressEvent<any> }
-  | { type: "abort"; event: ProgressEvent<any> }
+  | { type: "error"; event: Event }
+  | { type: "abort"; event: Event }
   | { type: "complete" }
   | { type: "reset" };
 

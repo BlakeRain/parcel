@@ -71,9 +71,9 @@ function getTeamIdentifier(): string | null {
     return null;
   }
 
-  let identifier: string = null;
+  let identifier: string | null = null;
   try {
-    const value = JSON.parse(element.textContent);
+    const value = JSON.parse(element.textContent || "");
     if (!(value instanceof Array)) {
       console.error("Team identifier value is not an array");
       return null;
@@ -199,6 +199,9 @@ function setupDropIndicator() {
             count++;
           }
         }, 100);
+      })
+      .catch((err) => {
+        console.error("Failed to load upload form:", err);
       });
   });
 
@@ -218,6 +221,12 @@ function setupParcelChangeEvent() {
     (event: CustomEvent) => {
       const team = getTeamIdentifier();
       const row = document.getElementById("upload-row-" + event.detail.value);
+
+      if (!row) {
+        console.error("Could not find upload row element:", event.detail.value);
+        return;
+      }
+
       const page = row.dataset.page;
       const order = row.dataset.order;
       const asc = row.dataset.asc;

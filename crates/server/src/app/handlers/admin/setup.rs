@@ -34,7 +34,10 @@ pub async fn get_setup(
 ) -> poem::Result<(StatusCode, HeaderMap, Html<String>)> {
     let required = requires_setup(&env.pool)
         .await
-        .map_err(InternalServerError)?;
+        .map_err(|err| {
+            tracing::error!(?err, "Failed to check if setup is required");
+            InternalServerError(err)
+        })?;
     if !required {
         tracing::warn!("Setup requested, but was already completed");
 
@@ -75,7 +78,10 @@ pub async fn post_setup(
 ) -> poem::Result<Response> {
     let required = requires_setup(&env.pool)
         .await
-        .map_err(InternalServerError)?;
+        .map_err(|err| {
+            tracing::error!(?err, "Failed to check if setup is required");
+            InternalServerError(err)
+        })?;
 
     if !required {
         tracing::error!("Setup form submitted, but setup was already completed");

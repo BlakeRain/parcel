@@ -71,7 +71,10 @@ pub async fn get_list(
 
     let stats = UploadStats::get_for_user(&env.pool, user.id)
         .await
-        .map_err(InternalServerError)?;
+        .map_err(|err| {
+            tracing::error!(?err, %user.id, "Failed to get upload stats for user");
+            InternalServerError(err)
+        })?;
 
     let uploads = UploadList::get_for_user(
         &env.pool,

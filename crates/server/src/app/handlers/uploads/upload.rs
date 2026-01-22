@@ -47,7 +47,10 @@ async fn render_upload(
         upload
             .is_owner(&env.pool, user)
             .await
-            .map_err(InternalServerError)?
+            .map_err(|err| {
+                tracing::error!(?err, %upload.id, %user.id, "Failed to check upload ownership");
+                InternalServerError(err)
+            })?
             .is_some()
     } else {
         false
@@ -57,7 +60,10 @@ async fn render_upload(
         if let Some(team_id) = upload.owner_team {
             TeamMember::get_for_user_and_team(&env.pool, user.id, team_id)
                 .await
-                .map_err(InternalServerError)?
+                .map_err(|err| {
+                    tracing::error!(?err, %user.id, %team_id, "Failed to get team membership");
+                    InternalServerError(err)
+                })?
         } else {
             None
         }
@@ -208,17 +214,26 @@ pub async fn delete_upload(
             }
             let stats = UploadStats::get_for_user(&env.pool, user.id)
                 .await
-                .map_err(InternalServerError)?;
+                .map_err(|err| {
+                    tracing::error!(?err, %user.id, "Failed to get upload stats for user");
+                    InternalServerError(err)
+                })?;
             (stats, user.limit, None)
         }
 
         (None, Some(team_id)) => {
             let stats = UploadStats::get_for_team(&env.pool, team_id)
                 .await
-                .map_err(InternalServerError)?;
+                .map_err(|err| {
+                    tracing::error!(?err, %team_id, "Failed to get upload stats for team");
+                    InternalServerError(err)
+                })?;
             let Some(team) = Team::get(&env.pool, team_id)
                 .await
-                .map_err(InternalServerError)?
+                .map_err(|err| {
+                    tracing::error!(?err, %team_id, "Failed to get team by ID");
+                    InternalServerError(err)
+                })?
             else {
                 tracing::error!(team_id = %team_id, "Unable to find team with given ID");
                 return Err(poem::Error::from_status(StatusCode::NOT_FOUND));

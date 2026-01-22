@@ -240,7 +240,10 @@ pub async fn post_edit(
     upload.expiry_date = expiry_date;
     upload.custom_slug = custom_slug;
 
-    upload.save(&env.pool).await.map_err(InternalServerError)?;
+    upload.save(&env.pool).await.map_err(|err| {
+        tracing::error!(?err, %upload.id, "Failed to save upload");
+        InternalServerError(err)
+    })?;
 
     Ok(Html("")
         .with_header(

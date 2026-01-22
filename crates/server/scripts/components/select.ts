@@ -70,7 +70,7 @@ function stopPropagation(event: Event) {
   event.stopPropagation();
 }
 
-const StateContext = createContext<{ state: State; dispatch: Function }>({
+const StateContext = createContext<{ state: State; dispatch: (action: StateAction) => void }>({
   state: createInitialState(),
   dispatch: () => {
     throw new Error("attempt to use dispatch without state context");
