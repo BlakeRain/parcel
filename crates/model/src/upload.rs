@@ -176,11 +176,65 @@ impl Upload {
             .await
     }
 
+    /// Fetch multiple uploads by their IDs in a single query.
+    pub async fn get_many(pool: &SqlitePool, ids: &[Key<Upload>]) -> sqlx::Result<Vec<Self>> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let mut query = QueryBuilder::new("SELECT * FROM uploads WHERE id IN (");
+        let mut separated = query.separated(", ");
+        for id in ids {
+            separated.push_bind(*id);
+        }
+        separated.push_unseparated(")");
+
+        query.build_query_as().fetch_all(pool).await
+    }
+
+    /// Delete multiple uploads by their IDs in a single query.
+    /// Returns the slugs of the deleted uploads (for cache cleanup).
+    pub async fn delete_many(pool: &SqlitePool, ids: &[Key<Upload>]) -> sqlx::Result<Vec<String>> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let mut query = QueryBuilder::new("DELETE FROM uploads WHERE id IN (");
+        let mut separated = query.separated(", ");
+        for id in ids {
+            separated.push_bind(*id);
+        }
+        separated.push_unseparated(") RETURNING slug");
+
+        query.build_query_scalar().fetch_all(pool).await
+    }
+
     pub async fn get_by_slug(pool: &SqlitePool, slug: &str) -> sqlx::Result<Option<Self>> {
         sqlx::query_as("SELECT * FROM uploads WHERE slug = ?")
             .bind(slug)
             .fetch_optional(pool)
             .await
+    }
+
+    /// Check which slugs exist in the database from a list of candidates.
+    /// Returns only the slugs that exist.
+    pub async fn get_existing_slugs(
+        pool: &SqlitePool,
+        slugs: &[String],
+    ) -> sqlx::Result<std::collections::HashSet<String>> {
+        if slugs.is_empty() {
+            return Ok(std::collections::HashSet::new());
+        }
+
+        let mut query = QueryBuilder::new("SELECT slug FROM uploads WHERE slug IN (");
+        let mut separated = query.separated(", ");
+        for slug in slugs {
+            separated.push_bind(slug);
+        }
+        separated.push_unseparated(")");
+
+        let existing: Vec<String> = query.build_query_scalar().fetch_all(pool).await?;
+        Ok(existing.into_iter().collect())
     }
 
     pub async fn get_by_custom_slug(
@@ -620,7 +674,7 @@ impl UploadList {
         offset: u32,
         limit: u32,
     ) -> sqlx::Result<Vec<Self>> {
-        sqlx::query_as(&format!(
+        let base_query = format!(
             "SELECT uploads.id, uploads.slug, uploads.filename, \
                 uploads.size, uploads.public, uploads.downloads, \
                 uploads.\"limit\", uploads.remaining, uploads.expiry_date, \
@@ -636,19 +690,30 @@ impl UploadList {
                 LEFT JOIN users AS uploader ON uploads.uploaded_by = uploader.id \
                 WHERE uploads.owner_user = $1 {} \
                 ORDER BY {} {} LIMIT {} OFFSET {}",
-            if let Some(search) = search {
-                format!("AND (uploads.filename LIKE '%{search}%')")
+            if search.is_some() {
+                "AND (uploads.filename LIKE $2)"
             } else {
-                String::new()
+                ""
             },
             order.get_order_field(),
             if asc { "ASC" } else { "DESC" },
             limit,
             offset
-        ))
-        .bind(user)
-        .fetch_all(pool)
-        .await
+        );
+
+        if let Some(search) = search {
+            let search_pattern = format!("%{search}%");
+            sqlx::query_as(&base_query)
+                .bind(user)
+                .bind(search_pattern)
+                .fetch_all(pool)
+                .await
+        } else {
+            sqlx::query_as(&base_query)
+                .bind(user)
+                .fetch_all(pool)
+                .await
+        }
     }
 
     pub async fn get_for_team(
@@ -660,7 +725,7 @@ impl UploadList {
         offset: u32,
         limit: u32,
     ) -> sqlx::Result<Vec<Self>> {
-        sqlx::query_as(&format!(
+        let base_query = format!(
             "SELECT uploads.id, uploads.slug, uploads.filename, \
                 uploads.size, uploads.public, uploads.downloads, \
                 uploads.\"limit\", uploads.remaining, uploads.expiry_date, \
@@ -676,18 +741,29 @@ impl UploadList {
                 LEFT JOIN users AS uploader ON uploads.uploaded_by = uploader.id \
                 WHERE uploads.owner_team = $1 {} \
                 ORDER BY {} {} LIMIT {} OFFSET {}",
-            if let Some(search) = search {
-                format!("AND (uploads.filename LIKE '%{search}%')")
+            if search.is_some() {
+                "AND (uploads.filename LIKE $2)"
             } else {
-                String::new()
+                ""
             },
             order.get_order_field(),
             if asc { "ASC" } else { "DESC" },
             limit,
             offset
-        ))
-        .bind(team)
-        .fetch_all(pool)
-        .await
+        );
+
+        if let Some(search) = search {
+            let search_pattern = format!("%{search}%");
+            sqlx::query_as(&base_query)
+                .bind(team)
+                .bind(search_pattern)
+                .fetch_all(pool)
+                .await
+        } else {
+            sqlx::query_as(&base_query)
+                .bind(team)
+                .fetch_all(pool)
+                .await
+        }
     }
 }

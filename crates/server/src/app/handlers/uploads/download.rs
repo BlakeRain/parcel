@@ -25,6 +25,43 @@ use crate::{
     env::Env,
 };
 
+/// Builds a Content-Disposition header value with a safely encoded filename.
+///
+/// This function properly escapes the filename to prevent header injection attacks
+/// and uses RFC 5987 encoding for non-ASCII characters.
+fn content_disposition_filename(filename: &str) -> String {
+    // Check if filename contains only ASCII characters
+    let is_ascii = filename.chars().all(|c| c.is_ascii() && c != '"' && c != '\\');
+
+    if is_ascii {
+        // Simple case: ASCII-only filename, just need to escape quotes and backslashes
+        let escaped = filename.replace('\\', "\\\\").replace('"', "\\\"");
+        format!("attachment; filename=\"{escaped}\"")
+    } else {
+        // Use RFC 5987 encoding for non-ASCII filenames
+        // Also provide a fallback ASCII filename
+        let ascii_fallback: String = filename
+            .chars()
+            .map(|c| if c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_' { c } else { '_' })
+            .collect();
+
+        // Percent-encode the UTF-8 filename for filename*
+        let encoded: String = filename
+            .as_bytes()
+            .iter()
+            .map(|&byte| {
+                if byte.is_ascii_alphanumeric() || b"!#$&+-.^_`|~".contains(&byte) {
+                    (byte as char).to_string()
+                } else {
+                    format!("%{:02X}", byte)
+                }
+            })
+            .collect();
+
+        format!("attachment; filename=\"{ascii_fallback}\"; filename*=UTF-8''{encoded}")
+    }
+}
+
 async fn send_download(
     env: &Env,
     mut upload: Upload,
@@ -54,10 +91,7 @@ async fn send_download(
 
     let mut builder = Response::builder()
         .status(StatusCode::OK)
-        .header(
-            CONTENT_DISPOSITION,
-            format!("attachment; filename=\"{}\"", upload.filename),
-        )
+        .header(CONTENT_DISPOSITION, content_disposition_filename(&upload.filename))
         .header(CONTENT_LENGTH, meta.len());
 
     if let Some(ref mime_type) = upload.mime_type {

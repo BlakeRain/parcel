@@ -22,9 +22,10 @@ impl<'r> FromRequest<'r> for SessionUser {
         request: &'r Request,
         request_body: &mut RequestBody,
     ) -> poem::Result<Self> {
-        let env = request
-            .data::<crate::env::Env>()
-            .expect("Env to be provided");
+        let Some(env) = request.data::<crate::env::Env>() else {
+            tracing::error!("Env not found in request data - middleware misconfigured");
+            return Err(poem::Error::from_status(poem::http::StatusCode::INTERNAL_SERVER_ERROR));
+        };
 
         let session = <&Session>::from_request(request, request_body).await?;
 

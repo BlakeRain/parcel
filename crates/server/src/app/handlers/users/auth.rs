@@ -1,14 +1,17 @@
+use std::net::IpAddr;
+
 use minijinja::context;
 use poem::{
     error::InternalServerError,
     handler,
     session::Session,
-    web::{CsrfToken, CsrfVerifier, Data, Form, Redirect},
-    IntoResponse, Response,
+    web::{CsrfToken, CsrfVerifier, Data, Form, RealIp, Redirect, RemoteAddr},
+    Addr, IntoResponse, Response,
 };
 use serde::Deserialize;
 
 use parcel_model::{
+    login_attempt::LoginAttempt,
     types::Key,
     user::{requires_setup, User},
 };
@@ -21,6 +24,23 @@ use crate::{
     env::Env,
     utils::SessionExt,
 };
+
+/// Get the client IP address, respecting the `trust_proxy` setting.
+///
+/// When `trust_proxy` is true, uses proxy headers (X-Forwarded-For, etc.).
+/// When false, uses only the direct peer address to prevent IP spoofing.
+fn get_client_ip(trust_proxy: bool, real_ip: &RealIp, remote_addr: &RemoteAddr) -> Option<IpAddr> {
+    if trust_proxy {
+        // RealIp already checks proxy headers and falls back to peer address
+        real_ip.0
+    } else {
+        // Only use the direct peer address, ignore proxy headers
+        match &remote_addr.0 {
+            Addr::SocketAddr(addr) => Some(addr.ip()),
+            _ => None,
+        }
+    }
+}
 
 #[handler]
 pub async fn get_signin(
@@ -61,6 +81,8 @@ pub async fn post_signin(
     env: Data<&Env>,
     session: &Session,
     verifier: &CsrfVerifier,
+    real_ip: RealIp,
+    remote_addr: &RemoteAddr,
     Form(SignInForm {
         token,
         username,
@@ -70,6 +92,24 @@ pub async fn post_signin(
     if !verifier.is_valid(&token) {
         tracing::error!("Invalid CSRF token in sign in form");
         return Err(CsrfError.into());
+    }
+
+    let client_ip = get_client_ip(env.trust_proxy, &real_ip, remote_addr);
+    let client_ip_str = client_ip.map(|ip| ip.to_string());
+
+    // Check lockout BEFORE doing expensive password verification (prevents timing attacks)
+    if LoginAttempt::is_locked_out(&env.pool, &username)
+        .await
+        .map_err(|err| {
+            tracing::error!(?err, %username, "Failed to check lockout status");
+            InternalServerError(err)
+        })?
+    {
+        session.set(
+            "error",
+            "Too many failed attempts. Please try again in a few minutes.",
+        );
+        return Ok(Redirect::see_other("/user/signin"));
     }
 
     let user = User::get_by_username(&env.pool, &username)
@@ -83,6 +123,10 @@ pub async fn post_signin(
         Some(user) => user,
         None => {
             tracing::info!(?username, "User not found");
+            // Record failed attempt even for non-existent users (prevents username enumeration timing)
+            LoginAttempt::record(&env.pool, &username, client_ip_str.as_deref(), false)
+                .await
+                .ok();
             session.set("error", "Invalid username or password");
             return Ok(Redirect::see_other("/user/signin"));
         }
@@ -90,6 +134,9 @@ pub async fn post_signin(
 
     if !user.verify_password(&password) {
         tracing::info!(?username, "Invalid password");
+        LoginAttempt::record(&env.pool, &username, client_ip_str.as_deref(), false)
+            .await
+            .ok();
         session.set("error", "Invalid username or password");
         return Ok(Redirect::see_other("/user/signin"));
     }
@@ -108,8 +155,15 @@ pub async fn post_signin(
     if user.totp.is_some() {
         tracing::info!(%user.id, ?username, "User requires TOTP");
         session.set("_authenticating", user.id);
+        // Store username in session for TOTP lockout checks
+        session.set("_authenticating_username", username);
         return Ok(Redirect::see_other("/user/signin/totp"));
     }
+
+    // Record successful login
+    LoginAttempt::record(&env.pool, &username, client_ip_str.as_deref(), true)
+        .await
+        .ok();
 
     session.remove("_authenticating");
     session.set("user_id", user.id);
@@ -173,6 +227,8 @@ pub async fn post_signin_totp(
     env: Data<&Env>,
     session: &Session,
     verifier: &CsrfVerifier,
+    real_ip: RealIp,
+    remote_addr: &RemoteAddr,
     Form(TotpForm { token, code }): Form<TotpForm>,
 ) -> poem::Result<Redirect> {
     let Some(user_id) = session.get::<Key<User>>("_authenticating") else {
@@ -180,6 +236,32 @@ pub async fn post_signin_totp(
         session.set("error", "You need to sign in first");
         return Ok(Redirect::see_other("/user/signin"));
     };
+
+    // Get the username from session for lockout checks (shared counter with password)
+    let username = session
+        .get::<String>("_authenticating_username")
+        .unwrap_or_default();
+
+    let client_ip = get_client_ip(env.trust_proxy, &real_ip, remote_addr);
+    let client_ip_str = client_ip.map(|ip| ip.to_string());
+
+    // Check lockout (shared counter with password attempts)
+    if !username.is_empty()
+        && LoginAttempt::is_locked_out(&env.pool, &username)
+            .await
+            .map_err(|err| {
+                tracing::error!(?err, %username, "Failed to check lockout status");
+                InternalServerError(err)
+            })?
+    {
+        session.remove("_authenticating");
+        session.remove("_authenticating_username");
+        session.set(
+            "error",
+            "Too many failed attempts. Please try again in a few minutes.",
+        );
+        return Ok(Redirect::see_other("/user/signin"));
+    }
 
     if !verifier.is_valid(&token) {
         tracing::error!("Invalid CSRF token in sign in TOTP form");
@@ -193,6 +275,7 @@ pub async fn post_signin_totp(
     else {
         tracing::error!(%user_id, "User not found");
         session.remove("_authenticating");
+        session.remove("_authenticating_username");
         session.set("error", "You need to sign in first");
         return Ok(Redirect::see_other("/user/signin"));
     };
@@ -200,6 +283,7 @@ pub async fn post_signin_totp(
     let Some(ref secret) = user.totp else {
         tracing::error!(%user_id, "User does not have TOTP secret");
         session.remove("_authenticating");
+        session.remove("_authenticating_username");
         session.set("error", "You need to sign in first");
         return Ok(Redirect::see_other("/user/signin"));
     };
@@ -267,6 +351,13 @@ pub async fn post_signin_totp(
             "TOTP code provided did not match the expected value"
         );
 
+        // Record failed TOTP attempt (shared counter with password)
+        if !username.is_empty() {
+            LoginAttempt::record(&env.pool, &username, client_ip_str.as_deref(), false)
+                .await
+                .ok();
+        }
+
         session.set(
             "error",
             "🤨 The TOTP code you provided was incorrect. Please try again.",
@@ -275,7 +366,15 @@ pub async fn post_signin_totp(
         return Ok(Redirect::see_other("/user/signin/totp"));
     }
 
+    // Record successful login
+    if !username.is_empty() {
+        LoginAttempt::record(&env.pool, &username, client_ip_str.as_deref(), true)
+            .await
+            .ok();
+    }
+
     session.remove("_authenticating");
+    session.remove("_authenticating_username");
     session.set("user_id", user.id);
 
     tracing::info!(%user.id, "User signed in after TOTP");

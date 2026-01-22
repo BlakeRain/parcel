@@ -60,6 +60,7 @@ pub fn create_app(
     env: Env,
     preview: PreviewWorker,
     cookie_key: Option<&[u8]>,
+    cors_origins: &[String],
 ) -> anyhow::Result<impl IntoEndpoint> {
     let cookie_key = if let Some(key) = cookie_key {
         CookieKey::derive_from(key)
@@ -136,7 +137,17 @@ pub fn create_app(
         .catch_all_error(errors::handle_500)
         .data(env)
         .data(preview)
-        .with(Cors::new())
+        .with({
+            let cors = Cors::new();
+            if cors_origins.is_empty() {
+                // No origins specified - use restrictive same-origin policy
+                cors.allow_credentials(false)
+            } else {
+                // Configure with explicit allowed origins
+                cors_origins.iter().fold(cors, |c, origin| c.allow_origin(origin))
+                    .allow_credentials(true)
+            }
+        })
         .with(Csrf::new().cookie_name("parcel-csrf"))
         .with(Tracing)
         .with(CookieSession::new(

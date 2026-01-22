@@ -9,16 +9,16 @@ use poem::{
 use serde::{Deserialize, Serialize};
 
 use parcel_model::{
-    team::{HomeTab, TeamTab},
+    team::{HomeTab, TeamMember, TeamTab},
     types::Key,
-    upload::{Upload, UploadList, UploadOrder, UploadPermission, UploadStats},
+    upload::{Upload, UploadList, UploadOrder, UploadStats},
 };
 
 use crate::{
     app::{
         errors::CsrfError,
         extractors::user::SessionUser,
-        handlers::utils::{check_permission, delete_upload_cache},
+        handlers::utils::delete_upload_cache_by_slug,
         templates::{authorized_context, render_template},
     },
     env::Env,
@@ -127,7 +127,7 @@ pub async fn post_delete(
         return Err(CsrfError.into());
     }
 
-    let ids = form
+    let ids: Vec<Key<Upload>> = form
         .into_iter()
         .filter(|(name, _)| name == "selected")
         .map(|(_, id)| id.parse::<Key<Upload>>())
@@ -137,24 +137,78 @@ pub async fn post_delete(
             poem::Error::from_status(StatusCode::BAD_REQUEST)
         })?;
 
-    for id in ids {
-        let Some(upload) = Upload::get(&env.pool, id).await.map_err(|err| {
-            tracing::error!(?err, ?id, "Unable to get upload by ID");
-            InternalServerError(err)
-        })?
-        else {
-            tracing::error!(id = ?id, "Unable to find upload with given ID");
-            return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
+    if ids.is_empty() {
+        return Ok(Html("").with_header("HX-Refresh", "true"));
+    }
+
+    // Batch fetch all uploads in a single query
+    let uploads = Upload::get_many(&env.pool, &ids).await.map_err(|err| {
+        tracing::error!(?err, "Unable to fetch uploads for bulk delete");
+        InternalServerError(err)
+    })?;
+
+    // Verify all requested IDs were found
+    if uploads.len() != ids.len() {
+        tracing::error!(
+            requested = ids.len(),
+            found = uploads.len(),
+            "Some uploads not found for bulk delete"
+        );
+        return Err(poem::Error::from_status(StatusCode::NOT_FOUND));
+    }
+
+    // Pre-fetch user's team memberships once for permission checking
+    let team_memberships = if user.admin {
+        Vec::new() // Admin can delete anything, no need to fetch
+    } else {
+        TeamMember::get_for_user(&env.pool, user.id)
+            .await
+            .map_err(|err| {
+                tracing::error!(?err, %user.id, "Unable to fetch team memberships");
+                InternalServerError(err)
+            })?
+    };
+
+    // Check permissions for each upload in-memory
+    let mut ids_to_delete = Vec::with_capacity(uploads.len());
+    for upload in &uploads {
+        let can_delete = if user.admin {
+            true
+        } else if upload.owner_user == Some(user.id) {
+            // User owns the upload directly
+            true
+        } else if let Some(team_id) = upload.owner_team {
+            // Check if user is a member of the team with delete permission
+            team_memberships
+                .iter()
+                .any(|m| m.team == team_id && m.can_delete)
+        } else {
+            false
         };
 
-        check_permission(&env, &upload, Some(&user), UploadPermission::Delete).await?;
+        if !can_delete {
+            tracing::error!(
+                upload = %upload.id,
+                user = %user.id,
+                "User tried to delete upload without permission"
+            );
+            return Err(poem::Error::from_status(StatusCode::FORBIDDEN));
+        }
 
-        upload.delete(&env.pool).await.map_err(|err| {
-            tracing::error!(err = ?err, upload = ?upload, "Unable to delete upload");
+        ids_to_delete.push(upload.id);
+    }
+
+    // Batch delete all uploads in a single query
+    let deleted_slugs = Upload::delete_many(&env.pool, &ids_to_delete)
+        .await
+        .map_err(|err| {
+            tracing::error!(?err, "Unable to delete uploads");
             InternalServerError(err)
         })?;
 
-        delete_upload_cache(&env, &upload).await;
+    // Delete cache files for each deleted upload
+    for slug in deleted_slugs {
+        delete_upload_cache_by_slug(&env, &slug).await;
     }
 
     Ok(Html("").with_header("HX-Refresh", "true"))

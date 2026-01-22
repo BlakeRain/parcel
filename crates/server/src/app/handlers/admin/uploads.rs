@@ -86,7 +86,7 @@ pub async fn get_cache(
 
 trait WithCacheFiles: Default {
     #[allow(clippy::result_large_err)]
-    fn valid_cache_file(&mut self, entry: std::fs::DirEntry, upload: Upload) -> poem::Result<()>;
+    fn valid_cache_file(&mut self, entry: std::fs::DirEntry) -> poem::Result<()>;
     #[allow(clippy::result_large_err)]
     fn invalid_cache_file(&mut self, entry: std::fs::DirEntry) -> poem::Result<()>;
 }
@@ -104,7 +104,7 @@ struct CacheFilesSummary {
 }
 
 impl WithCacheFiles for CacheFilesSummary {
-    fn valid_cache_file(&mut self, entry: std::fs::DirEntry, _upload: Upload) -> poem::Result<()> {
+    fn valid_cache_file(&mut self, entry: std::fs::DirEntry) -> poem::Result<()> {
         self.valid_total += entry
             .metadata()
             .map_err(|err| {
@@ -140,7 +140,7 @@ struct CacheFilesCleanup {
 }
 
 impl WithCacheFiles for CacheFilesCleanup {
-    fn valid_cache_file(&mut self, _entry: std::fs::DirEntry, _upload: Upload) -> poem::Result<()> {
+    fn valid_cache_file(&mut self, _entry: std::fs::DirEntry) -> poem::Result<()> {
         Ok(())
     }
 
@@ -174,6 +174,10 @@ where
         InternalServerError(err)
     })?;
 
+    // First pass: collect all entries and their filenames
+    let mut entries: Vec<(std::fs::DirEntry, String)> = Vec::new();
+    let mut slugs: Vec<String> = Vec::new();
+
     for entry in dir {
         let entry = entry.map_err(|err| {
             tracing::error!(err = ?err, "Failed to read cache directory entry");
@@ -185,15 +189,28 @@ where
             poem::Error::from_status(poem::http::StatusCode::INTERNAL_SERVER_ERROR)
         })?;
 
-        let upload = Upload::get_by_slug(&env.pool, &filename)
-            .await
-            .map_err(|err| {
-                tracing::error!(err = ?err, slug = ?filename, "Failed to fetch upload by slug");
-                InternalServerError(err)
-            })?;
+        // Extract base slug (remove .preview suffix if present)
+        let slug = filename
+            .strip_suffix(".preview")
+            .unwrap_or(&filename)
+            .to_string();
 
-        if let Some(upload) = upload {
-            result.valid_cache_file(entry, upload)?;
+        slugs.push(slug.clone());
+        entries.push((entry, slug));
+    }
+
+    // Batch fetch all existing slugs in a single query
+    let existing_slugs = Upload::get_existing_slugs(&env.pool, &slugs)
+        .await
+        .map_err(|err| {
+            tracing::error!(err = ?err, "Failed to fetch existing upload slugs");
+            InternalServerError(err)
+        })?;
+
+    // Second pass: categorize entries based on HashSet membership
+    for (entry, slug) in entries {
+        if existing_slugs.contains(&slug) {
+            result.valid_cache_file(entry)?;
         } else {
             result.invalid_cache_file(entry)?;
         }

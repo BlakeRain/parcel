@@ -6,10 +6,19 @@ use poem::{
     http::StatusCode,
     web::{CsrfToken, CsrfVerifier, Data, Html, Json, Multipart, Query, RealIp},
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
 use parcel_model::{team::Team, types::Key, upload::Upload};
+
+/// Represents a pending upload before it's inserted into the database.
+#[derive(Debug, Serialize)]
+struct PendingUpload {
+    id: Key<Upload>,
+    slug: String,
+    filename: String,
+    size: i64,
+}
 
 use crate::{
     app::{
@@ -177,12 +186,12 @@ pub async fn post_new(
             let size = meta.len() as i64;
             tracing::info!(?slug, size, "Upload to cache complete");
 
-            uploads.push(serde_json::json!({
-                "id": Key::<Upload>::new(),
-                "slug": slug,
-                "filename": filename,
-                "size": size,
-            }));
+            uploads.push(PendingUpload {
+                id: Key::<Upload>::new(),
+                slug,
+                filename,
+                size,
+            });
         } else {
             tracing::info!(field_name = ?field.name(), "Ignoring unrecognized field");
         }
@@ -191,17 +200,11 @@ pub async fn post_new(
     if !seen_csrf {
         tracing::error!("CSRF token was not seen in upload form");
 
-        for upload in uploads {
-            let slug = upload
-                .get("slug")
-                .expect("slug field missing")
-                .as_str()
-                .expect("slug field is not a string");
-
-            let path = env.cache_dir.join(slug);
-            tracing::info!(?path, ?slug, "Deleting cached upload");
+        for upload in &uploads {
+            let path = env.cache_dir.join(&upload.slug);
+            tracing::info!(?path, slug = ?upload.slug, "Deleting cached upload");
             if let Err(err) = tokio::fs::remove_file(&path).await {
-                tracing::error!(?path, ?err, ?slug, "Failed to delete cached upload");
+                tracing::error!(?path, ?err, slug = ?upload.slug, "Failed to delete cached upload");
             }
         }
 
@@ -234,7 +237,10 @@ pub async fn post_new(
         FROM data \
         RETURNING id",
     )
-    .bind(serde_json::to_string(&uploads).expect("JSON serialization failed"))
+    .bind(serde_json::to_string(&uploads).map_err(|err| {
+        tracing::error!(?err, "Failed to serialize uploads to JSON");
+        InternalServerError(err)
+    })?)
     .bind(owner_user)
     .bind(owner_team)
     .bind(OffsetDateTime::now_utc())

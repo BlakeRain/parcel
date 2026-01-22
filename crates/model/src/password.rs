@@ -3,6 +3,7 @@ use std::fmt::{Debug, Formatter};
 use argon2::{password_hash::SaltString, Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use pbkdf2::Pbkdf2;
 use sqlx::{Database, Sqlite};
+use tracing;
 
 #[derive(Clone)]
 pub enum StoredPassword {
@@ -61,15 +62,14 @@ impl<'q> sqlx::Encode<'q, Sqlite> for StoredPassword {
 
 impl<'r> sqlx::Decode<'r, Sqlite> for StoredPassword {
     fn decode(value: <Sqlite as Database>::ValueRef<'r>) -> Result<Self, sqlx::error::BoxDynError> {
-        <String as sqlx::Decode<Sqlite>>::decode(value).map(|password| {
-            if password.starts_with("$argon2") {
-                StoredPassword::Argon2(password)
-            } else if password.starts_with("$pbkdf2") {
-                StoredPassword::Pbkdf2(password)
-            } else {
-                panic!("Unknown password hash type")
-            }
-        })
+        let password = <String as sqlx::Decode<Sqlite>>::decode(value)?;
+        if password.starts_with("$argon2") {
+            Ok(StoredPassword::Argon2(password))
+        } else if password.starts_with("$pbkdf2") {
+            Ok(StoredPassword::Pbkdf2(password))
+        } else {
+            Err("Unknown password hash type".into())
+        }
     }
 }
 
@@ -88,15 +88,19 @@ impl StoredPassword {
 
     pub fn verify(&self, plain: &str) -> bool {
         match self {
-            Self::Pbkdf2(hash) => Pbkdf2
-                .verify_password(
-                    plain.as_bytes(),
-                    &PasswordHash::new(hash).expect("valid password hash"),
-                )
-                .is_ok(),
+            Self::Pbkdf2(hash) => {
+                let Ok(parsed) = PasswordHash::new(hash) else {
+                    tracing::error!("Failed to parse PBKDF2 password hash");
+                    return false;
+                };
+                Pbkdf2.verify_password(plain.as_bytes(), &parsed).is_ok()
+            }
 
             Self::Argon2(hash) => {
-                let parsed = PasswordHash::new(hash).expect("valid password hash");
+                let Ok(parsed) = PasswordHash::new(hash) else {
+                    tracing::error!("Failed to parse Argon2 password hash");
+                    return false;
+                };
                 Argon2::default()
                     .verify_password(plain.as_bytes(), &parsed)
                     .is_ok()

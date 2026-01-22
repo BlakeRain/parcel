@@ -41,6 +41,17 @@ pub struct Args {
     /// Maximum size of an upload that can have a preview generated.
     #[arg(long, env)]
     pub max_preview_size: Option<u64>,
+
+    /// Allowed CORS origin(s). Can be specified multiple times. If not specified, CORS is disabled
+    /// and only same-origin requests are allowed.
+    #[arg(long = "cors-origin", env = "CORS_ORIGINS", value_delimiter = ',')]
+    pub cors_origins: Vec<String>,
+
+    /// Trust X-Forwarded-For and similar proxy headers for client IP detection.
+    /// Enable this if running behind a reverse proxy (nginx, Cloudflare, etc.).
+    /// When disabled, only the direct peer address is used.
+    #[arg(long, env = "TRUST_PROXY")]
+    pub trust_proxy: bool,
 }
 
 impl Args {

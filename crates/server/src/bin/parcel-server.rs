@@ -29,7 +29,7 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Starting preview generation worker");
     let (preview, worker) = workers::previews::start_worker(env.clone()).await?;
 
-    let app = create_app(env, preview.clone(), cookie_key.as_deref())
+    let app = create_app(env, preview.clone(), cookie_key.as_deref(), &args.cors_origins)
         .context("failed to create application")?;
     Server::new(TcpListener::bind("0.0.0.0:3000"))
         .run(app)

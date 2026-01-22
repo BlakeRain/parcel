@@ -33,10 +33,15 @@ pub struct CsrfError;
 impl CsrfError {
     pub async fn handle(self) -> impl IntoResponse {
         let context = default_context(TemplateEnv::default());
-        let Html(body) = render_template("errors/csrf-detected.html", &context)
-            .await
-            .expect("template to render");
-        Response::builder().status(self.status()).body(body)
+        match render_template("errors/csrf-detected.html", &context).await {
+            Ok(Html(body)) => Response::builder().status(self.status()).body(body),
+            Err(err) => {
+                tracing::error!(?err, "Failed to render CSRF error page");
+                Response::builder()
+                    .status(self.status())
+                    .body("CSRF error detected. Please refresh and try again.")
+            }
+        }
     }
 }
 
@@ -47,30 +52,38 @@ impl ResponseError for CsrfError {
 }
 
 pub async fn handle_404(_: NotFoundError) -> impl IntoResponse {
-    render_template("errors/404.html", default_context(TemplateEnv::default()))
-        .await
-        .expect("failed to render 404 page")
-        .with_status(StatusCode::NOT_FOUND)
-        .with_header("Pragma", "no-cache")
-        .with_header("Cache-Control", "no-cache, no-store, must-revalidate")
-        .into_response()
+    match render_template("errors/404.html", default_context(TemplateEnv::default())).await {
+        Ok(html) => html
+            .with_status(StatusCode::NOT_FOUND)
+            .with_header("Pragma", "no-cache")
+            .with_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            .into_response(),
+        Err(err) => {
+            tracing::error!(?err, "Failed to render 404 error page");
+            Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .body("Page not found")
+        }
+    }
 }
 
 pub async fn handle_500(error: poem::Error) -> impl IntoResponse {
     tracing::error!("Internal server error: {:?}", error);
 
-    render_template(
-        "errors/500.html",
-        minijinja::context! {
-            error => error.to_string(),
-            ..default_context(TemplateEnv::default())
-        },
-    )
-    .await
-    .expect("failed to render 500 page")
-    .with_status(error.status())
-    .with_header("Pragma", "no-cache")
-    .with_header("Cache-Control", "no-cache, no-store, must-revalidate")
-    .with_header("HX-Trigger", "closeModals")
-    .into_response()
+    let status = error.status();
+
+    match render_template("errors/500.html", default_context(TemplateEnv::default())).await {
+        Ok(html) => html
+            .with_status(status)
+            .with_header("Pragma", "no-cache")
+            .with_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            .with_header("HX-Trigger", "closeModals")
+            .into_response(),
+        Err(err) => {
+            tracing::error!(?err, "Failed to render 500 error page");
+            Response::builder()
+                .status(status)
+                .body("Internal server error")
+        }
+    }
 }

@@ -233,21 +233,20 @@ pub async fn post_new(
 
     tracing::info!(user = %user.id, username = ?user.username, "Created new user");
 
-    for (team_id, permissions) in teams {
-        tracing::info!(%team_id, user_id = %user.id, "Adding user to team");
-        user.join_team(
-            &env.pool,
-            team_id,
-            permissions.edit,
-            permissions.delete,
-            permissions.config,
-        )
-        .await
-        .map_err(|err| {
-            tracing::error!(err = ?err, user_id = %user.id, %team_id,
-                            "Failed to add user to team");
-            InternalServerError(err)
-        })?;
+    // Batch insert all team memberships
+    let team_memberships: Vec<_> = teams
+        .into_iter()
+        .map(|(team_id, perms)| (team_id, perms.edit, perms.delete, perms.config))
+        .collect();
+
+    if !team_memberships.is_empty() {
+        tracing::info!(user_id = %user.id, teams = team_memberships.len(), "Adding user to teams");
+        user.join_teams(&env.pool, &team_memberships)
+            .await
+            .map_err(|err| {
+                tracing::error!(?err, user_id = %user.id, "Failed to add user to teams");
+                InternalServerError(err)
+            })?;
     }
 
     Ok(Redirect::see_other("/admin/users").into_response())
@@ -483,37 +482,27 @@ pub async fn post_user(
         "Updated user"
     );
 
-    let membership = user.get_teams(&env.pool).await.map_err(|err| {
-        tracing::error!(err = ?err, user_id = %user_id, "Failed to get user's team membership");
+    // Remove the user from all their current team memberships in one query.
+    tracing::info!(user_id = %user_id, "Removing user from all teams");
+    user.leave_all_teams(&env.pool).await.map_err(|err| {
+        tracing::error!(?err, user_id = %user_id, "Failed to remove user from teams");
         InternalServerError(err)
     })?;
 
-    // Remove the user from all their team memberships.
-    for team in membership.iter().copied() {
-        tracing::info!(team_id = %team, user_id = %user_id, "Removing user from team");
-        user.leave_team(&env.pool, team).await.map_err(|err| {
-            tracing::error!(err = ?err, user_id = %user_id, team_id = %team,
-                        "Failed to remove user from team");
-            InternalServerError(err)
-        })?;
-    }
+    // Batch insert all new team memberships.
+    let team_memberships: Vec<_> = teams
+        .into_iter()
+        .map(|(team_id, perms)| (team_id, perms.edit, perms.delete, perms.config))
+        .collect();
 
-    // Add the user to the teams they were selected for.
-    for (team_id, permissions) in teams {
-        tracing::info!(%team_id, user_id = %user_id, "Adding user to team");
-        user.join_team(
-            &env.pool,
-            team_id,
-            permissions.edit,
-            permissions.delete,
-            permissions.config,
-        )
-        .await
-        .map_err(|err| {
-            tracing::error!(err = ?err, user_id = %user_id, %team_id,
-                                "Failed to add user to team");
-            InternalServerError(err)
-        })?;
+    if !team_memberships.is_empty() {
+        tracing::info!(user_id = %user_id, teams = team_memberships.len(), "Adding user to teams");
+        user.join_teams(&env.pool, &team_memberships)
+            .await
+            .map_err(|err| {
+                tracing::error!(?err, user_id = %user_id, "Failed to add user to teams");
+                InternalServerError(err)
+            })?;
     }
 
     Ok(Redirect::see_other("/admin/users").into_response())

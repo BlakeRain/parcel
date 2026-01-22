@@ -224,6 +224,70 @@ impl TeamMember {
         .await?;
         Ok(())
     }
+
+    /// Batch update permissions for multiple team members.
+    /// Each tuple is (user_id, can_edit, can_delete, can_config).
+    /// Only updates existing members (does not insert new ones).
+    pub async fn batch_update_permissions(
+        pool: &SqlitePool,
+        team: Key<Team>,
+        members: &[(Key<User>, bool, bool, bool)],
+    ) -> sqlx::Result<()> {
+        if members.is_empty() {
+            return Ok(());
+        }
+
+        // Use a transaction to batch multiple updates
+        // SQLite doesn't support UPDATE with multiple rows in VALUES, so we use
+        // a CASE expression for efficient batch updates
+        let mut query = QueryBuilder::new("UPDATE team_members SET ");
+
+        // can_edit CASE
+        query.push("can_edit = CASE user ");
+        for (user_id, can_edit, _, _) in members {
+            query.push("WHEN ");
+            query.push_bind(*user_id);
+            query.push(" THEN ");
+            query.push_bind(*can_edit);
+            query.push(" ");
+        }
+        query.push("ELSE can_edit END, ");
+
+        // can_delete CASE
+        query.push("can_delete = CASE user ");
+        for (user_id, _, can_delete, _) in members {
+            query.push("WHEN ");
+            query.push_bind(*user_id);
+            query.push(" THEN ");
+            query.push_bind(*can_delete);
+            query.push(" ");
+        }
+        query.push("ELSE can_delete END, ");
+
+        // can_config CASE
+        query.push("can_config = CASE user ");
+        for (user_id, _, _, can_config) in members {
+            query.push("WHEN ");
+            query.push_bind(*user_id);
+            query.push(" THEN ");
+            query.push_bind(*can_config);
+            query.push(" ");
+        }
+        query.push("ELSE can_config END ");
+
+        // WHERE clause
+        query.push("WHERE team = ");
+        query.push_bind(team);
+        query.push(" AND user IN (");
+        let mut separated = query.separated(", ");
+        for (user_id, _, _, _) in members {
+            separated.push_bind(*user_id);
+        }
+        separated.push_unseparated(")");
+
+        query.build().execute(pool).await?;
+        Ok(())
+    }
 }
 
 #[derive(Debug, FromRow, Serialize)]

@@ -44,6 +44,9 @@ pub struct Inner {
     /// record any `preview_error` though, as this is not really an error condition, and the user
     /// might change this value later.
     pub max_preview_size: Option<u64>,
+
+    /// Whether to trust proxy headers (X-Forwarded-For, etc.) for client IP detection.
+    pub trust_proxy: bool,
 }
 
 impl Env {
@@ -56,6 +59,7 @@ impl Env {
             plausible_script,
             preview_generation_interval,
             max_preview_size,
+            trust_proxy,
             ..
         }: &Args,
     ) -> sqlx::Result<Self> {
@@ -92,6 +96,7 @@ impl Env {
         let plausible_script = plausible_script.clone();
         let preview_generation_interval = Duration::from(*preview_generation_interval);
         let max_preview_size = *max_preview_size;
+        let trust_proxy = *trust_proxy;
         let inner = Inner {
             pool,
             config_dir,
@@ -100,6 +105,7 @@ impl Env {
             plausible_script,
             preview_generation_interval,
             max_preview_size,
+            trust_proxy,
         };
         let inner = Arc::new(inner);
 

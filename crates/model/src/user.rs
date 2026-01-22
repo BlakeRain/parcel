@@ -286,6 +286,43 @@ impl User {
         Ok(())
     }
 
+    /// Remove the user from all their current teams.
+    pub async fn leave_all_teams(&self, pool: &SqlitePool) -> sqlx::Result<()> {
+        sqlx::query("DELETE FROM team_members WHERE user = $1")
+            .bind(self.id)
+            .execute(pool)
+            .await?;
+        Ok(())
+    }
+
+    /// Add the user to multiple teams in a single batch INSERT.
+    /// Each tuple is (team_id, can_edit, can_delete, can_config).
+    pub async fn join_teams(
+        &self,
+        pool: &SqlitePool,
+        teams: &[(Key<Team>, bool, bool, bool)],
+    ) -> sqlx::Result<()> {
+        if teams.is_empty() {
+            return Ok(());
+        }
+
+        let mut query = QueryBuilder::new(
+            "INSERT INTO team_members (team, user, can_edit, can_delete, can_config) ",
+        );
+
+        query.push_values(teams, |mut builder, (team, can_edit, can_delete, can_config)| {
+            builder
+                .push_bind(*team)
+                .push_bind(self.id)
+                .push_bind(*can_edit)
+                .push_bind(*can_delete)
+                .push_bind(*can_config);
+        });
+
+        query.build().execute(pool).await?;
+        Ok(())
+    }
+
     pub async fn username_exists(
         pool: &SqlitePool,
         existing: Option<Key<User>>,

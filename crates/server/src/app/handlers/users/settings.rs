@@ -12,6 +12,7 @@ use poem::{
 };
 use rand::Rng;
 use serde::Deserialize;
+use validator::Validate;
 
 use parcel_model::{upload::UploadOrder, user::User};
 
@@ -141,9 +142,10 @@ pub async fn post_settings(
     Ok(Redirect::see_other("/user/settings"))
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
 pub struct PasswordForm {
     token: String,
+    #[validate(length(min = 8, message = "Password must be at least 8 characters"))]
     password: String,
 }
 
@@ -153,16 +155,29 @@ pub async fn post_password(
     SessionUser(mut user): SessionUser,
     verifier: &CsrfVerifier,
     session: &Session,
-    Form(PasswordForm { token, password }): Form<PasswordForm>,
+    Form(form): Form<PasswordForm>,
 ) -> poem::Result<Redirect> {
-    if !verifier.is_valid(&token) {
+    if !verifier.is_valid(&form.token) {
         tracing::error!("Invalid CSRF token in password form");
         return Err(CsrfError.into());
     }
 
+    if let Err(errors) = form.validate() {
+        tracing::warn!(%user.id, ?errors, "Password validation failed");
+        let error_msg = errors
+            .field_errors()
+            .get("password")
+            .and_then(|errs| errs.first())
+            .and_then(|e| e.message.as_ref())
+            .map(|m| m.to_string())
+            .unwrap_or_else(|| "Password must be at least 8 characters".to_string());
+        session.set("password_error", error_msg);
+        return Ok(Redirect::see_other("/user/settings"));
+    }
+
     tracing::info!(%user.id, ?user.username, "Changing password");
 
-    user.set_password(&env.pool, &password)
+    user.set_password(&env.pool, &form.password)
         .await
         .map_err(|err| {
             tracing::error!(%user.id, ?user.username, ?err,

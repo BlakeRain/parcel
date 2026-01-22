@@ -195,45 +195,47 @@ pub async fn post_settings(
             InternalServerError(err)
         })?;
 
+    // Fetch current team members once for validation
+    let current_members = TeamMember::get_for_team(&env.pool, team.id)
+        .await
+        .map_err(|err| {
+            tracing::error!(?err, %team.id, "Failed to get team members");
+            InternalServerError(err)
+        })?;
+
+    // Build a set of current member IDs for efficient lookup
+    let current_member_ids: std::collections::HashSet<_> =
+        current_members.iter().map(|m| m.user).collect();
+
+    // Validate all users in the form are actually members and build the batch update
+    let mut permission_updates = Vec::with_capacity(members.len());
     for (user_id, permissions) in members {
-        tracing::info!(
-            team = %team.id,
-            user = %user_id,
-            ?permissions,
-            "Setting permissions for team member"
-        );
-
-        // Don't let team managers accidently add new members by forming POST requests.
-        let is_member = team.is_member(&env.pool, user_id)
-            .await
-            .map_err(|err| {
-                tracing::error!(?err, %user_id, "Failed to check if user is active");
-                InternalServerError(err)
-            })?;
-
-        if !is_member {
+        // Don't let team managers accidentally add new members by forming POST requests.
+        if !current_member_ids.contains(&user_id) {
             tracing::error!(
                 user = %user_id,
                 team = %team.id,
                 "Attempt to set permissions for non-member user"
             );
-
             return Err(poem::Error::from_status(StatusCode::FORBIDDEN));
         }
 
-        TeamMember::set_user_permissions(
-            &env.pool,
-            team.id,
-            user_id,
-            permissions.edit,
-            permissions.delete,
-            permissions.config,
-        )
-        .await
-        .map_err(|err| {
-            tracing::error!(?err, "Failed to set team member permissions");
-            InternalServerError(err)
-        })?;
+        permission_updates.push((user_id, permissions.edit, permissions.delete, permissions.config));
+    }
+
+    // Batch update all permissions in a single query
+    if !permission_updates.is_empty() {
+        tracing::info!(
+            team = %team.id,
+            count = permission_updates.len(),
+            "Updating permissions for team members"
+        );
+        TeamMember::batch_update_permissions(&env.pool, team.id, &permission_updates)
+            .await
+            .map_err(|err| {
+                tracing::error!(?err, "Failed to update team member permissions");
+                InternalServerError(err)
+            })?;
     }
 
     Ok(Html("")

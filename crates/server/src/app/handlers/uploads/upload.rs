@@ -1,3 +1,4 @@
+
 use minijinja::context;
 use poem::{
     error::InternalServerError,
@@ -201,7 +202,10 @@ pub async fn delete_upload(
 
     let (stats, limit, team) = match (upload.owner_user, upload.owner_team) {
         (Some(user_id), None) => {
-            assert_eq!(user_id, user.id, "User ID mismatch");
+            if user_id != user.id {
+                tracing::error!(%user_id, %user.id, "User ID mismatch after permission check");
+                return Err(poem::Error::from_status(StatusCode::FORBIDDEN));
+            }
             let stats = UploadStats::get_for_user(&env.pool, user.id)
                 .await
                 .map_err(InternalServerError)?;
@@ -223,7 +227,10 @@ pub async fn delete_upload(
             (stats, team.limit, Some(team))
         }
 
-        (_, _) => unreachable!("Upload has no owner"),
+        (_, _) => {
+            tracing::error!(%upload.id, "Upload has invalid ownership state");
+            return Err(poem::Error::from_status(StatusCode::INTERNAL_SERVER_ERROR));
+        }
     };
 
     let home = HomeTab::get_for_user(&env.pool, user.id)
