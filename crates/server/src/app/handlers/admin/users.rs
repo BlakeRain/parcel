@@ -38,7 +38,7 @@ pub async fn get_users(
     csrf_token: &CsrfToken,
     SessionAdmin(admin): SessionAdmin,
 ) -> poem::Result<Response> {
-    let users = UserList::get(&env.pool).await.map_err(|err| {
+    let users = UserList::get_with_pagination(&env.pool, 0, 50).await.map_err(|err| {
         tracing::error!(err = ?err, "Failed to get list of users");
         InternalServerError(err)
     })?;
@@ -48,12 +48,35 @@ pub async fn get_users(
         context! {
             users,
             csrf_token => csrf_token.0,
+            page => 0,
             ..authorized_context(&env, &admin)
         },
     )
     .await?
     .with_header("HX-Trigger", "closeModals")
     .into_response())
+}
+
+#[handler]
+pub async fn get_users_page(
+    env: Data<&Env>,
+    SessionAdmin(admin): SessionAdmin,
+    Path(page): Path<u32>,
+) -> poem::Result<Html<String>> {
+    let users = UserList::get_with_pagination(&env.pool, page * 50, 50).await.map_err(|err| {
+        tracing::error!(err = ?err, page = page, "Failed to get page of users");
+        InternalServerError(err)
+    })?;
+
+    render_template(
+        "admin/users/page.html",
+        context! {
+            users,
+            page,
+            ..authorized_context(&env, &admin)
+        },
+    )
+    .await
 }
 
 #[handler]

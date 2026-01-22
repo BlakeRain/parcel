@@ -374,6 +374,14 @@ pub struct UserList {
 
 impl UserList {
     pub async fn get(pool: &SqlitePool) -> sqlx::Result<Vec<UserList>> {
+        Self::get_with_pagination(pool, 0, 50).await
+    }
+
+    pub async fn get_with_pagination(
+        pool: &SqlitePool,
+        offset: u32,
+        limit: u32,
+    ) -> sqlx::Result<Vec<UserList>> {
         sqlx::query_as(
             "WITH team_counts AS (
                 SELECT user, COUNT(*) AS team_count FROM team_members GROUP BY user
@@ -399,8 +407,11 @@ impl UserList {
             LEFT JOIN team_counts tc ON tc.user = users.id \
             LEFT JOIN upload_counts uc ON uc.user = users.id \
             LEFT JOIN users AS created_by ON created_by.id = users.created_by \
-            ORDER BY users.username",
+            ORDER BY users.username \
+            LIMIT $1 OFFSET $2",
         )
+        .bind(limit as i64)
+        .bind(offset as i64)
         .fetch_all(pool)
         .await
     }

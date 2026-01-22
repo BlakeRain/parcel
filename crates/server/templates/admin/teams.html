@@ -47,66 +47,7 @@
       </tr>
     </thead>
     <tbody>
-      {% if teams | length == 0 %}
-        <tr>
-          <td colspan="9" class="text-center text-gray-500 dark:text-gray-400">
-            No teams found
-          </td>
-        </tr>
-      {% endif %}
-      {% for team in teams %}
-        <tr>
-          <td class="text-left">
-            <div class="flex flex-row items-center gap-1 text-nowrap">
-              <span class="font-mono">{{ team.id | substr(start=0, len=8) }} … {{ team.id | substr(start=-4) }}</span>
-              <parcel-clipboard value="{{ team.id }}"></parcel-clipboard>
-            </div>
-          </td>
-          <td class="text-left">{{ team.name }}</td>
-          <td class="text-center {% if team.enabled %}text-success{% else %}text-danger{% endif %}">
-            {% if team.enabled %}Yes{% else %}No{% endif %}
-          </td>
-          <td class="text-right">{{ team.member_count }}</td>
-          <td class="text-right">{{ team.upload_count }}</td>
-          <td class="text-right">{{ team.upload_total | filesizeformat }}</td>
-          <td class="text-right">
-            {% if team.limit is number %}
-              {{ team.limit | filesizeformat }}
-            {% else %}
-              <i>No Limit</i>
-            {% endif %}
-          </td>
-          <td class="text-left">{{ team.created_at | datetime }}</td>
-          <td class="text-right">
-            <parcel-dropdown>
-              <div class="dropdown-list">
-                <a
-                  href="#"
-                  title="Edit this team"
-                  hx-get="/admin/teams/{{ team.id }}"
-                  hx-target="body"
-                  hx-swap="beforeend">
-                  <span class="icon-pencil"></span>
-                  Edit team &hellip;
-                </a>
-                <a
-                  href="#"
-                  title="Delete this team"
-                  hx-delete="/admin/teams/{{ team.id }}"
-                  hx-include="[name='csrf_token']"
-                  hx-confirm="Are you sure you want to delete this team?"
-                  hx-target="#teams-list-container"
-                  hx-select="#teams-list-container"
-                  hx-swap="outerHTML"
-                  class="text-danger">
-                  <span class="icon-trash"></span>
-                  Delete team &hellip;
-                </a>
-              </div>
-            </parcel-dropdown>
-          </td>
-        </tr>
-      {% endfor %}
+      {% include "admin/teams/page.html" %}
     </tbody>
   </table>
 </div>

@@ -111,8 +111,10 @@ pub fn create_app(
         "/admin"                        handlers::admin::admin                  GET
         "/admin/setup"                  handlers::admin::setup::setup           GET POST
         "/admin/uploads"                handlers::admin::uploads::uploads       GET
+        "/admin/uploads/page/:page"     handlers::admin::uploads::uploads_page  GET
         "/admin/uploads/cache"          handlers::admin::uploads::cache         GET POST DELETE
         "/admin/users"                  handlers::admin::users::users           GET
+        "/admin/users/page/:page"       handlers::admin::users::users_page      GET
         "/admin/users/new"              handlers::admin::users::new             GET POST
         "/admin/users/new/username"     handlers::admin::users::new_username        POST
         "/admin/users/:id"              handlers::admin::users::user            GET POST DELETE
@@ -121,6 +123,7 @@ pub fn create_app(
         "/admin/users/:id/masquerade"   handlers::admin::users::masquerade      GET
         "/admin/users/:id/username"     handlers::admin::users::check_username      POST
         "/admin/teams"                  handlers::admin::teams::teams           GET
+        "/admin/teams/page/:page"       handlers::admin::teams::teams_page      GET
         "/admin/teams/new"              handlers::admin::teams::new             GET POST
         "/admin/teams/new/slug"         handlers::admin::teams::check_new_slug      POST
         "/admin/teams/:id"              handlers::admin::teams::team            GET POST DELETE
@@ -144,7 +147,9 @@ pub fn create_app(
                 cors.allow_credentials(false)
             } else {
                 // Configure with explicit allowed origins
-                cors_origins.iter().fold(cors, |c, origin| c.allow_origin(origin))
+                cors_origins
+                    .iter()
+                    .fold(cors, |c, origin| c.allow_origin(origin))
                     .allow_credentials(true)
             }
         })

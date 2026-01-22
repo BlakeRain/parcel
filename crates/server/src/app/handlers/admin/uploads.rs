@@ -2,7 +2,7 @@ use minijinja::context;
 use poem::{
     error::InternalServerError,
     handler,
-    web::{CsrfToken, CsrfVerifier, Data, Form, Html, Query},
+    web::{CsrfToken, CsrfVerifier, Data, Form, Html, Path, Query},
 };
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
@@ -49,8 +49,11 @@ pub async fn get_uploads(
                 uploads.uploaded_at, uploads.remote_addr
         FROM uploads
         LEFT OUTER JOIN users ON users.id = uploads.uploaded_by
-        ORDER BY uploaded_at DESC",
+        ORDER BY uploaded_at DESC
+        LIMIT $1 OFFSET $2",
     )
+    .bind(50 as i64)
+    .bind(0 as i64)
     .fetch_all(&env.pool)
     .await
     .map_err(|err| {
@@ -62,6 +65,44 @@ pub async fn get_uploads(
         "admin/uploads.html",
         context! {
             uploads,
+            page => 0,
+            ..authorized_context(&env, &admin)
+        },
+    )
+    .await
+}
+
+#[handler]
+pub async fn get_uploads_page(
+    env: Data<&Env>,
+    SessionAdmin(admin): SessionAdmin,
+    Path(page): Path<u32>,
+) -> poem::Result<Html<String>> {
+    let uploads = sqlx::query_as::<_, UploadListItem>(
+        "SELECT uploads.id, uploads.slug, uploads.filename, uploads.size, uploads.public,
+                uploads.downloads, uploads.\"limit\", uploads.remaining, uploads.expiry_date,
+                uploads.uploaded_by as uploaded_by_id,
+                users.username as uploaded_by_name,
+                uploads.uploaded_at, uploads.remote_addr
+        FROM uploads
+        LEFT OUTER JOIN users ON users.id = uploads.uploaded_by
+        ORDER BY uploaded_at DESC
+        LIMIT $1 OFFSET $2",
+    )
+    .bind(50 as i64)
+    .bind((page * 50) as i64)
+    .fetch_all(&env.pool)
+    .await
+    .map_err(|err| {
+        tracing::error!(err = ?err, page = page, "Failed to fetch page of uploads");
+        InternalServerError(err)
+    })?;
+
+    render_template(
+        "admin/uploads/page.html",
+        context! {
+            uploads,
+            page,
             ..authorized_context(&env, &admin)
         },
     )

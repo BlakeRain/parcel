@@ -34,7 +34,7 @@ pub async fn get_teams(
     csrf_token: &CsrfToken,
     SessionAdmin(admin): SessionAdmin,
 ) -> poem::Result<Response> {
-    let teams = TeamList::get(&env.pool).await.map_err(|err| {
+    let teams = TeamList::get_with_pagination(&env.pool, 0, 50).await.map_err(|err| {
         tracing::error!(?err, "Failed to get list of teams");
         InternalServerError(err)
     })?;
@@ -44,12 +44,35 @@ pub async fn get_teams(
         context! {
             teams,
             csrf_token => csrf_token.0,
+            page => 0,
             ..authorized_context(&env, &admin)
         },
     )
     .await?
     .with_header("HX-Trigger", "closeModals")
     .into_response())
+}
+
+#[handler]
+pub async fn get_teams_page(
+    env: Data<&Env>,
+    SessionAdmin(admin): SessionAdmin,
+    Path(page): Path<u32>,
+) -> poem::Result<Html<String>> {
+    let teams = TeamList::get_with_pagination(&env.pool, page * 50, 50).await.map_err(|err| {
+        tracing::error!(?err, page = page, "Failed to get page of teams");
+        InternalServerError(err)
+    })?;
+
+    render_template(
+        "admin/teams/page.html",
+        context! {
+            teams,
+            page,
+            ..authorized_context(&env, &admin)
+        },
+    )
+    .await
 }
 
 #[handler]

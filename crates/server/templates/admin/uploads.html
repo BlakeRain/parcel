@@ -38,57 +38,7 @@
       </tr>
     </thead>
     <tbody>
-      {% for upload in uploads %}
-        <tr>
-          <td>
-            <div class="flex flex-row items-center gap-1 text-nowrap">
-              <span class="font-mono">{{ upload.id | substr(start=0, len=8) }} … {{ upload.id | substr(start=-4) }}</span>
-              <parcel-clipboard value="{{ upload.id }}"></parcel-clipboard>
-            </div>
-          </td>
-          <td class="text-left text-nowrap">
-            <a href="/uploads/{{ upload.slug }}" target="_blank">
-              {{ upload.slug }}
-            </a>
-          </td>
-          <td class="text-left">
-            {{ upload.filename }}
-          </td>
-          <td class="text-nowrap">
-            {% if upload.public %}Public{% else %}Private{% endif %}
-          </td>
-          <td class="text-right text-nowrap">
-            {{ upload.downloads }}
-          </td>
-          <td class="text-right text-nowrap">
-            {% if upload.limit %}
-              {{ upload.limit }} ({{ upload.remaining }} remaining)
-            {% else %}
-              &#8734;
-            {% endif %}
-          </td>
-          <td class="text-left text-nowrap">
-            {% if upload.expiry_date %}
-              <parcel-date value="{{ upload.expiry_date | date }}">
-                {{ upload.expiry_date | date }}
-              </parcel-date>
-            {% else %}
-              <i>Never</i>
-            {% endif %}
-          </td>
-          <td class="text-left text-nowrap">
-            <parcel-datetime value="{{ upload.uploaded_at | datetime }}">
-              {{ upload.uploaded_at | datetime }}
-            </parcel-datetime>
-          </td>
-          <td class="text-left text-nowrap">
-            {{ upload.uploaded_by_name }}
-          </td>
-          <td class="text-left text-nowrap">
-            <code>{{ upload.remote_addr }}</code>
-          </td>
-        </tr>
-      {% endfor %}
+      {% include "admin/uploads/page.html" %}
     </tbody>
   </table>
 </div>

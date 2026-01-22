@@ -359,6 +359,14 @@ pub struct TeamList {
 
 impl TeamList {
     pub async fn get(pool: &SqlitePool) -> sqlx::Result<Vec<TeamList>> {
+        Self::get_with_pagination(pool, 0, 50).await
+    }
+
+    pub async fn get_with_pagination(
+        pool: &SqlitePool,
+        offset: u32,
+        limit: u32,
+    ) -> sqlx::Result<Vec<TeamList>> {
         sqlx::query_as(
             "SELECT \
             teams.id, teams.name, teams.enabled, teams.\"limit\", teams.created_at, \
@@ -368,8 +376,11 @@ impl TeamList {
             FROM teams \
             LEFT JOIN uploads ON uploads.owner_team = teams.id \
             GROUP BY teams.id \
-            ORDER BY teams.name ASC",
+            ORDER BY teams.name ASC \
+            LIMIT $1 OFFSET $2",
         )
+        .bind(limit as i64)
+        .bind(offset as i64)
         .fetch_all(pool)
         .await
     }
