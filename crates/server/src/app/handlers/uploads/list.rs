@@ -50,43 +50,45 @@ pub async fn get_list(
     csrf_token: &CsrfToken,
     Query(query): Query<ListQuery>,
 ) -> poem::Result<Html<String>> {
-    let has_teams = user.has_teams(&env.pool).await.map_err(|err| {
+    // Execute all database queries in parallel
+    let (has_teams_result, home_result, tabs_result, stats_result, uploads_result) = tokio::join!(
+        user.has_teams(&env.pool),
+        HomeTab::get_for_user(&env.pool, user.id),
+        TeamTab::get_for_user(&env.pool, user.id),
+        UploadStats::get_for_user(&env.pool, user.id),
+        UploadList::get_for_user(
+            &env.pool,
+            user.id,
+            query.get_search(),
+            query.order.unwrap_or(user.default_order),
+            query.asc.unwrap_or(user.default_asc),
+            0,
+            50,
+        )
+    );
+
+    // Handle errors for each parallel query result
+    let has_teams = has_teams_result.map_err(|err| {
         tracing::error!(%user.id, ?err, "Unable to check if user has teams");
         InternalServerError(err)
     })?;
 
-    let home = HomeTab::get_for_user(&env.pool, user.id)
-        .await
-        .map_err(|err| {
-            tracing::error!(%user.id, ?err, "Unable to get home tab for user");
-            poem::error::InternalServerError(err)
-        })?;
+    let home = home_result.map_err(|err| {
+        tracing::error!(%user.id, ?err, "Unable to get home tab for user");
+        poem::error::InternalServerError(err)
+    })?;
 
-    let tabs = TeamTab::get_for_user(&env.pool, user.id)
-        .await
-        .map_err(|err| {
-            tracing::error!(%user.id, ?err, "Unable to get team tabs for user");
-            poem::error::InternalServerError(err)
-        })?;
+    let tabs = tabs_result.map_err(|err| {
+        tracing::error!(%user.id, ?err, "Unable to get team tabs for user");
+        poem::error::InternalServerError(err)
+    })?;
 
-    let stats = UploadStats::get_for_user(&env.pool, user.id)
-        .await
-        .map_err(|err| {
-            tracing::error!(?err, %user.id, "Failed to get upload stats for user");
-            InternalServerError(err)
-        })?;
+    let stats = stats_result.map_err(|err| {
+        tracing::error!(?err, %user.id, "Failed to get upload stats for user");
+        InternalServerError(err)
+    })?;
 
-    let uploads = UploadList::get_for_user(
-        &env.pool,
-        user.id,
-        query.get_search(),
-        query.order.unwrap_or(user.default_order),
-        query.asc.unwrap_or(user.default_asc),
-        0,
-        50,
-    )
-    .await
-    .map_err(|err| {
+    let uploads = uploads_result.map_err(|err| {
         tracing::error!(%user.id, ?err, "Unable to get uploads for user");
         InternalServerError(err)
     })?;
