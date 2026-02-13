@@ -93,6 +93,8 @@ pub fn create_app(
         "/uploads/:id/public"           handlers::uploads::public                   POST
         "/uploads/:id/reset"            handlers::uploads::reset                    POST
         "/uploads/:id/share"            handlers::uploads::share                GET
+        "/uploads/:id/tags"             handlers::uploads::tags                 GET
+        "/uploads/:id/tags/edit"        handlers::uploads::tags_edit            GET POST
         "/uploads/:id/transfer"         handlers::uploads::transfer             GET POST
         "/uploads/:owner/:slug"         handlers::uploads::custom_upload        GET
         "/teams/:id"                    handlers::teams::team                   GET

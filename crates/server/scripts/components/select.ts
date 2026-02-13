@@ -83,7 +83,7 @@ const WithState: FunctionComponent<{ selector?: string }> = ({
 }) => {
   const [state, dispatch] = useReducer(
     reduceState,
-    createInitialState(selector),
+    createInitialState(selector)
   );
   return html`
     <${StateContext.Provider} value=${{ state, dispatch }}>
@@ -144,12 +144,12 @@ const ParcelSelectDropdown: FunctionComponent<{ name: string }> = ({
   };
 
   const optionElements = options.map(
-    (option) => html`<${ParcelSelectOption} name=${name} option=${option} />`,
+    (option) => html`<${ParcelSelectOption} name=${name} option=${option} />`
   );
 
   return html`
     <div class="parcel-select-options">
-      <div class="flex flex-row justify-between mx-2 py-2">
+      <div class="flex flex-row justify-between mx-2 py-2 gap-2 text-nowrap">
         <a href="#" onclick=${onSelectAllClick}>Select all</a>
         <a
           href="#"
@@ -163,33 +163,39 @@ const ParcelSelectDropdown: FunctionComponent<{ name: string }> = ({
   `;
 };
 
-const ParcelSelectInfo: FunctionComponent<{ placeholder?: string }> = ({
-  placeholder,
-}) => {
+const ParcelSelectInfo: FunctionComponent<{
+  noun?: string;
+  placeholder?: string;
+}> = ({ noun, placeholder }) => {
   const options = useContext(OptionsContext);
   const { state } = useContext(StateContext);
 
+  const nounSingular = noun ? noun : "option";
+  const nounPlural = noun ? `${noun}s` : "options";
+
   const names = options
     .filter((option) => state.checked.has(option.value))
-    .map((option) => option.label)
-    .join(", ");
+    .map((option) => html`<span class="option">${option.label}</span>`);
 
   return html`
-    <div class="grow noselect">
+    <div
+      class="grow noselect ${state.checked.size === 0 ? "text-gray-500" : ""}"
+    >
       <span
         >${state.checked.size == 0
-          ? placeholder || "No selection"
-          : `${state.checked.size} selected:`}</span
+          ? placeholder || `No ${nounPlural}`
+          : `${state.checked.size} ${
+              state.checked.size === 1 ? nounSingular : nounPlural
+            }:`}</span
       >
-      <span class="text-ellipsis ml-1 italic text-gray-500 dark:text-gray-500"
-        >${names}</span
-      >
+      <span class="parcel-selections">${names}</span>
     </div>
   `;
 };
 
 const ParcelSelect: FunctionComponent<{
   name: string;
+  noun?: string;
   class?: string;
   placeholder?: string;
 }> = (props) => {
@@ -222,7 +228,10 @@ const ParcelSelect: FunctionComponent<{
       class="parcel-select ${props.class} ${state.open ? "open" : ""}"
       onclick=${onOuterClick}
     >
-      <${ParcelSelectInfo} placeholder=${props.placeholder} />
+      <${ParcelSelectInfo}
+        noun=${props.noun}
+        placeholder=${props.placeholder}
+      />
       <${ParcelSelectDropdown} name=${props.name} />
     </div>
   `;
@@ -234,11 +243,12 @@ const ParcelSelectOuter: FunctionComponent<{
   values?: string;
   class?: string;
   placeholder?: string;
+  noun?: string;
 }> = (props) => {
   return html`
     <${WithOptions} selector=${props.options}>
       <${WithState} selector=${props.values}>
-        <${ParcelSelect} name=${props.name} class=${props.class} placeholder=${props.placeholder} />
+        <${ParcelSelect} name=${props.name} noun=${props.noun} class=${props.class} placeholder=${props.placeholder} />
       </${WithState}>
     </${WithOptions}>
   `;
@@ -248,6 +258,8 @@ export function register() {
   registerElement(ParcelSelectOuter, "parcel-select", [
     "name",
     "class",
+    "noun",
     "options",
+    "values",
   ]);
 }

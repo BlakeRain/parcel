@@ -34,12 +34,12 @@ pub async fn get_upload_by_slug(env: &Env, slug: &str) -> poem::Result<Upload> {
     Ok(upload)
 }
 
-pub async fn check_permission(
+pub async fn has_permission(
     env: &Env,
     upload: &Upload,
     user: Option<&User>,
     permission: UploadPermission,
-) -> poem::Result<()> {
+) -> poem::Result<bool> {
     let granted = upload
         .can_access(&env.pool, user, permission)
         .await
@@ -47,6 +47,17 @@ pub async fn check_permission(
             tracing::error!(?err, upload = %upload.id, "Error checking upload permission");
             InternalServerError(err)
         })?;
+
+    Ok(granted)
+}
+
+pub async fn check_permission(
+    env: &Env,
+    upload: &Upload,
+    user: Option<&User>,
+    permission: UploadPermission,
+) -> poem::Result<()> {
+    let granted = has_permission(env, upload, user, permission).await?;
 
     if !granted {
         let uid = user.map(|u| u.id);

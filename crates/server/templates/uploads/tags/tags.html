@@ -1,0 +1,13 @@
+<div
+  id="upload-tags-{{ upload.id }}"
+  class="ml-auto flex flex-row gap-1 items-center"
+  hx-swap-oob="true">
+  {% if tags | length > 0 -%}
+    {% for tag in tags -%}
+      <a
+        href="#"
+        title="Filter by tag: {{ tag }}"
+        class="tag">{{ tag }}</a>
+    {%- endfor %}
+  {%- endif %}
+</div>
