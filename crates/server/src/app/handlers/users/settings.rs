@@ -10,7 +10,7 @@ use poem::{
     web::{CsrfToken, CsrfVerifier, Data, Form, Html, Redirect},
     IntoResponse, Response,
 };
-use rand::Rng;
+use rand::RngExt;
 use serde::Deserialize;
 use validator::Validate;
 

@@ -1,3 +1,4 @@
+pub mod connection;
 pub mod login_attempt;
 pub mod migration;
 pub mod password;

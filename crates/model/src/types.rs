@@ -119,6 +119,12 @@ impl<'de, T> serde::Deserialize<'de> for Key<T> {
     }
 }
 
+impl<T> Into<libsql::Value> for Key<T> {
+    fn into(self) -> libsql::Value {
+        libsql::Value::Text(self.value.to_string())
+    }
+}
+
 impl<T> sqlx::Type<Sqlite> for Key<T> {
     fn type_info() -> <Sqlite as Database>::TypeInfo {
         <uuid::fmt::Hyphenated as sqlx::Type<Sqlite>>::type_info()

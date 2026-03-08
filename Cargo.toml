@@ -16,11 +16,14 @@ argon2 = { version = "0.5", features = ["std"] }
 base32 = { version = "0.5" }
 base64 = { version = "0.22" }
 clap = { version = "4.4", features = ["derive", "env", "wrap_help"] }
+futures-core = { version = "0.3" }
 humansize = { version = "2.1" }
 humantime = { version = "2.2" }
+libsql = { version = "0.9", features = ["remote"] }
+log = { version = "0.4" }
 pbkdf2 = { version = "0.12", features = ["simple"] }
-rand_core = { version = "0.9", features = ["std"] }
-rand = { version = "0.9" }
+rand_core = { version = "0.10" }
+rand = { version = "0.10" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
 shellexpand = { version = "3.1" }
@@ -29,9 +32,10 @@ thiserror = { version = "2.0" }
 time = { version = "0.3", features = ["formatting", "macros", "serde"] }
 time-humanize = { version = "0.1" }
 tokio = { version = "1.32", features = ["full"] }
-toml = { version = "0.9" }
+toml = { version = "1.0" }
 tracing = { version = "0.1", features = ["log"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+url = { version = "2.5" }
 uuid = { version = "1.11", features = ["v4", "serde"] }
 
 parcel-model = { path = "crates/model" }

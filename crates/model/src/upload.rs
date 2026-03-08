@@ -62,6 +62,19 @@ impl UploadOrder {
     }
 }
 
+impl Into<libsql::Value> for UploadOrder {
+    fn into(self) -> libsql::Value {
+        match self {
+            Self::Filename => "filename",
+            Self::Size => "size",
+            Self::Downloads => "downloads",
+            Self::ExpiryDate => "expiry_date",
+            Self::UploadedAt => "uploaded_at",
+        }
+        .into()
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum UploadPermission {
     View,
@@ -709,10 +722,7 @@ impl UploadList {
                 .fetch_all(pool)
                 .await
         } else {
-            sqlx::query_as(&base_query)
-                .bind(user)
-                .fetch_all(pool)
-                .await
+            sqlx::query_as(&base_query).bind(user).fetch_all(pool).await
         }
     }
 
@@ -760,10 +770,7 @@ impl UploadList {
                 .fetch_all(pool)
                 .await
         } else {
-            sqlx::query_as(&base_query)
-                .bind(team)
-                .fetch_all(pool)
-                .await
+            sqlx::query_as(&base_query).bind(team).fetch_all(pool).await
         }
     }
 }

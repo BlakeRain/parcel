@@ -1,20 +1,22 @@
 use std::collections::HashSet;
 
 use anyhow::Context;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, QueryBuilder, SqlitePool};
-use time::OffsetDateTime;
+use time::{format_description::well_known::Rfc3339, OffsetDateTime};
+
+use crate::connection::Connection;
 
 use super::{password::StoredPassword, team::Team, types::Key, upload::UploadOrder};
 
-#[derive(FromRow, Serialize)]
+#[derive(FromRow, Deserialize, Serialize)]
 pub struct User {
     pub id: Key<User>,
     pub username: String,
     pub name: String,
-    #[serde(skip)]
+    #[serde(skip_serializing)]
     pub password: StoredPassword,
-    #[serde(skip)]
+    #[serde(skip_serializing)]
     pub totp: Option<String>,
     pub enabled: bool,
     pub admin: bool,
@@ -26,16 +28,48 @@ pub struct User {
     pub default_asc: bool,
 }
 
-pub async fn requires_setup(pool: &SqlitePool) -> sqlx::Result<bool> {
-    let count = sqlx::query_scalar::<_, i32>("SELECT COUNT(*) FROM users")
-        .fetch_one(pool)
+pub async fn requires_setup(connection: &Connection) -> anyhow::Result<bool> {
+    let count = connection
+        .query_scalar::<i32, _>("SELECT COUNT(*) FROM users", ())
         .await?;
-
     Ok(count == 0)
 }
 
 impl User {
-    pub async fn create(&self, pool: &SqlitePool) -> sqlx::Result<()> {
+    pub async fn create(&self, connection: &Connection) -> anyhow::Result<()> {
+        let result = connection
+            .execute(
+                "INSERT INTO users \
+            (id, username, name, password, enabled, admin, \
+             \"limit\", created_at, created_by, \
+             default_order, default_asc) \
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+                (
+                    self.id,
+                    self.username.clone(),
+                    self.name.clone(),
+                    self.password.clone(),
+                    self.enabled,
+                    self.admin,
+                    self.limit,
+                    self.created_at
+                        .format(&Rfc3339)
+                        .context("failed to format date")?,
+                    self.created_by,
+                    self.default_order,
+                    self.default_asc,
+                ),
+            )
+            .await?;
+
+        if result != 1 {
+            anyhow::bail!("Failed to create user");
+        }
+
+        Ok(())
+    }
+
+    pub async fn create_old(&self, pool: &SqlitePool) -> sqlx::Result<()> {
         sqlx::query(
             "INSERT INTO users \
             (id, username, name, password, enabled, admin, \
@@ -310,14 +344,17 @@ impl User {
             "INSERT INTO team_members (team, user, can_edit, can_delete, can_config) ",
         );
 
-        query.push_values(teams, |mut builder, (team, can_edit, can_delete, can_config)| {
-            builder
-                .push_bind(*team)
-                .push_bind(self.id)
-                .push_bind(*can_edit)
-                .push_bind(*can_delete)
-                .push_bind(*can_config);
-        });
+        query.push_values(
+            teams,
+            |mut builder, (team, can_edit, can_delete, can_config)| {
+                builder
+                    .push_bind(*team)
+                    .push_bind(self.id)
+                    .push_bind(*can_edit)
+                    .push_bind(*can_delete)
+                    .push_bind(*can_config);
+            },
+        );
 
         query.build().execute(pool).await?;
         Ok(())

@@ -34,6 +34,25 @@ impl TryFrom<&str> for StoredPassword {
     }
 }
 
+impl<'de> serde::Deserialize<'de> for StoredPassword {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Ok(StoredPassword::try_from(s.as_str()).map_err(serde::de::Error::custom)?)
+    }
+}
+
+impl libsql::params::IntoValue for StoredPassword {
+    fn into_value(self) -> libsql::Result<libsql::Value> {
+        Ok(libsql::Value::Text(match self {
+            Self::Pbkdf2(password) => password,
+            Self::Argon2(password) => password,
+        }))
+    }
+}
+
 impl sqlx::Type<Sqlite> for StoredPassword {
     fn type_info() -> <Sqlite as Database>::TypeInfo {
         <String as sqlx::Type<Sqlite>>::type_info()
