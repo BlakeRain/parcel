@@ -71,7 +71,7 @@ jobs:
           images: ghcr.io/${{ github.repository }}
       - name: Build and publish the Docker image
         id: push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
@@ -109,7 +109,7 @@ jobs:
             suffix=-libreoffice,latest=true
       - name: Build and publish the Docker image
         id: push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
