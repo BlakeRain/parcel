@@ -59,7 +59,7 @@ jobs:
       - name: Checkout the repository
         uses: actions/checkout@v6
       - name: Log in to the Container Registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        uses: docker/login-action@db14339dbc0a1f0b184157be94b23a2138122354
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -95,7 +95,7 @@ jobs:
       - name: Checkout the repository
         uses: actions/checkout@v6
       - name: Log in to the Container Registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        uses: docker/login-action@db14339dbc0a1f0b184157be94b23a2138122354
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
