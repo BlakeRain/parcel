@@ -1,7 +1,9 @@
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, QueryBuilder, SqlitePool};
-use time::{Date, OffsetDateTime};
+use time::{format_description::well_known::Rfc3339, Date, OffsetDateTime};
+
+use crate::connection::{Connection, ConnectionExt};
 
 use super::{
     password::StoredPassword,
@@ -10,7 +12,7 @@ use super::{
     user::User,
 };
 
-#[derive(Debug, Clone, FromRow, Serialize)]
+#[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
 pub struct Upload {
     pub id: Key<Upload>,
     pub slug: String,
@@ -92,250 +94,287 @@ pub enum UploadOwnership {
 }
 
 impl Upload {
-    pub async fn create(&self, pool: &SqlitePool) -> sqlx::Result<()> {
-        sqlx::query(
-            "INSERT INTO uploads (id, slug, filename, size, public,
-            downloads, \"limit\", remaining, expiry_date, password,
-            custom_slug, uploaded_by, uploaded_at, remote_addr,
-            owner_team, owner_user)
-            VALUES ($1, $2, $3, $4, $5,
-                    0, $6, $7, $8, $9,
-                    $10, $11, $12, $13,
-                    $14, $15)
-            RETURNING id",
-        )
-        .bind(self.id)
-        .bind(&self.slug)
-        .bind(&self.filename)
-        .bind(self.size)
-        .bind(self.public)
-        .bind(self.limit)
-        .bind(self.remaining)
-        .bind(self.expiry_date)
-        .bind(&self.password)
-        .bind(&self.custom_slug)
-        .bind(self.uploaded_by)
-        .bind(self.uploaded_at)
-        .bind(&self.remote_addr)
-        .bind(self.owner_team)
-        .bind(self.owner_user)
-        .execute(pool)
-        .await?;
+    pub async fn create(&self, connection: &Connection) -> anyhow::Result<()> {
+        connection
+            .execute(
+                "INSERT INTO uploads (id, slug, filename, size, public,
+                downloads, \"limit\", remaining, expiry_date, password,
+                custom_slug, uploaded_by, uploaded_at, remote_addr,
+                owner_team, owner_user)
+                VALUES (?1, ?2, ?3, ?4, ?5,
+                    0, ?6, ?7, ?8, ?9,
+                    ?10, ?11, ?12, ?13,
+                    ?14, ?15)
+                RETURNING id",
+                (
+                    self.id,
+                    self.slug.clone(),
+                    self.filename.clone(),
+                    self.size,
+                    self.public,
+                    self.limit,
+                    self.remaining,
+                    match self.expiry_date {
+                        Some(date) => Some(date.format(&Rfc3339).context("failed to format date")?),
+                        None => None,
+                    },
+                    self.password.clone(),
+                    self.custom_slug.clone(),
+                    self.uploaded_by,
+                    self.uploaded_at
+                        .format(&Rfc3339)
+                        .context("failed to format date")?,
+                    self.remote_addr.clone(),
+                    self.owner_team,
+                    self.owner_user,
+                ),
+            )
+            .await?;
 
         Ok(())
     }
 
-    pub async fn save(&self, pool: &SqlitePool) -> sqlx::Result<()> {
-        let count = sqlx::query(
-            "UPDATE uploads SET
-            filename = $1,
-            size = $2,
-            public = $3,
-            downloads = $4,
-            \"limit\" = $5,
-            remaining = $6,
-            expiry_date = $7,
-            password = $8,
-            custom_slug = $9,
-            owner_team = $10,
-            owner_user = $11
-            WHERE id = $12",
-        )
-        .bind(&self.filename)
-        .bind(self.size)
-        .bind(self.public)
-        .bind(self.downloads)
-        .bind(self.limit)
-        .bind(self.remaining)
-        .bind(self.expiry_date)
-        .bind(&self.password)
-        .bind(&self.custom_slug)
-        .bind(self.owner_team)
-        .bind(self.owner_user)
-        .bind(self.id)
-        .execute(pool)
-        .await?;
+    pub async fn save(&self, connection: &Connection) -> anyhow::Result<()> {
+        let count = connection
+            .execute(
+                "UPDATE uploads SET
+                filename = ?1,
+                size = ?2,
+                public = ?3,
+                downloads = ?4,
+                \"limit\" = ?5,
+                remaining = ?6,
+                expiry_date = ?7,
+                password = ?8,
+                custom_slug = ?9,
+                owner_team = ?10,
+                owner_user = ?11
+                WHERE id = ?12",
+                (
+                    self.filename.clone(),
+                    self.size,
+                    self.public,
+                    self.downloads,
+                    self.limit,
+                    self.remaining,
+                    match self.expiry_date {
+                        Some(date) => Some(date.format(&Rfc3339).context("failed to format date")?),
+                        None => None,
+                    },
+                    self.password.clone(),
+                    self.custom_slug.clone(),
+                    self.owner_team,
+                    self.owner_user,
+                    self.id,
+                ),
+            )
+            .await?;
 
-        if count.rows_affected() == 0 {
-            Err(sqlx::Error::RowNotFound)
+        if count != 1 {
+            anyhow::bail!("Failed to save upload");
         } else {
             Ok(())
         }
     }
 
-    pub async fn set_public(&mut self, pool: &SqlitePool, public: bool) -> sqlx::Result<()> {
-        if public == self.public {
+    pub async fn set_public(
+        &mut self,
+        connection: &Connection,
+        public: bool,
+    ) -> anyhow::Result<()> {
+        if self.public == public {
             return Ok(());
         }
 
-        let count = sqlx::query("UPDATE uploads SET public = $1 WHERE id = $2")
-            .bind(public)
-            .bind(self.id)
-            .execute(pool)
+        let count = connection
+            .execute(
+                "UPDATE uploads SET public = ?1 WHERE id = ?2",
+                (public, self.id),
+            )
             .await?;
 
-        if count.rows_affected() == 0 {
-            return Err(sqlx::Error::RowNotFound);
+        if count != 1 {
+            anyhow::bail!("Failed to set public");
         }
 
         self.public = public;
         Ok(())
     }
 
-    pub async fn get(pool: &SqlitePool, id: Key<Upload>) -> sqlx::Result<Option<Self>> {
-        sqlx::query_as("SELECT * FROM uploads WHERE id = $1")
-            .bind(id)
-            .fetch_optional(pool)
+    pub async fn get(connection: &Connection, id: Key<Upload>) -> anyhow::Result<Option<Self>> {
+        connection
+            .query_optional("SELECT * FROM uploads WHERE id = ?1", [id])
             .await
     }
 
     /// Fetch multiple uploads by their IDs in a single query.
-    pub async fn get_many(pool: &SqlitePool, ids: &[Key<Upload>]) -> sqlx::Result<Vec<Self>> {
+    pub async fn get_many(
+        connection: &Connection,
+        ids: &[Key<Upload>],
+    ) -> anyhow::Result<Vec<Self>> {
         if ids.is_empty() {
             return Ok(Vec::new());
         }
 
-        let mut query = QueryBuilder::new("SELECT * FROM uploads WHERE id IN (");
-        let mut separated = query.separated(", ");
-        for id in ids {
-            separated.push_bind(*id);
-        }
-        separated.push_unseparated(")");
+        let mut query = vec![String::from("SELECT * FROM uploads WHERE id IN (")];
 
-        query.build_query_as().fetch_all(pool).await
+        let mut params = Vec::with_capacity(ids.len());
+
+        for id in ids {
+            query.push(format!("?{}", params.len() + 1));
+            params.push(*id);
+        }
+
+        let query = query.join(", ");
+        let query = format!("{query})");
+
+        connection.query(&query, params).await
     }
 
     /// Delete multiple uploads by their IDs in a single query.
     /// Returns the slugs of the deleted uploads (for cache cleanup).
-    pub async fn delete_many(pool: &SqlitePool, ids: &[Key<Upload>]) -> sqlx::Result<Vec<String>> {
+    pub async fn delete_many(
+        connection: &Connection,
+        ids: &[Key<Upload>],
+    ) -> anyhow::Result<Vec<String>> {
         if ids.is_empty() {
             return Ok(Vec::new());
         }
 
-        let mut query = QueryBuilder::new("DELETE FROM uploads WHERE id IN (");
-        let mut separated = query.separated(", ");
-        for id in ids {
-            separated.push_bind(*id);
-        }
-        separated.push_unseparated(") RETURNING slug");
+        let mut query = vec![String::from("DELETE FROM uploads WHERE id IN (")];
+        let mut params = Vec::with_capacity(ids.len());
 
-        query.build_query_scalar().fetch_all(pool).await
+        for id in ids {
+            query.push(format!("?{}", params.len() + 1));
+            params.push(*id);
+        }
+
+        let query = query.join(", ");
+        let query = format!("{query}) RETURNING slug");
+
+        connection.query_scalars(&query, params).await
     }
 
-    pub async fn get_by_slug(pool: &SqlitePool, slug: &str) -> sqlx::Result<Option<Self>> {
-        sqlx::query_as("SELECT * FROM uploads WHERE slug = ?")
-            .bind(slug)
-            .fetch_optional(pool)
+    pub async fn get_by_slug(connection: &Connection, slug: &str) -> anyhow::Result<Option<Self>> {
+        connection
+            .query_optional(
+                "SELECT * FROM uploads WHERE slug = ?1",
+                [String::from(slug)],
+            )
             .await
     }
 
     /// Check which slugs exist in the database from a list of candidates.
     /// Returns only the slugs that exist.
     pub async fn get_existing_slugs(
-        pool: &SqlitePool,
+        connection: &Connection,
         slugs: &[String],
-    ) -> sqlx::Result<std::collections::HashSet<String>> {
+    ) -> anyhow::Result<std::collections::HashSet<String>> {
         if slugs.is_empty() {
             return Ok(std::collections::HashSet::new());
         }
 
-        let mut query = QueryBuilder::new("SELECT slug FROM uploads WHERE slug IN (");
-        let mut separated = query.separated(", ");
-        for slug in slugs {
-            separated.push_bind(slug);
-        }
-        separated.push_unseparated(")");
+        let mut query = vec![String::from("SELECT slug FROM uploads WHERE slug IN (")];
+        let mut params = Vec::with_capacity(slugs.len());
 
-        let existing: Vec<String> = query.build_query_scalar().fetch_all(pool).await?;
-        Ok(existing.into_iter().collect())
+        for slug in slugs {
+            query.push(format!("?{}", params.len() + 1));
+            params.push(slug.clone());
+        }
+
+        let query = query.join(", ");
+        let query = format!("{query})");
+
+        Ok(connection
+            .query_scalars(&query, params)
+            .await?
+            .into_iter()
+            .collect())
     }
 
     pub async fn get_by_custom_slug(
-        pool: &SqlitePool,
+        connection: &Connection,
         owner: &str,
         custom_slug: &str,
-    ) -> sqlx::Result<Option<Self>> {
-        sqlx::query_as(
-            "SELECT uploads.* FROM uploads \
+    ) -> anyhow::Result<Option<Self>> {
+        connection
+            .query_optional(
+                "SELECT uploads.* FROM uploads \
             LEFT JOIN users ON uploads.owner_user = users.id \
             LEFT JOIN teams ON uploads.owner_team = teams.id \
-            WHERE (users.username = $1 OR teams.slug = $1) AND uploads.custom_slug = $2",
-        )
-        .bind(owner)
-        .bind(custom_slug)
-        .fetch_optional(pool)
-        .await
+            WHERE (users.username = ?1 OR teams.slug = ?1) AND uploads.custom_slug = ?2",
+                (String::from(owner), String::from(custom_slug)),
+            )
+            .await
     }
 
     pub async fn custom_slug_exists(
-        pool: &SqlitePool,
+        connection: &Connection,
         owner: Key<User>,
         existing: Option<Key<Upload>>,
         custom_slug: &str,
-    ) -> sqlx::Result<bool> {
-        let mut query =
-            QueryBuilder::new("SELECT EXISTS(SELECT 1 FROM uploads WHERE owner_user = ");
-
-        query.push_bind(owner);
-        query.push(" AND custom_slug = ");
-        query.push_bind(custom_slug);
-
+    ) -> anyhow::Result<bool> {
         if let Some(existing) = existing {
-            query.push(" AND id != ");
-            query.push_bind(existing);
+            connection
+                .query_scalar(
+                    "SELECT EXISTS (SELECT 1 FROM uploads WHERE owner_user = ?1 AND custom_slug = ?2 AND id != ?3)",
+                    (owner, String::from(custom_slug), existing),
+                )
+                .await
+        } else {
+            connection
+                .query_scalar(
+                    "SELECT EXISTS (SELECT 1 FROM uploads WHERE owner_user = ?1 AND custom_slug = ?2)",
+                    (owner, String::from(custom_slug)),
+                )
+                .await
         }
-
-        query.push(")");
-
-        query.build_query_scalar().fetch_one(pool).await
     }
 
     pub async fn custom_team_slug_exists(
-        pool: &SqlitePool,
+        connection: &Connection,
         owner: Key<Team>,
         existing: Option<Key<Upload>>,
         custom_slug: &str,
-    ) -> sqlx::Result<bool> {
-        let mut query =
-            QueryBuilder::new("SELECT EXISTS(SELECT 1 FROM uploads WHERE owner_team = ");
-
-        query.push_bind(owner);
-        query.push(" AND custom_slug = ");
-        query.push_bind(custom_slug);
-
+    ) -> anyhow::Result<bool> {
         if let Some(existing) = existing {
-            query.push(" AND id != ");
-            query.push_bind(existing);
+            connection
+                .query_scalar(
+                    "SELECT EXISTS (SELECT 1 FROM uploads WHERE owner_team = ?1 AND custom_slug = ?2 AND id != ?3)",
+                    (owner, String::from(custom_slug), existing),
+                )
+                .await
+        } else {
+            connection
+                .query_scalar(
+                    "SELECT EXISTS (SELECT 1 FROM uploads WHERE owner_team = ?1 AND custom_slug = ?2)",
+                    (owner, String::from(custom_slug)),
+                )
+                .await
         }
-
-        query.push(")");
-
-        query.build_query_scalar().fetch_one(pool).await
     }
 
     pub async fn record_download(
         &mut self,
-        pool: &SqlitePool,
+        connection: &Connection,
         user: Option<&User>,
-    ) -> sqlx::Result<()> {
-        let mut query = QueryBuilder::new("UPDATE uploads SET downloads = downloads + 1");
+    ) -> anyhow::Result<()> {
+        let mut query = vec![String::from("UPDATE uploads SET downloads = downloads + 1")];
 
         let public = match user {
             None => false,
-            Some(user) => self.is_owner(pool, user).await?.is_some(),
+            Some(user) => self.is_owner(connection, user).await?.is_some(),
         };
 
         if public && self.remaining.is_some() {
-            query.push(", remaining = MAX(0, remaining - 1)");
+            query.push(String::from(", remaining = MAX(0, remaining - 1)"));
         }
 
-        query.push(" WHERE id = $1 RETURNING downloads, remaining");
+        query.push(String::from(
+            " WHERE id = ?1 RETURNING downloads, remaining",
+        ));
 
-        let (downloads, remaining) = query
-            .build_query_as::<(i64, Option<i64>)>()
-            .bind(self.id)
-            .fetch_one(pool)
-            .await?;
+        let (downloads, remaining) = connection.query_one(&query.join(""), [self.id]).await?;
 
         self.downloads = downloads;
         self.remaining = remaining;
@@ -343,14 +382,16 @@ impl Upload {
         Ok(())
     }
 
-    pub async fn reset_remaining(&self, pool: &SqlitePool) -> sqlx::Result<()> {
-        let count = sqlx::query("UPDATE uploads SET remaining = \"limit\" WHERE id = $1")
-            .bind(self.id)
-            .execute(pool)
+    pub async fn reset_remaining(&self, connection: &Connection) -> anyhow::Result<()> {
+        let count = connection
+            .execute(
+                "UPDATE uploads SET remaining = \"limit\" WHERE id = ?1",
+                [self.id],
+            )
             .await?;
 
-        if count.rows_affected() == 0 {
-            return Err(sqlx::Error::RowNotFound);
+        if count != 1 {
+            anyhow::bail!("Failed to reset remaining downloads");
         }
 
         Ok(())
@@ -495,9 +536,9 @@ impl Upload {
 
     pub async fn is_owner(
         &self,
-        pool: &SqlitePool,
+        connection: &Connection,
         user: &User,
-    ) -> sqlx::Result<Option<UploadOwnership>> {
+    ) -> anyhow::Result<Option<UploadOwnership>> {
         // If this upload is owned by a user, and we are passed that user.
         if matches!(self.owner_user, Some(owner) if owner == user.id) {
             return Ok(Some(UploadOwnership::OwnedByUser));
@@ -506,7 +547,7 @@ impl Upload {
         // If this upload is owned by a team, check the user is a member of that team.
         if let Some(owner) = self.owner_team {
             if let Some(membership) =
-                TeamMember::get_for_user_and_team(pool, user.id, owner).await?
+                TeamMember::get_for_user_and_team(connection, user.id, owner).await?
             {
                 return Ok(Some(UploadOwnership::OwnedByTeam(membership)));
             }

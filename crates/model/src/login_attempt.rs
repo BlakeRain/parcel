@@ -1,7 +1,11 @@
+use anyhow::Context;
 use sqlx::{FromRow, SqlitePool};
-use time::OffsetDateTime;
+use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
-use crate::types::Key;
+use crate::{
+    connection::{Connection, ConnectionExt},
+    types::Key,
+};
 
 /// The number of failed login attempts allowed before locking out an account.
 const LOCKOUT_THRESHOLD: i64 = 10;
@@ -25,25 +29,31 @@ impl LoginAttempt {
     /// This inserts a new record with a generated UUID. The attempt is logged
     /// via tracing for audit purposes.
     pub async fn record(
-        pool: &SqlitePool,
+        connection: &Connection,
         username: &str,
         ip_address: Option<&str>,
         success: bool,
-    ) -> sqlx::Result<()> {
+    ) -> anyhow::Result<()> {
         let id = Key::<LoginAttempt>::new();
         let now = OffsetDateTime::now_utc();
 
-        sqlx::query(
-            "INSERT INTO login_attempts (id, username, ip_address, attempted_at, success) \
-             VALUES ($1, $2, $3, $4, $5)",
-        )
-        .bind(id)
-        .bind(username)
-        .bind(ip_address)
-        .bind(now)
-        .bind(success)
-        .execute(pool)
-        .await?;
+        let result = connection
+            .execute(
+                "INSERT INTO login_attempts (id, username, ip_address, attempted_at, success) \
+            VALUES (?1, ?2, ?3, ?4, ?5)",
+                (
+                    id,
+                    String::from(username),
+                    ip_address.map(String::from),
+                    now.format(&Rfc3339).context("failed to format date")?,
+                    success,
+                ),
+            )
+            .await?;
+
+        if result != 1 {
+            anyhow::bail!("Failed to record login attempt");
+        }
 
         tracing::info!(
             %username,
@@ -59,17 +69,19 @@ impl LoginAttempt {
     ///
     /// Returns `true` if there have been `LOCKOUT_THRESHOLD` or more failed attempts
     /// within the last `LOCKOUT_WINDOW_SECS` seconds.
-    pub async fn is_locked_out(pool: &SqlitePool, username: &str) -> sqlx::Result<bool> {
+    pub async fn is_locked_out(connection: &Connection, username: &str) -> anyhow::Result<bool> {
         let cutoff = OffsetDateTime::now_utc() - time::Duration::seconds(LOCKOUT_WINDOW_SECS);
 
-        let count: i64 = sqlx::query_scalar(
-            "SELECT COUNT(*) FROM login_attempts \
-             WHERE username = $1 AND attempted_at > $2 AND success = 0",
-        )
-        .bind(username)
-        .bind(cutoff)
-        .fetch_one(pool)
-        .await?;
+        let count: i64 = connection
+            .query_scalar(
+                "SELECT COUNT(*) FROM login_attempts \
+                WHERE username = ?1 AND attempted_at > ?2 AND success = 0",
+                (
+                    String::from(username),
+                    cutoff.format(&Rfc3339).context("failed to format date")?,
+                ),
+            )
+            .await?;
 
         let locked = count >= LOCKOUT_THRESHOLD;
 

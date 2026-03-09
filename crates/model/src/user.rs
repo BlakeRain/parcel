@@ -2,10 +2,10 @@ use std::collections::HashSet;
 
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, QueryBuilder, SqlitePool};
+use sqlx::FromRow;
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
-use crate::connection::Connection;
+use crate::connection::{Connection, ConnectionExt};
 
 use super::{password::StoredPassword, team::Team, types::Key, upload::UploadOrder};
 
@@ -69,49 +69,37 @@ impl User {
         Ok(())
     }
 
-    pub async fn create_old(&self, pool: &SqlitePool) -> sqlx::Result<()> {
-        sqlx::query(
-            "INSERT INTO users \
-            (id, username, name, password, enabled, admin, \
-             \"limit\", created_at, created_by, \
-             default_order, default_asc) \
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) \
-            RETURNING id",
-        )
-        .bind(self.id)
-        .bind(&self.username)
-        .bind(&self.name)
-        .bind(&self.password)
-        .bind(self.enabled)
-        .bind(self.admin)
-        .bind(self.limit)
-        .bind(self.created_at)
-        .bind(self.created_by)
-        .bind(self.default_order)
-        .bind(self.default_asc)
-        .execute(pool)
-        .await?;
-
-        Ok(())
-    }
-
-    pub async fn set_username(&mut self, pool: &SqlitePool, username: &str) -> sqlx::Result<()> {
-        sqlx::query("UPDATE users SET username = $1 WHERE id = $2")
-            .bind(username)
-            .bind(self.id)
-            .execute(pool)
+    pub async fn set_username(
+        &mut self,
+        connection: &Connection,
+        username: &str,
+    ) -> anyhow::Result<()> {
+        let result = connection
+            .execute(
+                "UPDATE users SET username = ?1 WHERE id = ?2",
+                (String::from(username), self.id),
+            )
             .await?;
+
+        if result != 1 {
+            anyhow::bail!("Failed to set username");
+        }
 
         self.username = username.to_string();
         Ok(())
     }
 
-    pub async fn set_name(&mut self, pool: &SqlitePool, name: &str) -> sqlx::Result<()> {
-        sqlx::query("UPDATE users SET name = $1 WHERE id = $2")
-            .bind(name)
-            .bind(self.id)
-            .execute(pool)
+    pub async fn set_name(&mut self, connection: &Connection, name: &str) -> anyhow::Result<()> {
+        let result = connection
+            .execute(
+                "UPDATE users SET name = ?1 WHERE id = ?2",
+                (String::from(name), self.id),
+            )
             .await?;
+
+        if result != 1 {
+            anyhow::bail!("Failed to set name");
+        }
 
         self.name = name.to_string();
         Ok(())
@@ -119,42 +107,64 @@ impl User {
 
     pub async fn set_default_order(
         &mut self,
-        pool: &SqlitePool,
+        connection: &Connection,
         order: UploadOrder,
         asc: bool,
-    ) -> sqlx::Result<()> {
-        sqlx::query("UPDATE users SET default_order = $1, default_asc = $2 WHERE id = $3")
-            .bind(order)
-            .bind(asc)
-            .bind(self.id)
-            .execute(pool)
+    ) -> anyhow::Result<()> {
+        let result = connection
+            .execute(
+                "UPDATE users SET default_order = ?1, default_asc = ?2 WHERE id = ?3",
+                (order, asc, self.id),
+            )
             .await?;
+
+        if result != 1 {
+            anyhow::bail!("Failed to set default order");
+        }
 
         self.default_order = order;
         self.default_asc = asc;
         Ok(())
     }
 
-    pub async fn set_password(&mut self, pool: &SqlitePool, password: &str) -> anyhow::Result<()> {
+    pub async fn set_password(
+        &mut self,
+        connection: &Connection,
+        password: &str,
+    ) -> anyhow::Result<()> {
         let password = StoredPassword::new(password).context("failed to hash password")?;
 
-        sqlx::query("UPDATE users SET password = $1 WHERE id = $2")
-            .bind(&password)
-            .bind(self.id)
-            .execute(pool)
+        let result = connection
+            .execute(
+                "UPDATE users SET password = ?1 WHERE id = ?2",
+                (password.clone(), self.id),
+            )
             .await
             .context("failed to update user password")?;
+
+        if result != 1 {
+            anyhow::bail!("Failed to set password");
+        }
 
         self.password = password;
         Ok(())
     }
 
-    pub async fn set_enabled(&mut self, pool: &SqlitePool, enabled: bool) -> sqlx::Result<()> {
-        sqlx::query("UPDATE users SET enabled = $1 WHERE id = $2")
-            .bind(enabled)
-            .bind(self.id)
-            .execute(pool)
+    pub async fn set_enabled(
+        &mut self,
+        connection: &Connection,
+        enabled: bool,
+    ) -> anyhow::Result<()> {
+        let result = connection
+            .execute(
+                "UPDATE users SET enabled = ?1 WHERE id = ?2",
+                (enabled, self.id),
+            )
             .await?;
+
+        if result != 1 {
+            anyhow::bail!("Failed to set enabled");
+        }
 
         self.enabled = enabled;
         Ok(())
@@ -162,30 +172,36 @@ impl User {
 
     pub async fn update(
         &mut self,
-        pool: &SqlitePool,
+        connection: &Connection,
         username: &str,
         name: &str,
         admin: bool,
         enabled: bool,
         limit: Option<i64>,
-    ) -> sqlx::Result<()> {
-        sqlx::query(
-            "UPDATE users SET \
-                username = $1, \
-                name = $2, \
-                enabled = $3, \
-                admin = $4, \
-                \"limit\" = $5 \
-            WHERE id = $6",
-        )
-        .bind(username)
-        .bind(name)
-        .bind(enabled)
-        .bind(admin)
-        .bind(limit)
-        .bind(self.id)
-        .execute(pool)
-        .await?;
+    ) -> anyhow::Result<()> {
+        let result = connection
+            .execute(
+                "UPDATE users SET \
+                username = ?1, \
+                name = ?2, \
+                enabled = ?3, \
+                admin = ?4, \
+                \"limit\" = ?5 \
+            WHERE id = ?6",
+                (
+                    String::from(username),
+                    String::from(name),
+                    enabled,
+                    admin,
+                    limit,
+                    self.id,
+                ),
+            )
+            .await?;
+
+        if result != 1 {
+            anyhow::bail!("Failed to update user");
+        }
 
         self.username = username.to_string();
         self.name = name.to_string();
@@ -195,42 +211,56 @@ impl User {
         Ok(())
     }
 
-    pub async fn record_last_access(&mut self, pool: &SqlitePool) -> sqlx::Result<()> {
+    pub async fn record_last_access(&mut self, connection: &Connection) -> anyhow::Result<()> {
         let now = OffsetDateTime::now_utc();
-        sqlx::query("UPDATE users SET last_access = $1 WHERE id = $2")
-            .bind(now)
-            .bind(self.id)
-            .execute(pool)
+        let result = connection
+            .execute(
+                "UPDATE users SET last_access = ?1 WHERE id = ?2",
+                (
+                    now.format(&Rfc3339).context("failed to format date")?,
+                    self.id,
+                ),
+            )
             .await?;
+
+        if result != 1 {
+            anyhow::bail!("Failed to record last access");
+        }
 
         self.last_access = Some(now);
         Ok(())
     }
 
-    pub async fn get(pool: &SqlitePool, id: Key<User>) -> sqlx::Result<Option<Self>> {
-        sqlx::query_as("SELECT * FROM users WHERE id = ?")
-            .bind(id)
-            .fetch_optional(pool)
+    pub async fn get(connection: &Connection, id: Key<User>) -> anyhow::Result<Option<Self>> {
+        connection
+            .query_optional("SELECT * FROM users WHERE id = ?1", [id])
             .await
     }
 
-    pub async fn get_by_username(pool: &SqlitePool, username: &str) -> sqlx::Result<Option<Self>> {
-        sqlx::query_as("SELECT * FROM users WHERE username = ?")
-            .bind(username)
-            .fetch_optional(pool)
+    pub async fn get_by_username(
+        connection: &Connection,
+        username: &str,
+    ) -> anyhow::Result<Option<Self>> {
+        connection
+            .query_optional(
+                "SELECT * FROM users WHERE username = ?1",
+                [String::from(username)],
+            )
             .await
     }
 
-    pub async fn delete(&self, pool: &SqlitePool) -> sqlx::Result<()> {
-        sqlx::query("DELETE FROM team_members WHERE user = $1")
-            .bind(self.id)
-            .execute(pool)
+    pub async fn delete(&self, connection: &Connection) -> anyhow::Result<()> {
+        connection
+            .execute("DELETE FROM team_members WHERE user = ?1", [self.id])
             .await?;
 
-        sqlx::query("DELETE FROM users WHERE id = $1")
-            .bind(self.id)
-            .execute(pool)
+        let result = connection
+            .execute("DELETE FROM users WHERE id = ?1", [self.id])
             .await?;
+
+        if result != 1 {
+            anyhow::bail!("Failed to delete user");
+        }
 
         Ok(())
     }
@@ -239,50 +269,66 @@ impl User {
         self.password.verify(plain)
     }
 
-    pub async fn set_totp_secret(&mut self, pool: &SqlitePool, secret: &str) -> sqlx::Result<()> {
-        sqlx::query("UPDATE users SET totp = $1 WHERE id = $2")
-            .bind(secret)
-            .bind(self.id)
-            .execute(pool)
+    pub async fn set_totp_secret(
+        &mut self,
+        connection: &Connection,
+        secret: &str,
+    ) -> anyhow::Result<()> {
+        let result = connection
+            .execute(
+                "UPDATE users SET totp = ?1 WHERE id = ?2",
+                (String::from(secret), self.id),
+            )
             .await?;
+
+        if result != 1 {
+            anyhow::bail!("Failed to set TOTP secret");
+        }
 
         self.totp = Some(secret.to_string());
         Ok(())
     }
 
-    pub async fn remove_totp_secret(&mut self, pool: &SqlitePool) -> sqlx::Result<()> {
-        sqlx::query("UPDATE users SET totp = NULL WHERE id = $1")
-            .bind(self.id)
-            .execute(pool)
+    pub async fn remove_totp_secret(&mut self, connection: &Connection) -> anyhow::Result<()> {
+        let result = connection
+            .execute("UPDATE users SET totp = NULL WHERE id = ?1", [self.id])
             .await?;
+
+        if result != 1 {
+            anyhow::bail!("Failed to remove TOTP secret");
+        }
 
         self.totp = None;
         Ok(())
     }
 
-    pub async fn has_teams(&self, pool: &SqlitePool) -> sqlx::Result<bool> {
-        sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM team_members WHERE user = $1)")
-            .bind(self.id)
-            .fetch_one(pool)
+    pub async fn has_teams(&self, connection: &Connection) -> anyhow::Result<bool> {
+        connection
+            .query_scalar(
+                "SELECT EXISTS (SELECT 1 FROM team_members WHERE user = ?1)",
+                [self.id],
+            )
             .await
     }
 
-    pub async fn get_teams(&self, pool: &SqlitePool) -> sqlx::Result<HashSet<Key<Team>>> {
-        Ok(
-            sqlx::query_scalar("SELECT team FROM team_members WHERE user = $1")
-                .bind(self.id)
-                .fetch_all(pool)
-                .await?
-                .into_iter()
-                .collect(),
-        )
+    pub async fn get_teams(&self, connection: &Connection) -> anyhow::Result<HashSet<Key<Team>>> {
+        Ok(connection
+            .query_scalars("SELECT team FROM team_members WHERE user = ?1", [self.id])
+            .await?
+            .into_iter()
+            .collect())
     }
 
-    pub async fn is_member_of(&self, pool: &SqlitePool, team: Key<Team>) -> sqlx::Result<bool> {
-        let result = sqlx::query("SELECT 1 FROM team_members WHERE user = $1 AND team = $2")
-            .bind(self.id)
-            .bind(team)
-            .fetch_optional(pool)
+    pub async fn is_member_of(
+        &self,
+        connection: &Connection,
+        team: Key<Team>,
+    ) -> anyhow::Result<bool> {
+        let result = connection
+            .query_optional::<(i32,), _>(
+                "SELECT 1 FROM team_members WHERE user = ?1 AND team = ?2",
+                (self.id, team),
+            )
             .await?;
 
         Ok(result.is_some())
@@ -290,42 +336,45 @@ impl User {
 
     pub async fn join_team(
         &self,
-        pool: &SqlitePool,
+        connection: &Connection,
         team: Key<Team>,
         can_edit: bool,
         can_delete: bool,
         can_config: bool,
-    ) -> sqlx::Result<()> {
-        sqlx::query(
-            "INSERT INTO team_members \
+    ) -> anyhow::Result<()> {
+        let result = connection
+            .execute(
+                "INSERT INTO team_members \
             (team, user, can_edit, can_delete, can_config) \
-            VALUES ($1, $2, $3, $4, $5)",
-        )
-        .bind(team)
-        .bind(self.id)
-        .bind(can_edit)
-        .bind(can_delete)
-        .bind(can_config)
-        .execute(pool)
-        .await?;
+            VALUES (?1, ?2, ?3, ?4, ?5)",
+                (team, self.id, can_edit, can_delete, can_config),
+            )
+            .await?;
+
+        if result != 1 {
+            anyhow::bail!("Failed to insert team member record");
+        }
+
         Ok(())
     }
 
-    pub async fn leave_team(&self, pool: &SqlitePool, team: Key<Team>) -> sqlx::Result<()> {
-        sqlx::query("DELETE FROM team_members WHERE team = $1 AND user = $2")
-            .bind(team)
-            .bind(self.id)
-            .execute(pool)
+    pub async fn leave_team(&self, connection: &Connection, team: Key<Team>) -> anyhow::Result<()> {
+        connection
+            .execute(
+                "DELETE FROM team_members WHERE team = ?1 AND user = ?2",
+                (team, self.id),
+            )
             .await?;
+
         Ok(())
     }
 
     /// Remove the user from all their current teams.
-    pub async fn leave_all_teams(&self, pool: &SqlitePool) -> sqlx::Result<()> {
-        sqlx::query("DELETE FROM team_members WHERE user = $1")
-            .bind(self.id)
-            .execute(pool)
+    pub async fn leave_all_teams(&self, connection: &Connection) -> anyhow::Result<()> {
+        connection
+            .execute("DELETE FROM team_members WHERE user = ?1", [self.id])
             .await?;
+
         Ok(())
     }
 
@@ -333,67 +382,58 @@ impl User {
     /// Each tuple is (team_id, can_edit, can_delete, can_config).
     pub async fn join_teams(
         &self,
-        pool: &SqlitePool,
+        connection: &Connection,
         teams: &[(Key<Team>, bool, bool, bool)],
-    ) -> sqlx::Result<()> {
-        if teams.is_empty() {
-            return Ok(());
+    ) -> anyhow::Result<()> {
+        for (team, can_edit, can_delete, can_config) in teams.iter() {
+            self.join_team(connection, *team, *can_edit, *can_delete, *can_config)
+                .await?;
         }
 
-        let mut query = QueryBuilder::new(
-            "INSERT INTO team_members (team, user, can_edit, can_delete, can_config) ",
-        );
-
-        query.push_values(
-            teams,
-            |mut builder, (team, can_edit, can_delete, can_config)| {
-                builder
-                    .push_bind(*team)
-                    .push_bind(self.id)
-                    .push_bind(*can_edit)
-                    .push_bind(*can_delete)
-                    .push_bind(*can_config);
-            },
-        );
-
-        query.build().execute(pool).await?;
         Ok(())
     }
 
     pub async fn username_exists(
-        pool: &SqlitePool,
+        connection: &Connection,
         existing: Option<Key<User>>,
         slug: &str,
-    ) -> sqlx::Result<bool> {
-        let mut query = QueryBuilder::new("SELECT EXISTS (SELECT 1 FROM users WHERE username = ");
-        query.push_bind(slug);
-
+    ) -> anyhow::Result<bool> {
         if let Some(existing) = existing {
-            query.push(" AND id != ");
-            query.push_bind(existing);
+            connection
+                .query_scalar(
+                    "SELECT EXISTS (SELECT 1 FROM users WHERE username = ?1 AND id != ?2)",
+                    (String::from(slug), existing),
+                )
+                .await
+        } else {
+            connection
+                .query_scalar(
+                    "SELECT EXISTS (SELECT 1 FROM users WHERE username = ?1)",
+                    [String::from(slug)],
+                )
+                .await
         }
-
-        query.push(")");
-
-        query.build_query_scalar().fetch_one(pool).await
     }
 }
 
-#[derive(Debug, FromRow, Serialize)]
+#[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct UserStats {
     pub count: i32,
     pub enabled: i32,
 }
 
 impl UserStats {
-    pub async fn get(pool: &SqlitePool) -> sqlx::Result<UserStats> {
-        sqlx::query_as("SELECT COUNT(*) AS count, SUM(enabled) AS enabled FROM users")
-            .fetch_one(pool)
+    pub async fn get(connection: &Connection) -> anyhow::Result<UserStats> {
+        connection
+            .query_one(
+                "SELECT COUNT(*) AS count, SUM(enabled) AS enabled FROM users",
+                (),
+            )
             .await
     }
 }
 
-#[derive(Debug, FromRow, Serialize)]
+#[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct UserList {
     pub id: Key<User>,
     pub username: String,
@@ -410,17 +450,18 @@ pub struct UserList {
 }
 
 impl UserList {
-    pub async fn get(pool: &SqlitePool) -> sqlx::Result<Vec<UserList>> {
-        Self::get_with_pagination(pool, 0, 50).await
+    pub async fn get(connection: &Connection) -> anyhow::Result<Vec<UserList>> {
+        Self::get_with_pagination(connection, 0, 50).await
     }
 
     pub async fn get_with_pagination(
-        pool: &SqlitePool,
+        connection: &Connection,
         offset: u32,
         limit: u32,
-    ) -> sqlx::Result<Vec<UserList>> {
-        sqlx::query_as(
-            "WITH team_counts AS (
+    ) -> anyhow::Result<Vec<UserList>> {
+        connection
+            .query(
+                "WITH team_counts AS (
                 SELECT user, COUNT(*) AS team_count FROM team_members GROUP BY user
             ), upload_counts AS (
                 SELECT uploaded_by AS user, \
@@ -445,11 +486,9 @@ impl UserList {
             LEFT JOIN upload_counts uc ON uc.user = users.id \
             LEFT JOIN users AS created_by ON created_by.id = users.created_by \
             ORDER BY users.username \
-            LIMIT $1 OFFSET $2",
-        )
-        .bind(limit as i64)
-        .bind(offset as i64)
-        .fetch_all(pool)
-        .await
+            LIMIT ?1 OFFSET ?2",
+                (limit as i64, offset as i64),
+            )
+            .await
     }
 }

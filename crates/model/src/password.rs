@@ -44,12 +44,12 @@ impl<'de> serde::Deserialize<'de> for StoredPassword {
     }
 }
 
-impl libsql::params::IntoValue for StoredPassword {
-    fn into_value(self) -> libsql::Result<libsql::Value> {
-        Ok(libsql::Value::Text(match self {
-            Self::Pbkdf2(password) => password,
-            Self::Argon2(password) => password,
-        }))
+impl Into<libsql::Value> for StoredPassword {
+    fn into(self) -> libsql::Value {
+        match self {
+            Self::Pbkdf2(password) => libsql::Value::Text(password),
+            Self::Argon2(password) => libsql::Value::Text(password),
+        }
     }
 }
 
