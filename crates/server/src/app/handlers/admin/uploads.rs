@@ -52,8 +52,8 @@ pub async fn get_uploads(
         ORDER BY uploaded_at DESC
         LIMIT $1 OFFSET $2",
     )
-    .bind(50 as i64)
-    .bind(0 as i64)
+    .bind(50_i64)
+    .bind(0_i64)
     .fetch_all(&env.pool)
     .await
     .map_err(|err| {
@@ -89,7 +89,7 @@ pub async fn get_uploads_page(
         ORDER BY uploaded_at DESC
         LIMIT $1 OFFSET $2",
     )
-    .bind(50 as i64)
+    .bind(50_i64)
     .bind((page * 50) as i64)
     .fetch_all(&env.pool)
     .await
