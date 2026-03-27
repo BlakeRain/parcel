@@ -1,5 +1,8 @@
 # parcel – A simple file upload tool
 
+> **ARCHIVED**
+> This repository has moved to: https://git.blakerain.com/BlakeRain/parcel
+
 <picture>
  <source media="(prefers-color-scheme: dark)" srcset="media/masked-screenshot.png">
  <source media="(prefers-color-scheme: light)" srcset="media/masked-screenshot.png">
