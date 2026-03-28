@@ -8,7 +8,7 @@
 {% for upload in uploads %}
 <div
   id="upload-row-{{ upload.id }}"
-  class="uploads-table-row"
+  class="uploads-table-row group/upload-row"
   data-page="{{ page }}"
   {% if query.order is string %}data-order="{{ query.order }}"{% endif %}
   {% if query.asc is boolean %}data-asc="{{ query.asc }}"{% endif %}>
@@ -28,6 +28,12 @@
       {% endif %}
       <a class="truncate" href="{{ upload_url}}">{{ upload.filename }}</a>
       <parcel-clipboard url="true" value="{{ upload_url }}"></parcel-clipboard>
+
+      {% with
+        tags = upload.tags | split(",") | list if upload.tags | length > 0 else [],
+        editable = (not team) or membership.can_edit %}
+        {% include "uploads/tags/tags.html" %}
+      {% endwith %}
     </div>
 
     <div class="text-right text-nowrap">{{ upload.size | filesizeformat }}</div>
@@ -122,6 +128,16 @@
               hx-swap="beforeend">
               <span class="icon-pencil"></span>
               Edit upload &hellip;
+            </a>
+            <a
+              href="#"
+              title="Edit upload tags"
+              hx-get="/uploads/{{ upload.id }}/tags/edit"
+              hx-trigger="click"
+              hx-target="body"
+              hx-swap="beforeend">
+              <span class="icon-tag"></span>
+              Edit tags &hellip;
             </a>
             <a
               href="#"

@@ -5,6 +5,7 @@ use time::{Date, OffsetDateTime};
 
 use super::{
     password::StoredPassword,
+    tag::Tag,
     team::{Team, TeamMember},
     types::Key,
     user::User,
@@ -78,7 +79,25 @@ pub enum UploadOwnership {
     OwnedByTeam(TeamMember),
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UploadOwner {
+    User(Key<User>),
+    Team(Key<Team>),
+}
+
 impl Upload {
+    pub fn get_owner(&self) -> Option<UploadOwner> {
+        if let Some(owner_user) = self.owner_user {
+            return Some(UploadOwner::User(owner_user));
+        }
+
+        if let Some(owner_team) = self.owner_team {
+            return Some(UploadOwner::Team(owner_team));
+        }
+
+        None
+    }
+
     pub async fn create(&self, pool: &SqlitePool) -> sqlx::Result<()> {
         sqlx::query(
             "INSERT INTO uploads (id, slug, filename, size, public,
@@ -599,6 +618,39 @@ impl Upload {
             }
         }
     }
+
+    pub async fn get_tags(&self, pool: &SqlitePool) -> sqlx::Result<Vec<String>> {
+        sqlx::query_scalar(
+            "SELECT tags.name FROM upload_tags
+            LEFT JOIN tags ON tags.id = upload_tags.tag
+            WHERE upload_tags.upload = $1
+            ORDER BY tags.name",
+        )
+        .bind(self.id)
+        .fetch_all(pool)
+        .await
+    }
+
+    pub async fn replace_tags(&self, pool: &SqlitePool, tags: Vec<Key<Tag>>) -> sqlx::Result<()> {
+        // First, delete all existing tags for this upload.
+        sqlx::query("DELETE FROM upload_tags WHERE upload = $1")
+            .bind(self.id)
+            .execute(pool)
+            .await?;
+
+        // Then, insert the new tags.
+        sqlx::query(
+            "INSERT INTO upload_tags (upload, tag) \
+            SELECT $1, value \
+            FROM json_each($2);",
+        )
+        .bind(self.id)
+        .bind(serde_json::to_string(&tags).expect("JSON serialization of key array"))
+        .execute(pool)
+        .await?;
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, FromRow, Serialize)]
@@ -662,6 +714,7 @@ pub struct UploadList {
     pub uploaded_by_id: Option<Key<User>>,
     pub uploaded_by_name: Option<String>,
     pub uploaded_at: OffsetDateTime,
+    pub tags: String,
 }
 
 impl UploadList {
@@ -679,15 +732,24 @@ impl UploadList {
                 uploads.size, uploads.public, uploads.downloads, \
                 uploads.\"limit\", uploads.remaining, uploads.expiry_date, \
                 uploads.custom_slug, \
-                uploads.password is not null as has_password, \
+                uploads.password IS NOT NULL AS has_password, \
                 COALESCE(teams.slug, users.username) AS owner_slug, \
                 uploads.uploaded_by AS uploaded_by_id, \
                 uploader.name AS uploaded_by_name, \
-                uploads.uploaded_at \
+                uploads.uploaded_at, \
+                tags.tags \
                 FROM uploads \
                 LEFT JOIN teams ON uploads.owner_team = teams.id \
                 LEFT JOIN users ON uploads.owner_user = users.id \
                 LEFT JOIN users AS uploader ON uploads.uploaded_by = uploader.id \
+                LEFT JOIN (\
+                    SELECT \
+                      upload_tags.upload, \
+                      GROUP_CONCAT(tags.name, ',' ORDER BY tags.name) AS tags \
+                    FROM upload_tags \
+                    LEFT JOIN tags ON tags.id = upload_tags.tag \
+                    GROUP BY upload_tags.upload \
+                ) AS tags ON uploads.id = tags.upload \
                 WHERE uploads.owner_user = $1 {} \
                 ORDER BY {} {} LIMIT {} OFFSET {}",
             if search.is_some() {
@@ -734,11 +796,20 @@ impl UploadList {
                 COALESCE(teams.slug, users.username) AS owner_slug, \
                 uploads.uploaded_by AS uploaded_by_id, \
                 uploader.name AS uploaded_by_name, \
-                uploads.uploaded_at \
+                uploads.uploaded_at, \
+                tags.tags \
                 FROM uploads \
                 LEFT JOIN teams ON uploads.owner_team = teams.id \
                 LEFT JOIN users ON uploads.owner_user = users.id \
                 LEFT JOIN users AS uploader ON uploads.uploaded_by = uploader.id \
+                LEFT JOIN (\
+                    SELECT \
+                      upload_tags.upload, \
+                      GROUP_CONCAT(tags.name, ',' ORDER BY tags.name) AS tags \
+                    FROM upload_tags \
+                    LEFT JOIN tags ON tags.id = upload_tags.tag \
+                    GROUP BY upload_tags.upload \
+                ) AS tags ON uploads.id = tags.upload \
                 WHERE uploads.owner_team = $1 {} \
                 ORDER BY {} {} LIMIT {} OFFSET {}",
             if search.is_some() {

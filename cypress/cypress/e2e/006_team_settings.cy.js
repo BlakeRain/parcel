@@ -146,7 +146,7 @@ describe("Teams", () => {
       "test-file.txt"
     );
     cy.get("#uploads-table .dropdown-button").click();
-    cy.get("a[hx-get$='/edit']")
+    cy.get("a[title='Edit upload settings']")
       .should("be.visible")
       .and("contain", "Edit upload")
       .click();

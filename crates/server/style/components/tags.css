@@ -1,0 +1,11 @@
+@layer components {
+  .tag {
+    @apply text-nowrap items-center px-2 py-1 text-xs font-medium rounded-full;
+    @apply bg-primary-200 hover:bg-primary-300 text-neutral-700 hover:text-neutral-900;
+    @apply dark:bg-primary-900 dark:hover:bg-primary-800 dark:text-neutral-100 dark:hover:text-neutral-50;
+
+    &.large {
+      @apply text-sm;
+    }
+  }
+}
