@@ -1,0 +1,5 @@
+## Where to store the hosts configuration file
+##
+## Linux & macOS: ~/.local/share/parcel/hosts.json
+## Windows: %USERPROFILE%/.local/share/parcel/hosts.json
+# hosts_path = "~/.hosts.json"
